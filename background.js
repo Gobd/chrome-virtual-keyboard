@@ -56,7 +56,8 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
             "intelligentScroll",
             "autoTriggerLinks",
             "autoTriggerAfter",
-            "refreshTime"
+            "refreshTime",
+            "keyboardLayout1"
         ], function(result) {
             sendResponse({
                 hardwareAcceleration: result.hardwareAcceleration,
@@ -66,7 +67,8 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
                 intelligentScroll: result.intelligentScroll,
                 autoTriggerLinks: result.autoTriggerLinks,
                 autoTriggerAfter: result.autoTriggerAfter,
-                refreshTime: result.refreshTime
+                refreshTime: result.refreshTime,
+                keyboardLayout1: result.keyboardLayout1
             });
         });
         return true;
