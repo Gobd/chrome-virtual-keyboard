@@ -1,92 +1,154 @@
-chrome.extension.onRequest.addListener(function (request, sender, sendResponse) {
+// MV3 Service Worker - uses chrome.storage.local instead of localStorage
+
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     if (request.method == "getLocalStorage") {
-        sendResponse({ data: localStorage[request.key] });
+        chrome.storage.local.get(request.key, function(result) {
+            sendResponse({ data: result[request.key] });
+        });
+        return true; // Keep channel open for async response
     }
     else if (request.method == "getSmallKeyboardCoords") {
-        sendResponse({ smallKeyboard: localStorage["smallKeyboard"], smallKeyboardTop: localStorage["smallKeyboardTop"], smallKeyboardBottom: localStorage["smallKeyboardBottom"], smallKeyboardRight: localStorage["smallKeyboardRight"], smallKeyboardLeft: localStorage["smallKeyboardLeft"] });
+        chrome.storage.local.get([
+            "smallKeyboard",
+            "smallKeyboardTop",
+            "smallKeyboardBottom",
+            "smallKeyboardRight",
+            "smallKeyboardLeft"
+        ], function(result) {
+            sendResponse({
+                smallKeyboard: result.smallKeyboard,
+                smallKeyboardTop: result.smallKeyboardTop,
+                smallKeyboardBottom: result.smallKeyboardBottom,
+                smallKeyboardRight: result.smallKeyboardRight,
+                smallKeyboardLeft: result.smallKeyboardLeft
+            });
+        });
+        return true;
     }
     else if (request.method == "loadKeyboardSettings") {
-        sendResponse({
-            openedFirstTime: localStorage["openedFirstTime"],
-            capsLock: localStorage["capsLock"],
-            smallKeyboard: localStorage["smallKeyboard"],
-            touchEvents: localStorage["touchEvents"],
-            keyboardLayout1: localStorage["keyboardLayout1"],
-            urlButton: localStorage["urlButton"],
-            keyboardEnabled: localStorage["keyboardEnabled"]
+        chrome.storage.local.get([
+            "openedFirstTime",
+            "capsLock",
+            "smallKeyboard",
+            "touchEvents",
+            "keyboardLayout1",
+            "urlButton",
+            "keyboardEnabled"
+        ], function(result) {
+            sendResponse({
+                openedFirstTime: result.openedFirstTime,
+                capsLock: result.capsLock,
+                smallKeyboard: result.smallKeyboard,
+                touchEvents: result.touchEvents,
+                keyboardLayout1: result.keyboardLayout1,
+                urlButton: result.urlButton,
+                keyboardEnabled: result.keyboardEnabled
+            });
         });
+        return true;
     }
     else if (request.method == "initLoadKeyboardSettings") {
-        sendResponse({
-            hardwareAcceleration: localStorage["hardwareAcceleration"],
-            zoomLevel: localStorage["zoomLevel"],
-            autoTrigger: localStorage["autoTrigger"],
-            repeatLetters: localStorage["repeatLetters"],
-            intelligentScroll: localStorage["intelligentScroll"],
-            autoTriggerLinks: localStorage["autoTriggerLinks"],
-            autoTriggerAfter: localStorage["autoTriggerAfter"],
-            refreshTime: localStorage["refreshTime"]
+        chrome.storage.local.get([
+            "hardwareAcceleration",
+            "zoomLevel",
+            "autoTrigger",
+            "repeatLetters",
+            "intelligentScroll",
+            "autoTriggerLinks",
+            "autoTriggerAfter",
+            "refreshTime"
+        ], function(result) {
+            sendResponse({
+                hardwareAcceleration: result.hardwareAcceleration,
+                zoomLevel: result.zoomLevel,
+                autoTrigger: result.autoTrigger,
+                repeatLetters: result.repeatLetters,
+                intelligentScroll: result.intelligentScroll,
+                autoTriggerLinks: result.autoTriggerLinks,
+                autoTriggerAfter: result.autoTriggerAfter,
+                refreshTime: result.refreshTime
+            });
         });
+        return true;
     }
     else if (request.method == "setLocalStorage") {
-        localStorage[request.key] = request.value;
-        sendResponse({ data: "ok", setted_key: request.key });
+        let obj = {};
+        obj[request.key] = request.value;
+        chrome.storage.local.set(obj, function() {
+            sendResponse({ data: "ok", setted_key: request.key });
+        });
+        return true;
     }
     else if (request.method == "openFromIframe") {
-        chrome.tabs.getSelected(null, function (tab) {
-            chrome.tabs.sendRequest(tab.id, request);
+        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+            if (tabs[0]) {
+                chrome.tabs.sendMessage(tabs[0].id, request);
+            }
         });
     }
     else if (request.method == "clickFromIframe") {
-        chrome.tabs.getSelected(null, function (tab) {
-            chrome.tabs.sendRequest(tab.id, request);
+        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+            if (tabs[0]) {
+                chrome.tabs.sendMessage(tabs[0].id, request);
+            }
         });
     }
     else if (request.method == "toogleKeyboard") {
-        if (localStorage["keyboardEnabled"] != "false") {
-            localStorage["keyboardEnabled"] = "false";
-        } else {
-            localStorage["keyboardEnabled"] = "true";
-        }
-        chrome.tabs.getSelected(null, function (tab) {
-            vkeyboard_loadPageIcon(tab.id);
-            if (localStorage["keyboardEnabled"] == "false") {
-                chrome.tabs.sendRequest(tab.id, "closeKeyboard");
-            } else {
-                chrome.tabs.sendRequest(tab.id, "openKeyboard");
-            }
-        })
+        chrome.storage.local.get("keyboardEnabled", function(result) {
+            let newValue = result.keyboardEnabled != "false" ? "false" : "true";
+            chrome.storage.local.set({ keyboardEnabled: newValue }, function() {
+                chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+                    if (tabs[0]) {
+                        vkeyboard_loadPageIcon(tabs[0].id);
+                        let message = newValue == "false" ? "closeKeyboard" : "openKeyboard";
+                        chrome.tabs.sendMessage(tabs[0].id, message);
+                    }
+                });
+            });
+        });
         sendResponse({ data: "ok" });
     }
     else if (request.method == "toogleKeyboardOn") {
-        localStorage["keyboardEnabled"] = "true";
-        chrome.tabs.getSelected(null, function (tab) {
-            vkeyboard_loadPageIcon(tab.id);
-            chrome.tabs.sendRequest(tab.id, "openKeyboard");
-        })
+        chrome.storage.local.set({ keyboardEnabled: "true" }, function() {
+            chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+                if (tabs[0]) {
+                    vkeyboard_loadPageIcon(tabs[0].id);
+                    chrome.tabs.sendMessage(tabs[0].id, "openKeyboard");
+                }
+            });
+        });
         sendResponse({ data: "ok" });
     }
     else if (request.method == "toogleKeyboardDemand") {
-        localStorage["keyboardEnabled"] = "demand";
-        chrome.tabs.getSelected(null, function (tab) {
-            vkeyboard_loadPageIcon(tab.id);
-            chrome.tabs.sendRequest(tab.id, "openKeyboard");
-        })
+        chrome.storage.local.set({ keyboardEnabled: "demand" }, function() {
+            chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+                if (tabs[0]) {
+                    vkeyboard_loadPageIcon(tabs[0].id);
+                    chrome.tabs.sendMessage(tabs[0].id, "openKeyboard");
+                }
+            });
+        });
         sendResponse({ data: "ok" });
     }
     else if (request.method == "toogleKeyboardOff") {
-        localStorage["keyboardEnabled"] = "false";
-        chrome.tabs.getSelected(null, function (tab) {
-            vkeyboard_loadPageIcon(tab.id);
-            chrome.tabs.sendRequest(tab.id, "closeKeyboard");
-        })
+        chrome.storage.local.set({ keyboardEnabled: "false" }, function() {
+            chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+                if (tabs[0]) {
+                    vkeyboard_loadPageIcon(tabs[0].id);
+                    chrome.tabs.sendMessage(tabs[0].id, "closeKeyboard");
+                }
+            });
+        });
         sendResponse({ data: "ok" });
     }
     else if (request.method == "openUrlBar") {
-        chrome.tabs.getSelected(null, function (tab) {
-            chrome.tabs.sendRequest(tab.id, "openUrlBar");
-            sendResponse({ data: "ok" });
+        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+            if (tabs[0]) {
+                chrome.tabs.sendMessage(tabs[0].id, "openUrlBar");
+                sendResponse({ data: "ok" });
+            }
         });
+        return true;
     }
     else if (request.method == "createTab") {
         chrome.tabs.create({ url: request.url });
@@ -97,21 +159,25 @@ chrome.extension.onRequest.addListener(function (request, sender, sendResponse) 
 });
 
 function vkeyboard_loadPageIcon(tabId) {
-    if (localStorage["keyboardEnabled"] == "demand") {
-        chrome.pageAction.setIcon({ tabId: tabId, path: "buttons/keyboard_2.png" }, function () { })
-    } else if (localStorage["keyboardEnabled"] != "false") {
-        chrome.pageAction.setIcon({ tabId: tabId, path: "buttons/keyboard_1.png" }, function () { })
-    } else {
-        chrome.pageAction.setIcon({ tabId: tabId, path: "buttons/keyboard_3.png" }, function () { })
-    }
+    chrome.storage.local.get("keyboardEnabled", function(result) {
+        let iconPath;
+        if (result.keyboardEnabled == "demand") {
+            iconPath = "buttons/keyboard_2.png";
+        } else if (result.keyboardEnabled != "false") {
+            iconPath = "buttons/keyboard_1.png";
+        } else {
+            iconPath = "buttons/keyboard_3.png";
+        }
+        chrome.action.setIcon({ tabId: tabId, path: iconPath });
+    });
 }
 
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-    if (localStorage["toogleKeyboard"] != "false") {
-        chrome.pageAction.show(tabId);
-        vkeyboard_loadPageIcon(tabId);
-    } else {
-        localStorage["keyboardEnabled"] = "true";
-        chrome.pageAction.hide(tabId);
-    }
+    chrome.storage.local.get("toogleKeyboard", function(result) {
+        if (result.toogleKeyboard != "false") {
+            vkeyboard_loadPageIcon(tabId);
+        } else {
+            chrome.storage.local.set({ keyboardEnabled: "true" });
+        }
+    });
 });
