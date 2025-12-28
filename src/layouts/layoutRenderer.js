@@ -103,7 +103,12 @@ function renderSpecialKey(key, keyType, labels) {
 
   // Build span content
   let spanContent = "";
-  if (keyType.spanClass) {
+  if (keyType.spanClass && !keyType.noLabel) {
+    // Has both class and label (e.g., &123 button)
+    const label = labels[key] || keyType.label || "";
+    spanContent = `<span class="${keyType.spanClass}">${label}</span>`;
+  } else if (keyType.spanClass) {
+    // Has class but no label (e.g., Shift icon, Close icon)
     spanContent = `<span class="${keyType.spanClass}"></span>`;
   } else if (!keyType.noLabel) {
     const label = labels[key] || keyType.label || key;
@@ -138,7 +143,7 @@ function renderRegularKey(keyDef, layoutId) {
     classes.push("kMenu");
   }
 
-  if (display || shift) {
+  if (display) {
     classes.push("keyCaseDisplay");
   }
 
