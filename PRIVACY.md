@@ -39,5 +39,6 @@ Any updates to this privacy policy will be reflected in this document with an up
 ## Contact
 
 If you have questions about this privacy policy, please contact:
+
 - Email: bkemper@gmail.com
 - GitHub: https://github.com/Gobd/chrome-virtual-keyboard/issues
