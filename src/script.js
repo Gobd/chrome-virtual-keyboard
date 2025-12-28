@@ -44,13 +44,6 @@ const TIMING = {
   URL_BAR_FOCUS_DELAY: 200,
 };
 
-// Character shift mapping for special characters
-const SHIFT_CHAR_MAP = {
-  // Hungarian special characters
-  "\u0151": "\u0150", // ő -> Ő
-  "\u0171": "\u0170", // ű -> Ű
-};
-
 // =============================================================================
 // GLOBAL STATE
 // =============================================================================
@@ -227,11 +220,6 @@ function getKeyWithShift(element) {
 }
 
 function applyShiftToCharacter(char) {
-  // Check special character map first
-  if (SHIFT_CHAR_MAP[char]) {
-    return SHIFT_CHAR_MAP[char];
-  }
-
   const charCode = char.charCodeAt(0);
 
   // Lowercase a-z (97-122) -> Uppercase A-Z (65-90)
@@ -250,21 +238,6 @@ function applyShiftToCharacter(char) {
 // =============================================================================
 // UTILITY FUNCTIONS
 // =============================================================================
-
-function getParentByTagName(element, tagName) {
-  let currentParent = element.parentNode;
-  const targetTag = tagName.toLowerCase();
-  let iterationCount = 0;
-
-  while (iterationCount < 500 && currentParent) {
-    if (currentParent.tagName?.toLowerCase() === targetTag) {
-      return currentParent;
-    }
-    currentParent = currentParent.parentNode;
-    iterationCount++;
-  }
-  return null;
-}
 
 function clickSubmitButton(form, inputType) {
   const inputs = form.querySelectorAll(inputType);
@@ -571,7 +544,7 @@ function handleEnter() {
     dispatchEvent(elem, "input");
     fireOnChange();
   } else {
-    const form = getParentByTagName(elem, "form");
+    const form = elem.closest("form");
     if (form) {
       const submitted =
         clickSubmitButton(form, "input") || clickSubmitButton(form, "button");
