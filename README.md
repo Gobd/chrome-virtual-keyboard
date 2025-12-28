@@ -1,6 +1,8 @@
 Virtual Keyboard for Google Chrome&trade; (Fork)
 ================================================
 
+![Virtual Keyboard Screenshot](screenshot.png)
+
 ## About
 
 Virtual Keyboard for Google Chrome&trade; will popup automatically when the user clicks on an input field such as textboxes and textareas. Furthermore, the keyboard will disappear automatically once no longer needed.
@@ -26,6 +28,14 @@ This extension requires the following permissions:
 | `<all_urls>` (host permission) | Required to inject the keyboard into any webpage you visit. Without this, the keyboard would only work on whitelisted sites |
 
 The content script runs on all pages to detect when you focus on input fields and display the keyboard.
+
+## Building for Chrome Web Store
+
+To create a zip file for submission to the Chrome Web Store:
+
+```bash
+zip -r virtual-keyboard.zip . -x "*.git*" -x "*.zip" -x "*.md" -x "screenshot.png"
+```
 
 ## Known Limitations
 
