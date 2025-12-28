@@ -56,7 +56,6 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
             "intelligentScroll",
             "autoTriggerLinks",
             "autoTriggerAfter",
-            "refreshTime",
             "keyboardLayout1"
         ], function(result) {
             sendResponse({
@@ -67,7 +66,6 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
                 intelligentScroll: result.intelligentScroll,
                 autoTriggerLinks: result.autoTriggerLinks,
                 autoTriggerAfter: result.autoTriggerAfter,
-                refreshTime: result.refreshTime,
                 keyboardLayout1: result.keyboardLayout1
             });
         });
