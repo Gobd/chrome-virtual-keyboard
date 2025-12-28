@@ -6,13 +6,15 @@ function addLayout() {
   const available = $("al").options;
   const selected = $("sl").options;
 
+  if (!available || available.length === 0) return;
+
   for (const opt of available) {
     if (!opt.selected) continue;
 
     // Check if already exists
     let exists = false;
-    for (const s of selected) {
-      if (s.value === opt.value) {
+    for (const existingOpt of selected) {
+      if (existingOpt.value === opt.value) {
         exists = true;
         break;
       }
@@ -31,11 +33,11 @@ function addLayout() {
 
 function removeLayout() {
   const selected = $("sl").options;
-  if (selected.length <= 1) return; // Keep at least one
+  if (!selected || selected.length <= 1) return; // Keep at least one
 
-  for (let i = selected.length - 1; i >= 0; i--) {
-    if (selected[i].selected) {
-      $("sl").removeChild(selected[i]);
+  for (let index = selected.length - 1; index >= 0; index--) {
+    if (selected[index].selected) {
+      $("sl").removeChild(selected[index]);
     }
   }
 
@@ -46,11 +48,15 @@ function saveLayouts() {
   const layouts = [];
   const selected = $("sl").options;
 
+  if (!selected || selected.length === 0) return;
+
   for (const opt of selected) {
     if (opt.value) {
       layouts.push({ value: opt.value, name: opt.text });
     }
   }
+
+  if (layouts.length === 0) return;
 
   chrome.storage.local.set({
     keyboardLayoutsList: JSON.stringify(layouts),
@@ -65,8 +71,15 @@ async function loadLayouts() {
 
   if (!result.keyboardLayoutsList) return;
 
-  const layouts = JSON.parse(result.keyboardLayoutsList);
-  if (layouts.length === 0) return;
+  let layouts;
+  try {
+    layouts = JSON.parse(result.keyboardLayoutsList);
+  } catch (error) {
+    console.error("Failed to parse layouts:", error);
+    return;
+  }
+
+  if (!layouts || layouts.length === 0) return;
 
   // Clear default and populate
   $("sl").innerHTML = "";

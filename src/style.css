@@ -64,7 +64,7 @@
   left: auto;
   right: -20px;
 }
-#virtualKeyboardChromeExtension.modeS [_key="Backspace"].kbdClick span {
+#virtualKeyboardChromeExtension.modeS [data-key="Backspace"].kbdClick span {
   background-image: url(/icons/backspace.png) !important;
   font-size: 0px !important;
   color: transparent !important;
@@ -155,7 +155,7 @@
 }
 
 @media only screen and (max-width: 1200px) {
-  #virtualKeyboardChromeExtension [_key="Backspace"].kbdClick span {
+  #virtualKeyboardChromeExtension [data-key="Backspace"].kbdClick span {
     background-image: url(/icons/backspace.png) !important;
     font-size: 0px !important;
     color: transparent !important;
@@ -163,7 +163,7 @@
   }
 }
 @media only screen and (max-width: 1200px) {
-  #virtualKeyboardChromeExtension [_key="Enter"].kbdClick span {
+  #virtualKeyboardChromeExtension [data-key="Enter"].kbdClick span {
     background-image: url(/icons/enter.png) !important;
     font-size: 0px !important;
     color: transparent !important;
@@ -171,11 +171,11 @@
   }
 }
 
-#virtualKeyboardChromeExtension [_key="Enter"] span {
+#virtualKeyboardChromeExtension [data-key="Enter"] span {
   background-image: url(/icons/enter-e.png);
 }
 
-#virtualKeyboardChromeExtension [_key="Backspace"] span {
+#virtualKeyboardChromeExtension [data-key="Backspace"] span {
   background-image: url(/icons/backspace-e.png);
 }
 
@@ -186,9 +186,9 @@
   text-shadow: none !important;
 }
 
-#virtualKeyboardChromeExtension [_key="Url"] span,
-#virtualKeyboardChromeExtension [_key="Enter"] span,
-#virtualKeyboardChromeExtension [_key="Backspace"] span {
+#virtualKeyboardChromeExtension [data-key="Url"] span,
+#virtualKeyboardChromeExtension [data-key="Enter"] span,
+#virtualKeyboardChromeExtension [data-key="Backspace"] span {
   background-position: center;
   font-size: 28px !important;
   padding-top: 20px !important;
@@ -225,11 +225,11 @@
     opacity 0.4s,
     margin 0.2s;
 }
-.virtualKeyboardChromeExtensionOverlay[_state="closed"] {
+.virtualKeyboardChromeExtensionOverlay[data-state="closed"] {
   opacity: 0;
   margin-bottom: -5px;
 }
-.virtualKeyboardChromeExtensionOverlay[_state="open"] {
+.virtualKeyboardChromeExtensionOverlay[data-state="open"] {
   opacity: 1;
 }
 .virtualKeyboardChromeExtensionOverlay ul,
@@ -251,7 +251,7 @@
   text-shadow: 0 0 3px #000;
   background-color: rgba(255, 255, 255, 0.05);
 }
-.virtualKeyboardChromeExtensionOverlay li[mo="true"] {
+.virtualKeyboardChromeExtensionOverlay li[data-mouse-over="true"] {
   background-color: rgba(255, 255, 255, 0.3);
 }
 #virtualKeyboardChromeExtensionUrlBar [type="submit"] {
