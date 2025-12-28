@@ -39,13 +39,10 @@ const state = {
     pagePadding: false,
   },
   settings: {
-    enabled: "true",
     layout: "en",
-    capsLock: true,
   },
   closeTimer: null,
   iframeCount: 0,
-  dialogs: [],
 };
 
 // Storage helpers - use chrome.storage directly
@@ -208,40 +205,12 @@ async function openKeyboard(posY, posX, force) {
     document.body.appendChild(state.keyboard.element);
   }
 
-  // Handle demand mode
-  if (
-    state.settings.enabled === "demand" &&
-    force === undefined &&
-    state.focused.element.id !== "virtualKeyboardChromeExtensionUrlBarTextBox"
-  ) {
-    showDemandPrompt(posX, posY);
-    return;
-  }
-
-  if (state.settings.enabled === "false") return;
-
   // Load layout if needed
   if (state.keyboard.loadedLayout !== state.settings.layout) {
     await loadLayout(state.settings.layout);
   }
 
   openKeyboardUI(posY);
-}
-
-function showDemandPrompt(posX, posY) {
-  const elem = state.focused.element;
-  if (posX === undefined) posX = getElementPositionX(elem);
-  if (posY === undefined) posY = getElementPositionY(elem);
-
-  posX += document.body.scrollLeft;
-  posY += window.scrollY;
-
-  const overlay = $("virtualKeyboardChromeExtensionOverlayDemand");
-  overlay.style.display = "block";
-  overlay.style.top = posY + "px";
-  overlay.style.left = posX + "px";
-
-  setTimeout(() => overlay.setAttribute("_state", "open"), 50);
 }
 
 async function loadLayout(layout) {
@@ -394,30 +363,9 @@ function handleKeyPress(key, skip = false) {
 }
 
 function handleClose() {
-  // Restore dialog attributes
-  for (const dlg of state.dialogs) {
-    if (dlg.oldNoCancelOnOutsideClick) {
-      dlg.setAttribute(
-        "no-cancel-on-outside-click",
-        dlg.oldNoCancelOnOutsideClick,
-      );
-    } else {
-      dlg.removeAttribute("no-cancel-on-outside-click");
-    }
-  }
-  state.dialogs = [];
-
   if (state.keyboard.open) {
     closeKeyboard();
   }
-
-  const overlay = $("virtualKeyboardChromeExtensionOverlayDemand");
-  overlay.setAttribute("_state", "close");
-  setTimeout(() => {
-    if (!state.keyboard.open) {
-      overlay.style.display = "none";
-    }
-  }, 200);
 }
 
 function handleEnter() {
@@ -550,7 +498,7 @@ function dispatchBackspaceEvents() {
 }
 
 function resetShiftIfNeeded() {
-  if (state.keyboard.shift && state.settings.capsLock) {
+  if (state.keyboard.shift) {
     state.keyboard.shift = false;
     $("virtualKeyboardChromeExtensionMainKbd").className = "";
     updateShiftKeys();
@@ -658,10 +606,6 @@ function handleInputPointerDown(e) {
 function handleInputEvent(element, isFocus = false, elementType = "input") {
   if (element.disabled || element.readOnly) return;
 
-  if (isFocus) {
-    disableDialogClose(element);
-  }
-
   clearTimeout(state.closeTimer);
   state.focused.type = elementType;
   fireOnChange();
@@ -672,23 +616,6 @@ function handleInputEvent(element, isFocus = false, elementType = "input") {
   }
 
   renderInputType();
-}
-
-function disableDialogClose(element) {
-  let el = element;
-  while (el) {
-    el = el.parentElement || el.parentNode || el.host;
-
-    if (el?.nodeName === "PAPER-DIALOG") {
-      if (!state.dialogs.includes(el)) {
-        el.oldNoCancelOnOutsideClick = el.getAttribute(
-          "no-cancel-on-outside-click",
-        );
-        el.setAttribute("no-cancel-on-outside-click", "");
-        state.dialogs.push(el);
-      }
-    }
-  }
 }
 
 // Event handlers for different input types
@@ -988,29 +915,6 @@ function initUrlBar() {
   if (urlBtn) urlBtn.style.display = "";
 }
 
-// Demand overlay setup
-function initDemandOverlay() {
-  const overlay = $("virtualKeyboardChromeExtensionOverlayDemand");
-  if (!overlay) return;
-
-  overlay.onclick = function (e) {
-    state.focused.element?.focus();
-    openKeyboard(state.focused.clickY, state.focused.clickX, true);
-
-    setTimeout(() => {
-      overlay.setAttribute("_state", "close");
-      setTimeout(() => {
-        overlay.style.display = "none";
-      }, 200);
-    }, 100);
-
-    preventDefault(e);
-  };
-
-  overlay.onpointerdown = preventDefault;
-  overlay.onpointerup = preventDefault;
-}
-
 // Document-level event handlers
 function onDocumentPointerUp() {
   // Close overlays
@@ -1027,29 +931,21 @@ function onDocumentPointerUp() {
 async function loadSettings() {
   const result = await storageGet([
     "openedFirstTime",
-    "capsLock",
     "keyboardLayout1",
-    "keyboardEnabled",
     "keyboardLayoutsList",
   ]);
 
   // First time setup
   if (!result.openedFirstTime) {
     await storageSet({
-      capsLock: "true",
       keyboardLayout1: "en",
       keyboardLayoutsList: JSON.stringify(LAYOUTS),
-      keyboardEnabled: "true",
       openedFirstTime: "true",
     });
 
-    state.settings.capsLock = true;
     state.settings.layout = "en";
-    state.settings.enabled = "true";
   } else {
-    state.settings.capsLock = result.capsLock !== "false";
     state.settings.layout = result.keyboardLayout1 || "en";
-    state.settings.enabled = result.keyboardEnabled || "true";
   }
 }
 
@@ -1070,7 +966,6 @@ async function init() {
 
   // Init UI components
   initUrlBar();
-  initDemandOverlay();
   initKeyboardKeys(true);
 }
 
@@ -1108,11 +1003,6 @@ if (top === self) {
         () => $("virtualKeyboardChromeExtensionUrlBarTextBox")?.focus(),
         200,
       );
-    } else if (request === "closeKeyboard") {
-      reloadKeyboardToggle(false);
-      handleKeyPress("Close");
-    } else if (request === "openKeyboard") {
-      reloadKeyboardToggle(true);
     }
   });
 
@@ -1121,20 +1011,6 @@ if (top === self) {
   let i = 0;
   for (const iframe of iframes) {
     if (!iframe.id) iframe.id = "CVK_F_" + i++;
-  }
-}
-
-async function reloadKeyboardToggle(openState) {
-  const result = await storageGet("keyboardEnabled");
-  state.settings.enabled = result.keyboardEnabled;
-
-  if (
-    openState &&
-    ["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)
-  ) {
-    const elem = document.activeElement;
-    elem.blur();
-    setTimeout(() => elem.focus(), 500);
   }
 }
 

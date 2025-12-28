@@ -64,31 +64,6 @@
   left: auto;
   right: -20px;
 }
-#virtualKeyboardChromeExtensionOverlayDemand {
-  background-color: rgba(255, 255, 255, 0.9) !important;
-  z-index: 250000 !important;
-  box-shadow: rgba(0, 0, 0, 0.298039) 0px 0px 10px !important;
-  border-radius: 4px !important;
-  position: absolute !important;
-  width: 50px !important;
-  height: 35px !important;
-  background-image: url(/buttons/keyboard_1.png) !important;
-  background-position: center !important;
-  background-repeat: no-repeat !important;
-  cursor: pointer;
-  opacity: 0 !important;
-  transition: all 0.2s !important;
-  margin-left: -25px;
-}
-#virtualKeyboardChromeExtensionOverlayDemand[_state="open"] {
-  opacity: 1 !important;
-  margin-top: 15px !important;
-}
-#virtualKeyboardChromeExtensionOverlayDemand:active,
-#virtualKeyboardChromeExtensionOverlayDemand:hover,
-#virtualKeyboardChromeExtensionOverlayDemand {
-  background-color: rgba(255, 255, 255, 1) !important;
-}
 #virtualKeyboardChromeExtension.modeS [_key="Backspace"].kbdClick span {
   background-image: url(/icons/backspace.png) !important;
   font-size: 0px !important;
