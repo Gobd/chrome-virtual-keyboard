@@ -43,6 +43,7 @@ const state = {
   },
   closeTimer: null,
   iframeCount: 0,
+  pointerOverKeyboard: false,
 };
 
 // Storage helpers - use chrome.storage directly
@@ -267,7 +268,7 @@ function openKeyboardUI(posY) {
 function renderInputType() {
   const elem = state.focused.element;
 
-  if (state.focused.type === "input") {
+  if (state.focused.type === "input" && elem) {
     if (!elem.getAttribute("_originalType")) {
       elem.setAttribute("_originalType", elem.type);
     }
@@ -877,7 +878,25 @@ function initUrlBar() {
   const urlInput = $("virtualKeyboardChromeExtensionUrlBarTextBox");
   if (!urlInput) return;
 
-  urlInput.onblur = function () {
+  let refocusing = false;
+  urlInput.onblur = function (e) {
+    if (refocusing) return;
+
+    // Check if focus is moving to keyboard or pointer is over keyboard
+    const relatedTarget = e.relatedTarget;
+    const kbd = $("virtualKeyboardChromeExtension");
+    const focusInKeyboard = relatedTarget && kbd && kbd.contains(relatedTarget);
+
+    if (focusInKeyboard || state.pointerOverKeyboard) {
+      // User is interacting with keyboard, keep URL bar visible and re-focus input
+      refocusing = true;
+      setTimeout(() => {
+        urlInput.focus();
+        refocusing = false;
+      }, 0);
+      return;
+    }
+
     $("virtualKeyboardChromeExtensionUrlBar").style.top = "-100px";
     const urlBtn = $("urlButton");
     if (urlBtn) urlBtn.setAttribute("highlight", "");
@@ -963,6 +982,17 @@ async function init() {
 
   // Set up document events
   document.addEventListener("pointerup", onDocumentPointerUp);
+
+  // Track pointer over keyboard for blur handling
+  const kbd = $("virtualKeyboardChromeExtension");
+  if (kbd) {
+    kbd.addEventListener("pointerenter", () => {
+      state.pointerOverKeyboard = true;
+    });
+    kbd.addEventListener("pointerleave", () => {
+      state.pointerOverKeyboard = false;
+    });
+  }
 
   // Init UI components
   initUrlBar();
