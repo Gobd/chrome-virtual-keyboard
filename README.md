@@ -10,12 +10,15 @@ This extension is ideal for touch screen devices. This keyboard works like an iO
 
 ## Fork Differences
 
-This is a fork of the [original Virtual Keyboard extension](https://github.com/nickytonline/chrome-virtual-keyboard) with the following changes:
+This is a fork of the [original Virtual Keyboard extension](https://github.com/xontab/chrome-virtual-keyboard) with the following changes:
 
 - **Manifest V3 Migration** - Updated from Manifest V2 to V3 for continued Chrome Web Store compatibility
 - **`role="textbox"` Support** - The keyboard now activates on elements with `role="textbox"` in addition to standard input fields (useful for custom form components and accessibility)
 - **Improved iframe Support** - Better handling of keyboard in same-origin iframe scenarios
 - **Efficient DOM Monitoring** - Replaced inefficient polling (scanning entire DOM every second) with MutationObserver for detecting new input fields. This uses zero CPU when the page is idle and responds instantly to dynamically added inputs
+- **Open Button** - Floating keyboard button in the lower-right corner to manually show the keyboard at any time
+- **`.com` Button** - Quick-insert ".com" when typing in the URL bar
+- **Simplified Settings** - Removed options for small keyboard, zoom level, and auto-trigger delay. The keyboard now always auto-triggers on focus, uses the full-size layout, and touch events work automatically
 
 ## Permissions
 
@@ -23,7 +26,7 @@ This extension requires the following permissions:
 
 | Permission  | Why It's Needed                                                                                |
 | ----------- | ---------------------------------------------------------------------------------------------- |
-| `storage`   | Saves your preferences (keyboard layout, size, theme) so they persist between browser sessions |
+| `storage`   | Saves your keyboard layout preference so it persists between browser sessions |
 | `activeTab` | Allows the extension to interact with the current tab when you click the extension icon        |
 
 The content script is configured to run on all pages (`<all_urls>`) to detect when you focus on input fields and display the keyboard.
