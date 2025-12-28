@@ -21,6 +21,7 @@ const DOM_IDS = {
   URL_BAR_TEXTBOX: "virtualKeyboardChromeExtensionUrlBarTextBox",
   SETTINGS_BUTTON: "settingsButton",
   URL_BUTTON: "urlButton",
+  OPEN_BUTTON: "virtualKeyboardOpenButton",
 };
 
 // CSS selectors and classes
@@ -77,11 +78,13 @@ const state = {
   settings: {
     layout: "en",
   },
+  urlBarOpen: false,
   closeTimer: null,
   iframeCount: 0,
   pointerOverKeyboard: false,
   observer: null,
   shadowObservers: new WeakMap(),
+  openButton: null,
 };
 
 // =============================================================================
@@ -163,6 +166,14 @@ function insertTextAtCursor(text) {
     selection.removeAllRanges();
     selection.addRange(range);
   }
+}
+
+function insertTextAtPosition(input, text) {
+  const pos = input.selectionStart;
+  const posEnd = input.selectionEnd;
+  input.value = input.value.slice(0, pos) + text + input.value.slice(posEnd);
+  input.selectionStart = input.selectionEnd = pos + text.length;
+  dispatchEvent(input, "input");
 }
 
 function deleteAtCursor() {
@@ -295,6 +306,10 @@ function closeKeyboard() {
   keyboard.style.opacity = "0";
   keyboard.setAttribute("data-state", "closed");
 
+  // Show the open button and broadcast to iframes
+  showOpenButton();
+  broadcastKeyboardState(false);
+
   setTimeout(() => {
     if (!state.keyboard.open) {
       keyboard.style.display = "none";
@@ -388,6 +403,10 @@ function openKeyboardUI(posY) {
   clearTimeout(state.closeTimer);
   state.scroll.lastPos = window.scrollY;
 
+  // Hide the open button and broadcast to iframes
+  hideOpenButton();
+  broadcastKeyboardState(true);
+
   // Add body padding
   if (!document.body.style.marginBottom || state.scroll.pagePadding) {
     document.body.style.marginBottom = $(DOM_IDS.KEYBOARD).offsetHeight + "px";
@@ -477,7 +496,13 @@ function handleKeyPress(key, skip = false) {
       break;
 
     case "Url":
-      $(DOM_IDS.URL_BAR_TEXTBOX).focus();
+      if (state.urlBarOpen) {
+        // URL bar is open, insert ".com"
+        insertTextAtPosition($(DOM_IDS.URL_BAR_TEXTBOX), ".com");
+      } else {
+        // Open URL bar
+        $(DOM_IDS.URL_BAR_TEXTBOX).focus();
+      }
       break;
 
     case "Settings":
@@ -993,6 +1018,7 @@ function initUrlBar() {
     $(DOM_IDS.URL_BAR).style.top = "-100px";
     const urlBtn = $(DOM_IDS.URL_BUTTON);
     if (urlBtn) urlBtn.setAttribute("highlight", "");
+    setUrlButtonMode(false);
     fireOnChange();
     state.focused.element = null;
     state.closeTimer = setTimeout(
@@ -1009,6 +1035,7 @@ function initUrlBar() {
 
     const urlBtn = $(DOM_IDS.URL_BUTTON);
     if (urlBtn) urlBtn.setAttribute("highlight", "true");
+    setUrlButtonMode(true);
 
     if (!state.keyboard.open) {
       openKeyboard(0, 0, true);
@@ -1028,6 +1055,88 @@ function initUrlBar() {
   // URL button always visible
   const urlBtn = $(DOM_IDS.URL_BUTTON);
   if (urlBtn) urlBtn.style.display = "";
+}
+
+function setUrlButtonMode(isDotCom) {
+  const urlBtn = $(DOM_IDS.URL_BUTTON);
+  if (!urlBtn) return;
+
+  const span = urlBtn.querySelector("span");
+  if (span) {
+    span.textContent = isDotCom ? ".com" : "URL";
+  }
+  state.urlBarOpen = isDotCom;
+}
+
+// =============================================================================
+// OPEN BUTTON (FLOATING KEYBOARD TRIGGER)
+// =============================================================================
+
+function createOpenButton() {
+  if ($(DOM_IDS.OPEN_BUTTON)) return; // Already exists
+
+  const button = document.createElement("button");
+  button.id = DOM_IDS.OPEN_BUTTON;
+  button.type = "button";
+  button.innerHTML = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path d="M20 5H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"/>
+  </svg>`;
+  button.title = "Open virtual keyboard";
+
+  button.addEventListener("click", handleOpenButtonClick);
+  button.addEventListener("pointerdown", preventDefault);
+
+  document.body.appendChild(button);
+  state.openButton = button;
+}
+
+function handleOpenButtonClick(event) {
+  preventDefault(event);
+
+  // Check if in same-origin iframe
+  const inIframe = top !== self && window.frameElement !== null;
+
+  if (inIframe) {
+    // Relay to top frame
+    chrome.runtime.sendMessage({
+      method: "openFromButton",
+    });
+  } else {
+    // Open keyboard directly (no focused element, just show it)
+    openKeyboardFromButton();
+  }
+}
+
+async function openKeyboardFromButton() {
+  // Load layout if needed
+  if (state.keyboard.loadedLayout !== state.settings.layout) {
+    await loadLayout(state.settings.layout);
+  }
+  openKeyboardUI(0);
+}
+
+function showOpenButton() {
+  const button = $(DOM_IDS.OPEN_BUTTON);
+  if (button) {
+    button.setAttribute("data-hidden", "false");
+  }
+}
+
+function hideOpenButton() {
+  const button = $(DOM_IDS.OPEN_BUTTON);
+  if (button) {
+    button.setAttribute("data-hidden", "true");
+  }
+}
+
+function broadcastKeyboardState(isOpen) {
+  // Only broadcast from top frame
+  if (top === self) {
+    chrome.runtime.sendMessage({
+      method: "keyboardStateChange",
+      isOpen,
+    });
+  }
 }
 
 // =============================================================================
@@ -1096,6 +1205,9 @@ async function init() {
   // Init UI components
   initUrlBar();
   initKeyboardKeys(true);
+
+  // Create the floating open button
+  createOpenButton();
 }
 
 // =============================================================================
@@ -1128,6 +1240,9 @@ if (top === self) {
         const pY = request.posY + getElementPositionY($(request.frame));
         openKeyboard(pY, pX, request.force);
       }
+    } else if (request.method === "openFromButton") {
+      // Open keyboard from iframe button click (no focused element)
+      openKeyboardFromButton();
     } else if (request.method === "clickFromIframe") {
       handleKeyPress(request.key, request.skip);
     } else if (request === "openUrlBar") {
@@ -1145,6 +1260,17 @@ if (top === self) {
     if (!iframe.id) iframe.id = "CVK_F_" + iframeIndex++;
   }
 }
+
+// Listen for keyboard state broadcasts in all frames (including iframes)
+chrome.runtime.onMessage.addListener((request) => {
+  if (request.method === "keyboardStateChange") {
+    if (request.isOpen) {
+      hideOpenButton();
+    } else {
+      showOpenButton();
+    }
+  }
+});
 
 // =============================================================================
 // LOAD KEYBOARD HTML AND CSS
@@ -1182,12 +1308,21 @@ async function loadKeyboardHTML() {
 // ENTRY POINT
 // =============================================================================
 
+function loadCSS() {
+  const link = document.createElement("link");
+  link.href = chrome.runtime.getURL("style.css");
+  link.type = "text/css";
+  link.rel = "stylesheet";
+  document.head.appendChild(link);
+}
+
 const isTopFrame = top === self;
 const isCrossOriginIframe = top !== self && window.frameElement === null;
 
 if (isTopFrame || isCrossOriginIframe) {
   loadKeyboardHTML();
 } else {
-  // Same-origin iframe - just bind inputs
+  // Same-origin iframe - load CSS and bind inputs (no keyboard HTML needed)
+  loadCSS();
   init();
 }

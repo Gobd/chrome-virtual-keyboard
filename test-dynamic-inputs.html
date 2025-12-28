@@ -135,7 +135,47 @@
       </div>
     </div>
 
-    <h2>5. Scroll Behavior Test</h2>
+    <h2>5. Iframe Test</h2>
+    <div class="test-section">
+      <p>Tests keyboard and floating button behavior inside iframes.</p>
+      <p>
+        <strong>Instructions:</strong> Each iframe should have its own floating
+        keyboard button. Clicking the button or focusing an input should open
+        the keyboard, and the button should disappear in ALL frames.
+      </p>
+      <p>
+        <strong>Note:</strong> This test requires serving the files from a web
+        server (e.g., <code>npx serve .</code> or
+        <code>python -m http.server</code>). File:// URLs won't work properly
+        for iframe content script injection.
+      </p>
+
+      <h4>Same-origin iframe 1:</h4>
+      <iframe
+        id="test-iframe-1"
+        src="test-iframe-content.html"
+        style="
+          width: 100%;
+          height: 220px;
+          border: 2px solid #4285f4;
+          border-radius: 4px;
+        "
+      ></iframe>
+
+      <h4 style="margin-top: 20px">Same-origin iframe 2:</h4>
+      <iframe
+        id="test-iframe-2"
+        src="test-iframe-content.html"
+        style="
+          width: 100%;
+          height: 220px;
+          border: 2px solid #34a853;
+          border-radius: 4px;
+        "
+      ></iframe>
+    </div>
+
+    <h2>6. Scroll Behavior Test</h2>
     <div class="test-section">
       <p>Tests that the keyboard scrolls the page to keep inputs visible.</p>
       <p>
