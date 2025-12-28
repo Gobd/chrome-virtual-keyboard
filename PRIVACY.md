@@ -25,7 +25,8 @@ The extension requires the following permissions:
 
 - **storage**: To save your keyboard preferences locally on your device
 - **activeTab**: To display the virtual keyboard on the current webpage
-- **host_permissions (all URLs)**: Required so the keyboard can function on any website you visit
+
+The content script is configured to run on all pages so the keyboard can function on any website you visit.
 
 ## Third-Party Services
 
