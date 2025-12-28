@@ -18,10 +18,7 @@
     "default_title": "Virtual Keyboard Toggle",
     "default_popup": "toggle.html"
   },
-  "permissions": [
-    "storage",
-    "activeTab"
-  ],
+  "permissions": ["storage", "activeTab"],
   "web_accessible_resources": [
     {
       "resources": [
@@ -39,12 +36,8 @@
   ],
   "content_scripts": [
     {
-      "matches": [
-        "<all_urls>"
-      ],
-      "js": [
-        "script.js"
-      ],
+      "matches": ["<all_urls>"],
+      "js": ["script.js"],
       "run_at": "document_end",
       "all_frames": true
     }
