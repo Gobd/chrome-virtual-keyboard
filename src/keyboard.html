@@ -32,16 +32,19 @@
 <div id="virtualKeyboardChromeExtensionUrlBar" style="top: -100px">
   <form
     onsubmit="
+      var url = document.getElementById(
+        'virtualKeyboardChromeExtensionUrlBarTextBox',
+      ).value;
       this.action =
-        'http://' +
-        document.getElementById('virtualKeyboardChromeExtensionUrlBarTextBox')
-          .value
+        url.startsWith('http://') || url.startsWith('https://')
+          ? url
+          : 'https://' + url;
     "
   >
     <input
       type="text"
       id="virtualKeyboardChromeExtensionUrlBarTextBox"
-      placeholder="http://"
+      placeholder="https://"
     />
     <input type="submit" value="Go" />
   </form>

@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "package": "cd src && zip -r ../chrome-virtual-keyboard.zip . -x \".DS_Store\""
   },
   "keywords": [],
