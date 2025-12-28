@@ -1,6 +1,28 @@
-// Virtual Keyboard Options - Layout selector only
+// Virtual Keyboard Options - Layout selector and display settings
 
 const $ = (id) => document.getElementById(id);
+
+function saveDisplaySettings() {
+  const showOpenButton = $("showOpenButton").checked;
+  const keyboardZoom = parseInt($("keyboardZoom").value, 10) || 100;
+
+  chrome.storage.local.set({
+    showOpenButton,
+    keyboardZoom,
+  });
+
+  $("changeEffect").className = "show";
+}
+
+async function loadDisplaySettings() {
+  const result = await chrome.storage.local.get([
+    "showOpenButton",
+    "keyboardZoom",
+  ]);
+
+  $("showOpenButton").checked = result.showOpenButton !== false;
+  $("keyboardZoom").value = result.keyboardZoom || 100;
+}
 
 function addLayout() {
   const available = $("al").options;
@@ -98,7 +120,11 @@ window.addEventListener("load", () => {
   document.body.className = "loaded";
 
   loadLayouts();
+  loadDisplaySettings();
 
   $("kl_add").addEventListener("click", addLayout);
   $("kl_remove").addEventListener("click", removeLayout);
+
+  $("showOpenButton").addEventListener("change", saveDisplaySettings);
+  $("keyboardZoom").addEventListener("change", saveDisplaySettings);
 });

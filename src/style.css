@@ -5,8 +5,9 @@
   position: fixed !important;
   bottom: -450px;
   opacity: 0;
-  left: 0;
-  right: 0;
+  left: 50%;
+  width: 100vw;
+  transform: translateX(-50%);
   transition-property: all;
   transition-duration: 0.4s;
   user-select: none;
@@ -16,61 +17,8 @@
 }
 .ha #virtualKeyboardChromeExtension {
   bottom: 0;
-  transform: translate3d(0, 450px, 0);
+  transform: translateX(-50%) translate3d(0, 450px, 0);
 }
-#virtualKeyboardChromeExtension.modeS {
-  width: 750px;
-  left: 50%;
-  right: auto;
-  zoom: 1 !important;
-}
-#virtualKeyboardChromeExtension.modeS .virtualKeyboardChromeExtensionMainKeys,
-#virtualKeyboardChromeExtension.modeS
-  #virtualKeyboardChromeExtensionNumberBarKbd1,
-#virtualKeyboardChromeExtension.modeS
-  #virtualKeyboardChromeExtensionMainNumbers {
-  zoom: 0.7 !important;
-}
-
-#virtualKeyboardChromeExtensionDraggableLeft,
-#virtualKeyboardChromeExtensionDraggableRight {
-  display: none;
-}
-.ha
-  #virtualKeyboardChromeExtension.modeS
-  #virtualKeyboardChromeExtensionDraggableLeft,
-.ha
-  #virtualKeyboardChromeExtension.modeS
-  #virtualKeyboardChromeExtensionDraggableRight {
-  bottom: 0;
-  transform: translate3d(0, 0, 0);
-}
-#virtualKeyboardChromeExtension.modeS
-  #virtualKeyboardChromeExtensionDraggableLeft,
-#virtualKeyboardChromeExtension.modeS
-  #virtualKeyboardChromeExtensionDraggableRight {
-  display: block;
-  width: 20px;
-  position: absolute;
-  left: -20px;
-  top: 0;
-  bottom: 0;
-  background-color: rgba(255, 255, 255, 0.2);
-  background: linear-gradient(to top, rgb(60, 60, 60), rgb(145, 145, 145));
-}
-
-#virtualKeyboardChromeExtension.modeS
-  #virtualKeyboardChromeExtensionDraggableRight {
-  left: auto;
-  right: -20px;
-}
-#virtualKeyboardChromeExtension.modeS [data-key="Backspace"].kbdClick span {
-  background-image: url(/icons/backspace.png) !important;
-  font-size: 0px !important;
-  color: transparent !important;
-  text-shadow: none !important;
-}
-
 @media only screen and (max-height: 950px) {
   #virtualKeyboardChromeExtension {
     zoom: 0.95;
@@ -516,6 +464,8 @@
   right: 20px;
   width: 50px;
   height: 50px;
+  min-width: 50px;
+  min-height: 50px;
   border-radius: 50%;
   background: linear-gradient(to top, #222, #444);
   border: none;
@@ -526,6 +476,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 42px;
+  color: #fff;
+  padding: 0;
+  line-height: 1;
+  aspect-ratio: 1 / 1;
 }
 #virtualKeyboardOpenButton:hover {
   transform: scale(1.1);
@@ -533,11 +488,6 @@
 }
 #virtualKeyboardOpenButton:active {
   transform: scale(0.95);
-}
-#virtualKeyboardOpenButton svg {
-  width: 28px;
-  height: 28px;
-  fill: #fff;
 }
 #virtualKeyboardOpenButton[data-hidden="true"] {
   opacity: 0;

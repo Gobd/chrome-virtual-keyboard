@@ -18,7 +18,7 @@ This is a fork of the [original Virtual Keyboard extension](https://github.com/x
 - **Efficient DOM Monitoring** - Replaced inefficient polling (scanning entire DOM every second) with MutationObserver for detecting new input fields. This uses zero CPU when the page is idle and responds instantly to dynamically added inputs
 - **Open Button** - Floating keyboard button in the lower-right corner to manually show the keyboard at any time
 - **`.com` Button** - Quick-insert ".com" when typing in the URL bar
-- **Simplified Settings** - Removed options for small keyboard, zoom level, and auto-trigger delay. The keyboard now always auto-triggers on focus, uses the full-size layout, and touch events work automatically
+- **Simplified Settings** - Removed options for small movable keyboard and auto-trigger delay. The keyboard now always auto-triggers on focus and touch events work automatically
 
 ## Permissions
 

@@ -70,6 +70,8 @@ const state = {
   },
   settings: {
     layout: "en",
+    showOpenButton: true,
+    keyboardZoom: 100,
   },
   urlBarOpen: false,
   closeTimer: null,
@@ -275,7 +277,7 @@ function closeKeyboard() {
   state.keyboard.open = false;
   const keyboard = $(DOM_IDS.KEYBOARD);
 
-  keyboard.style.transform = "translate3d(0,450px,0)";
+  keyboard.style.transform = "translateX(-50%) translate3d(0,450px,0)";
   keyboard.style.opacity = "0";
   keyboard.setAttribute("data-state", "closed");
 
@@ -389,7 +391,7 @@ function openKeyboardUI(posY) {
   state.keyboard.open = true;
   const keyboard = $(DOM_IDS.KEYBOARD);
   keyboard.style.display = "";
-  keyboard.style.transform = "translate3d(0,0,0)";
+  keyboard.style.transform = "translateX(-50%) translate3d(0,0,0)";
   keyboard.style.opacity = "1";
   keyboard.setAttribute("data-state", "open");
 
@@ -1047,13 +1049,12 @@ function setUrlButtonMode(isDotCom) {
 
 function createOpenButton() {
   if ($(DOM_IDS.OPEN_BUTTON)) return; // Already exists
+  if (!state.settings.showOpenButton) return; // Setting disabled
 
   const button = document.createElement("button");
   button.id = DOM_IDS.OPEN_BUTTON;
   button.type = "button";
-  button.innerHTML = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path d="M20 5H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"/>
-  </svg>`;
+  button.textContent = "⌨";
   button.title = "Open virtual keyboard";
 
   button.addEventListener("click", handleOpenButtonClick);
@@ -1129,6 +1130,8 @@ async function loadSettings() {
     "openedFirstTime",
     "keyboardLayout1",
     "keyboardLayoutsList",
+    "showOpenButton",
+    "keyboardZoom",
   ]);
 
   // First time setup
@@ -1138,11 +1141,17 @@ async function loadSettings() {
       keyboardLayout1: "en",
       keyboardLayoutsList: JSON.stringify(layouts),
       openedFirstTime: "true",
+      showOpenButton: true,
+      keyboardZoom: 100,
     });
 
     state.settings.layout = "en";
+    state.settings.showOpenButton = true;
+    state.settings.keyboardZoom = 100;
   } else {
     state.settings.layout = result.keyboardLayout1 || "en";
+    state.settings.showOpenButton = result.showOpenButton !== false;
+    state.settings.keyboardZoom = result.keyboardZoom || 100;
   }
 }
 
@@ -1173,6 +1182,9 @@ async function init() {
     keyboard.addEventListener("pointerleave", () => {
       state.pointerOverKeyboard = false;
     });
+
+    // Apply zoom setting
+    applyKeyboardZoom();
   }
 
   // Init UI components
@@ -1181,6 +1193,13 @@ async function init() {
 
   // Create the floating open button
   createOpenButton();
+}
+
+function applyKeyboardZoom() {
+  const keyboard = $(DOM_IDS.KEYBOARD);
+  if (!keyboard) return;
+
+  keyboard.style.zoom = state.settings.keyboardZoom / 100;
 }
 
 // =============================================================================
