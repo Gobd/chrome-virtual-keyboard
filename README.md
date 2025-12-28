@@ -26,16 +26,15 @@ This extension requires the following permissions:
 |------------|-----------------|
 | `storage` | Saves your preferences (keyboard layout, size, theme) so they persist between browser sessions |
 | `activeTab` | Allows the extension to interact with the current tab when you click the extension icon |
-| `<all_urls>` (host permission) | Required to inject the keyboard into any webpage you visit. Without this, the keyboard would only work on whitelisted sites |
 
-The content script runs on all pages to detect when you focus on input fields and display the keyboard.
+The content script is configured to run on all pages (`<all_urls>`) to detect when you focus on input fields and display the keyboard.
 
 ## Building for Chrome Web Store
 
 To create a zip file for submission to the Chrome Web Store:
 
 ```bash
-zip -r virtual-keyboard.zip . -x "*.git*" -x "*.zip" -x "*.md" -x "screenshot.png" -x "test-*.html"
+zip -r virtual-keyboard.zip . -x "*.git*" -x "*.zip" -x "*.md" -x "screenshot.png" -x "test-*.html" -x ".DS_Store"
 ```
 
 ## Known Limitations
