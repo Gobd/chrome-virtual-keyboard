@@ -1,27 +1,11 @@
 // Virtual Keyboard - Chrome Extension
-// Refactored: async/await, pointer events, simplified state
+// Refactored: async/await, pointer events, simplified state, JSON-based layouts
 
 // =============================================================================
 // CONSTANTS
 // =============================================================================
 
-const LAYOUTS = [
-  { value: "en", name: "English (QWERTY)" },
-  { value: "fr", name: "French (AZERTY)" },
-  { value: "de", name: "German (QWERTZ)" },
-  { value: "it", name: "Italian (QWERTY)" },
-  { value: "kr", name: "Korean" },
-  { value: "hu", name: "Magyar (QWERTY)" },
-  { value: "no", name: "Norwegian (QWERTY)" },
-  { value: "pl", name: "Polish (QWERTY)" },
-  { value: "ru", name: "Russian (JCUKEN)" },
-  { value: "sl", name: "Slovenian (QWERTZ)" },
-  { value: "es", name: "Spanish (QWERTY)" },
-  { value: "sw", name: "Swedish (QWERTY)" },
-  { value: "ta", name: "Tamil 99" },
-  { value: "cs", name: "Czech (QWERTY)" },
-  { value: "ua", name: "Ukrainian (QWERTY)" },
-];
+// Layouts are defined in layouts/layouts.js and rendered via LayoutRenderer
 
 // DOM element IDs
 const DOM_IDS = {
@@ -386,13 +370,11 @@ async function openKeyboard(posY, posX, force) {
 
 async function loadLayout(layout) {
   try {
-    const url = chrome.runtime.getURL(`layouts/keyboard_${layout}.html`);
-    const response = await fetch(url);
-    if (!response.ok) {
-      console.error(`Failed to load keyboard layout: ${layout}`);
+    const html = await window.LayoutRenderer.renderLayout(layout);
+    if (!html) {
+      console.error(`Failed to render keyboard layout: ${layout}`);
       return;
     }
-    const html = await response.text();
     $(DOM_IDS.MAIN_KBD_PLACEHOLDER).innerHTML = html;
     state.keyboard.loadedLayout = layout;
     initKeyboardKeys(true);
@@ -1069,9 +1051,10 @@ async function loadSettings() {
 
   // First time setup
   if (!result.openedFirstTime) {
+    const layouts = await window.LayoutRenderer.getLayouts();
     await storageSet({
       keyboardLayout1: "en",
-      keyboardLayoutsList: JSON.stringify(LAYOUTS),
+      keyboardLayoutsList: JSON.stringify(layouts),
       openedFirstTime: "true",
     });
 

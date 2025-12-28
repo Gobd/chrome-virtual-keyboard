@@ -23,7 +23,6 @@
     {
       "resources": [
         "keyboard.html",
-        "layouts/keyboard_*.html",
         "style.css",
         "options/*",
         "toggle.html",
@@ -37,7 +36,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["script.js"],
+      "js": ["layouts/layouts.js", "layouts/layoutRenderer.js", "script.js"],
       "run_at": "document_end",
       "all_frames": true
     }
