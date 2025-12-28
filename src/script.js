@@ -89,7 +89,7 @@ function isContentEditable() {
   return state.focused.type === "contenteditable";
 }
 
-function getSelection() {
+function getSelectionRange() {
   const sel = window.getSelection();
   return sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
 }
