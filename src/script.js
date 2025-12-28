@@ -1245,7 +1245,7 @@ if (top === self) {
       openKeyboardFromButton();
     } else if (request.method === "clickFromIframe") {
       handleKeyPress(request.key, request.skip);
-    } else if (request === "openUrlBar") {
+    } else if (request.method === "openUrlBar") {
       setTimeout(
         () => $(DOM_IDS.URL_BAR_TEXTBOX)?.focus(),
         TIMING.URL_BAR_FOCUS_DELAY,

@@ -7,40 +7,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 async function handleMessage(request, sender) {
   switch (request.method) {
-    // Iframe communication relay
+    // Relay messages to active tab
     case "openFromIframe":
     case "clickFromIframe":
-    case "openFromButton": {
-      const tabs = await chrome.tabs.query({
-        active: true,
-        currentWindow: true,
-      });
-      if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, request);
-      }
-      return { data: "ok" };
-    }
-
-    // Broadcast keyboard state to all frames in tab
-    case "keyboardStateChange": {
-      const tabs = await chrome.tabs.query({
-        active: true,
-        currentWindow: true,
-      });
-      if (tabs[0]) {
-        // Send to all frames in the tab
-        chrome.tabs.sendMessage(tabs[0].id, request);
-      }
-      return { data: "ok" };
-    }
-
+    case "openFromButton":
+    case "keyboardStateChange":
     case "openUrlBar": {
       const tabs = await chrome.tabs.query({
         active: true,
         currentWindow: true,
       });
-      if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, "openUrlBar");
+      for (const tab of tabs) {
+        chrome.tabs.sendMessage(tab.id, request);
       }
       return { data: "ok" };
     }
