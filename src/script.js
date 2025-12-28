@@ -1,171 +1,176 @@
-var virtualKeyboardChromeExtensionClickedElem = null;
-var virtualKeyboardChromeExtensionElemType = "input";
-var virtualKeyboardChromeExtensionPagePadding = false;
-var virtualKeyboardChromeExtensionState = false;
-var virtualKeyboardChromeExtensionStateLastPos = 0;
-var virtualKeyboardChromeExtensionStateNewPos = 0;
-var virtualKeyboardChromeExtensionShift = false;
-var virtualKeyboardChromeExtensionFormat = false;
-var virtualKeyboardChromeExtensionClickedYPos = undefined;
-var virtualKeyboardChromeExtensionClickedXPos = undefined;
-var virtualKeyboardChromeExtensionClickedMenuBtn = false;
-var virtualKeyboardChromeExtensionOffsetTimeout = undefined;
-var virtualKeyboardChromeExtensionElemChanged = false;
-var virtualKeyboardChromeExtensionShiftBehaviour = true;
-var virtualKeyboardChromeExtensionFullScreenState = true;
-var virtualKeyboardChromeExtensionTouchEvents = undefined;
-var virtualKeyboardChromeExtensionKeyboardElement = undefined;
-var virtualKeyboardChromeExtensionUrlButton = true;
-var virtualKeyboardChromeExtensionRepeatLetters = false;
-var virtualKeyboardChromeExtensionKeyboardEnabled = true;
-var virtualKeyboardChromeExtensionKeyboardLayout1Setting = "en";
-var virtualKeyboardChromeExtensionCloseTimer = null;
-var virtualKeyboardChromeExtensionBackspaceTimer = null;
-var virtualKeyboardChromeExtensionDraggabling = false;
-var virtualKeyboardChromeExtensionDraggablingX = 0;
-var virtualKeyboardChromeExtensionDraggablingY = 0;
-var virtualKeyboardChromeExtensionRequestRefresh = false;
-var virtualKeyboardChromeExtensionKeyboardLoaded1 = "";
+// Virtual Keyboard - Chrome Extension
+// Refactored: async/await, pointer events, simplified state, JSON-based layouts
 
-var hardwareAcceleration = true;
-var autoTrigger = false;
-var intelligentScroll = true;
-var autoTriggerLinks = false;
-var autoTriggerAfter = 1;
-var lastHovered = null;
-var lastHoveredTO = null;
-var iframeElemSent = 0;
-var dialogs = [];
+// =============================================================================
+// CONSTANTS
+// =============================================================================
 
-// Customize default settings in local storage
-var OPEN_SETTINGS = false; // Open KB settings page the first time
-var ALT_LAYOUTS = [
-  { value: "en", name: "English (QWERTY)" },
-  { value: "it", name: "Italian (QWERTY)" },
-  { value: "de", name: "German (QWERTZ)" },
-  { value: "sl", name: "Slovenian (QWERTZ)" },
-  { value: "es", name: "Spanish (QWERTY)" },
-  { value: "ru", name: "Russian (JCUKEN)" },
-  { value: "fr", name: "French (AZERTY)" },
-  { value: "kr", name: "Korean" },
-  { value: "sw", name: "Swedish (QWERTY)" },
-];
-var CAPS_LOCK = "true";
-var HW_ACCEL = "true";
-var INTELLISCROLL = "false";
-var DEFAULT_LAYOUT = "en";
-var REPEAT_LETTERS = "true";
-var SMALL_KB = "false";
-var TOGGLE_KB = "true";
-var TOUCH_EVENTS = "true";
-var URL_BUTTON = "false";
+// Layouts are defined in layouts/layouts.js and rendered via LayoutRenderer
 
-function set_default() {
-  /* Function called at the very beginning to set some default
-   *  custom values in the localStorage to "customize" the keybaord
-   *  when it gets loaded the first time.
-   */
+// DOM element IDs
+const DOM_IDS = {
+  KEYBOARD: "virtualKeyboardChromeExtension",
+  MAIN_KBD: "virtualKeyboardChromeExtensionMainKbd",
+  MAIN_KBD_PLACEHOLDER: "virtualKeyboardChromeExtensionMainKbdPH",
+  MAIN_NUMBERS: "virtualKeyboardChromeExtensionMainNumbers",
+  NUMBER_BAR_INPUT: "virtualKeyboardChromeExtensionNumberBarKbdInput",
+  SCROLL_EXTEND: "virtualKeyboardChromeExtensionOverlayScrollExtend",
+  OVERLAY_SETTINGS: "virtualKeyboardChromeExtensionOverlaySettings",
+  OVERLAY_SETTINGS_UL: "virtualKeyboardChromeExtensionOverlaySettingsUl",
+  URL_BAR: "virtualKeyboardChromeExtensionUrlBar",
+  URL_BAR_TEXTBOX: "virtualKeyboardChromeExtensionUrlBarTextBox",
+  SETTINGS_BUTTON: "settingsButton",
+  URL_BUTTON: "urlButton",
+};
 
-  // First check if the default settings are there already.
-  key = "openedFirstTime";
+// CSS selectors and classes
+const CSS = {
+  OVERLAY_CLASS: "virtualKeyboardChromeExtensionOverlay",
+  OVERLAY_BUTTON_CLASS: "virtualKeyboardChromeExtensionOverlayButton",
+  KEY_CLICK_CLASS: "kbdClick",
+  KEY_CASE_DISPLAY_CLASS: "keyCaseDisplay",
+  MENU_CLASS: "kMenu",
+  EMAIL_INPUT_CLASS: "kbEmailInput",
+};
 
-  if (OPEN_SETTINGS) {
-    last_key_to_check = "urlButton";
-  } else {
-    last_key_to_check = "openedFirstTime";
-  }
+// Timing constants (ms)
+const TIMING = {
+  OVERLAY_CLOSE_DELAY: 500,
+  CLOSE_TIMER_DELAY: 500,
+  URL_CLOSE_DELAY: 1000,
+  KEYBOARD_HIDE_DELAY: 500,
+  URL_BAR_HIGHLIGHT_DELAY: 500,
+  URL_BAR_FOCUS_DELAY: 200,
+};
 
-  chrome.runtime.sendMessage(
-    { method: "getLocalStorage", key: key },
-    function (response) {
-      if (response["data"] === "true") {
-        // If the defaults are already there, load the keyboard
-        chrome.runtime.sendMessage(
-          { method: "loadKeyboardSettings" },
-          xk_settings_load_main,
-        );
-      } else {
-        // If not, setup the defaults
-        base_settings = {
-          capsLock: CAPS_LOCK,
-          hardwareAcceleration: HW_ACCEL,
-          intelligentScroll: INTELLISCROLL,
-          keyboardLayout1: DEFAULT_LAYOUT,
-          keyboardLayoutsList: JSON.stringify(ALT_LAYOUTS),
-          repeatLetters: REPEAT_LETTERS,
-          smallKeyboard: SMALL_KB,
-          toogleKeyboard: TOGGLE_KB,
-          touchEvents: TOUCH_EVENTS,
-          urlButton: URL_BUTTON,
-          openedFirstTime: "true",
-        };
-        // Store the settings
-        for (var key in base_settings) {
-          if (OPEN_SETTINGS == true && key === "openedFirstTime") {
-            continue;
-          }
-          chrome.runtime.sendMessage(
-            {
-              method: "setLocalStorage",
-              key: key,
-              value: base_settings[key],
-            },
-            function (response) {
-              // If default settings keys are set, let's load the keyboard
-              if (response.setted_key === last_key_to_check) {
-                chrome.runtime.sendMessage(
-                  { method: "loadKeyboardSettings" },
-                  xk_settings_load_main,
-                );
-              }
-            },
-          );
-        }
-      }
-    },
+// Character shift mapping for special characters
+const SHIFT_CHAR_MAP = {
+  // Hungarian special characters
+  "\u0151": "\u0150", // ő -> Ő
+  "\u0171": "\u0170", // ű -> Ű
+};
+
+// =============================================================================
+// GLOBAL STATE
+// =============================================================================
+
+const state = {
+  keyboard: {
+    open: false,
+    shift: false,
+    numbersMode: false,
+    element: null,
+    loadedLayout: "",
+  },
+  focused: {
+    element: null,
+    type: "input",
+    changed: false,
+    clickY: 0,
+    clickX: 0,
+  },
+  scroll: {
+    lastPos: 0,
+    newPos: 0,
+    pagePadding: false,
+  },
+  settings: {
+    layout: "en",
+  },
+  closeTimer: null,
+  iframeCount: 0,
+  pointerOverKeyboard: false,
+  observer: null,
+  shadowObservers: new WeakMap(),
+};
+
+// =============================================================================
+// STORAGE HELPERS
+// =============================================================================
+
+async function storageGet(keys) {
+  return chrome.storage.local.get(keys);
+}
+
+async function storageSet(obj) {
+  return chrome.storage.local.set(obj);
+}
+
+// =============================================================================
+// EVENT HELPERS
+// =============================================================================
+
+function dispatchEvent(elem, type, options = {}) {
+  elem.dispatchEvent(new Event(type, { bubbles: true, ...options }));
+}
+
+function dispatchInputEvent(elem) {
+  elem.dispatchEvent(
+    new InputEvent("input", { bubbles: true, inputType: "insertText" }),
   );
 }
 
-function virtualKeyboardChromeExtension_dispatch_event(eventType = "input") {
-  var keyboardEvent = document.createEvent("Event");
-  keyboardEvent.initEvent(eventType, true, false);
-  virtualKeyboardChromeExtensionClickedElem.dispatchEvent(keyboardEvent);
+function createKeyboardEvent(type, keyCode = 0, charCode = 0) {
+  return new KeyboardEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    keyCode,
+    charCode,
+    which: keyCode || charCode,
+  });
 }
 
-function virtualKeyboardChromeExtension_isContentEditable() {
-  return virtualKeyboardChromeExtensionElemType === "contenteditable";
+// =============================================================================
+// DOM HELPERS
+// =============================================================================
+
+function $(id) {
+  return document.getElementById(id);
 }
 
-function virtualKeyboardChromeExtension_getSelection() {
-  var sel = window.getSelection();
-  if (sel.rangeCount > 0) {
-    return sel.getRangeAt(0);
+function $$(selector, root = document) {
+  return root.querySelectorAll(selector);
+}
+
+function preventDefault(event) {
+  event.preventDefault();
+  event.stopPropagation();
+}
+
+function setClassDisplay(className, value) {
+  for (const item of $$(`.${className}`)) {
+    item.style.display = value;
   }
-  return null;
 }
 
-function virtualKeyboardChromeExtension_insertTextAtCursor(text) {
-  var sel = window.getSelection();
-  if (sel.rangeCount > 0) {
-    var range = sel.getRangeAt(0);
+// =============================================================================
+// CONTENTEDITABLE HELPERS
+// =============================================================================
+
+function isContentEditable() {
+  return state.focused.type === "contenteditable";
+}
+
+function insertTextAtCursor(text) {
+  const selection = window.getSelection();
+  if (selection.rangeCount > 0) {
+    const range = selection.getRangeAt(0);
     range.deleteContents();
-    var textNode = document.createTextNode(text);
+    const textNode = document.createTextNode(text);
     range.insertNode(textNode);
     range.setStartAfter(textNode);
     range.setEndAfter(textNode);
-    sel.removeAllRanges();
-    sel.addRange(range);
+    selection.removeAllRanges();
+    selection.addRange(range);
   }
 }
 
-function virtualKeyboardChromeExtension_deleteAtCursor() {
-  var sel = window.getSelection();
-  if (sel.rangeCount > 0) {
-    var range = sel.getRangeAt(0);
+function deleteAtCursor() {
+  const selection = window.getSelection();
+  if (selection.rangeCount > 0) {
+    const range = selection.getRangeAt(0);
     if (range.collapsed) {
-      // No selection, delete char before cursor
-      var startContainer = range.startContainer;
-      var startOffset = range.startOffset;
+      const { startContainer, startOffset } = range;
       if (startContainer.nodeType === Node.TEXT_NODE && startOffset > 0) {
         startContainer.textContent =
           startContainer.textContent.slice(0, startOffset - 1) +
@@ -182,1912 +187,1007 @@ function virtualKeyboardChromeExtension_deleteAtCursor() {
   }
 }
 
-function virtualKeyboardChromeExtension_generate_onchange() {
-  if (virtualKeyboardChromeExtensionElemChanged == true) {
-    virtualKeyboardChromeExtensionElemChanged = false;
-    if (virtualKeyboardChromeExtensionClickedElem != null) {
-      if ("fireEvent" in virtualKeyboardChromeExtensionClickedElem)
-        virtualKeyboardChromeExtensionClickedElem.fireEvent("onchange");
-      else {
-        var evt = document.createEvent("HTMLEvents");
-        evt.initEvent("change", false, true);
-        virtualKeyboardChromeExtensionClickedElem.dispatchEvent(evt);
-      }
-    }
+// =============================================================================
+// OVERLAY HELPERS
+// =============================================================================
+
+function closeAllOverlays() {
+  const overlays = $$(`.${CSS.OVERLAY_CLASS}`);
+  for (const overlay of overlays) {
+    overlay.setAttribute("data-state", "closed");
   }
+  setTimeout(() => {
+    for (const overlay of overlays) {
+      overlay.style.display = "none";
+    }
+  }, TIMING.OVERLAY_CLOSE_DELAY);
 }
 
-function virtualKeyboardChromeExtension_closeKeyboard() {
-  virtualKeyboardChromeExtensionState = false;
-  var kbdElem = document.getElementById("virtualKeyboardChromeExtension");
+// =============================================================================
+// KEY HELPERS
+// =============================================================================
 
-  if (virtualKeyboardChromeExtensionFullScreenState) {
-    if (hardwareAcceleration) {
-      kbdElem.style.setProperty("-webkit-transform", "translate3d(0,450px,0)");
-    } else {
-      kbdElem.style.bottom = "-450px";
-    }
+function getKeyWithShift(element) {
+  const baseKey = element.getAttribute("data-key");
+  if (state.keyboard.shift && element.getAttribute("data-key-shift")) {
+    return element.getAttribute("data-key-shift");
+  }
+  return baseKey;
+}
+
+function applyShiftToCharacter(char) {
+  // Check special character map first
+  if (SHIFT_CHAR_MAP[char]) {
+    return SHIFT_CHAR_MAP[char];
   }
 
-  kbdElem.style.opacity = "0";
-  kbdElem.setAttribute("_state", "closed");
+  const charCode = char.charCodeAt(0);
 
-  setTimeout(function () {
-    if (virtualKeyboardChromeExtensionState === false) {
-      kbdElem.style.display = "none";
-    }
-  }, 500);
-
-  if (virtualKeyboardChromeExtensionFullScreenState && intelligentScroll) {
-    var scrollYAmount = window.scrollY;
-    if (
-      scrollYAmount <= virtualKeyboardChromeExtensionStateNewPos + 50 &&
-      scrollYAmount >= virtualKeyboardChromeExtensionStateNewPos - 50
-    ) {
-      document.getElementById(
-        "virtualKeyboardChromeExtensionOverlayScrollExtend",
-      ).style.display = "none";
-      if (virtualKeyboardChromeExtensionPagePadding) {
-        document.body.style.marginBottom = "";
-      }
-      window.scroll(0, virtualKeyboardChromeExtensionStateLastPos);
-    }
+  // Lowercase a-z (97-122) -> Uppercase A-Z (65-90)
+  if (charCode >= 97 && charCode <= 122) {
+    return String.fromCharCode(charCode - 32);
   }
-}
 
-function virtualKeyboardChromeExtension_dispatchBackspaceEvents() {
-  virtualKeyboardChromeExtensionClickedElem.dispatchEvent(
-    virtualKeyboardChromeExtension_backspace("keydown"),
-  );
-  virtualKeyboardChromeExtensionClickedElem.dispatchEvent(
-    virtualKeyboardChromeExtension_backspace("keypress"),
-  );
-  virtualKeyboardChromeExtensionClickedElem.dispatchEvent(
-    virtualKeyboardChromeExtension_backspace("keyup"),
-  );
-  virtualKeyboardChromeExtension_dispatch_event();
-}
-
-function virtualKeyboardChromeExtension_resetShiftIfNeeded() {
-  if (
-    virtualKeyboardChromeExtensionShift &&
-    virtualKeyboardChromeExtensionShiftBehaviour
-  ) {
-    virtualKeyboardChromeExtensionShift = !virtualKeyboardChromeExtensionShift;
-    document.getElementById("virtualKeyboardChromeExtensionMainKbd").className =
-      virtualKeyboardChromeExtensionShift ? "Shift" : "";
-    virtualKeyboardChromeExtension_shiftButtonKeys();
+  // Accented lowercase (224-252) -> Accented uppercase (192-220)
+  if (charCode >= 224 && charCode <= 252) {
+    return String.fromCharCode(charCode - 32);
   }
+
+  return char;
 }
 
-function virtualKeyboardChromeExtension_dispatchKeyEvents(key) {
-  virtualKeyboardChromeExtensionClickedElem.dispatchEvent(
-    virtualKeyboardChromeExtension_fireEvent("keypress", 0, key.charCodeAt(0)),
-  );
-  virtualKeyboardChromeExtensionClickedElem.dispatchEvent(
-    virtualKeyboardChromeExtension_fireEvent("keyup", 0, key.charCodeAt(0)),
-  );
-  virtualKeyboardChromeExtension_dispatch_event();
-  virtualKeyboardChromeExtensionClickedElem.dispatchEvent(
-    new InputEvent("input", { inputType: "insertText" }),
-  );
-}
+// =============================================================================
+// UTILITY FUNCTIONS
+// =============================================================================
 
-function virtualKeyboardChromeExtension_make_object_visible() {
-  if (virtualKeyboardChromeExtensionClickedElem == null || !intelligentScroll)
-    return;
-  if (!virtualKeyboardChromeExtensionFullScreenState) return;
+function getParentByTagName(element, tagName) {
+  let currentParent = element.parentNode;
+  const targetTag = tagName.toLowerCase();
+  let iterationCount = 0;
 
-  var keyboard = document.getElementById("virtualKeyboardChromeExtension");
-  var keyboardHeight = keyboard.offsetHeight;
-  var elemRect =
-    virtualKeyboardChromeExtensionClickedElem.getBoundingClientRect();
-  var visibleBottom = window.innerHeight - keyboardHeight;
-
-  // Check if the input is covered by the keyboard
-  if (elemRect.bottom > visibleBottom) {
-    // Calculate how much to scroll to put the element in view with some padding
-    var padding = 20;
-    var scrollAmount = elemRect.bottom - visibleBottom + padding;
-
-    virtualKeyboardChromeExtensionStateLastPos = window.scrollY;
-    virtualKeyboardChromeExtensionStateNewPos = window.scrollY + scrollAmount;
-
-    window.scrollBy({
-      top: scrollAmount,
-      behavior: "smooth",
-    });
-  }
-}
-
-function virtualKeyboardChromeExtension_getParentByTagName(el, tagName) {
-  var t = el.parentNode;
-  tagName = tagName.toLowerCase();
-  var c = 0;
-  while (c < 500) {
-    if (t != undefined) {
-      if (t.tagName != undefined) {
-        if (t.tagName.toLowerCase() == tagName) {
-          return t;
-        }
-      }
-      t = t.parentNode;
+  while (iterationCount < 500 && currentParent) {
+    if (currentParent.tagName?.toLowerCase() === targetTag) {
+      return currentParent;
     }
-    c++;
+    currentParent = currentParent.parentNode;
+    iterationCount++;
   }
   return null;
 }
 
-function virtualKeyboardChromeExtension_shiftButtonKeys() {
-  var keys = document.getElementsByClassName("keyCaseDisplay");
-  for (var i = 0; i < keys.length; i++) {
-    keys[i].innerHTML =
-      "<span>" +
-      keys[i].getAttribute(
-        "_key" + (virtualKeyboardChromeExtensionShift ? "C" : ""),
-      ) +
-      "</span>";
-  }
-}
-
-function virtualKeyboardChromeExtension_fireEvent(
-  eventType,
-  keyCodeArg = 0,
-  charCodeArgs = 0,
-) {
-  var keyboardEvent = document.createEvent("KeyboardEvent");
-  var initMethod =
-    typeof keyboardEvent.initKeyboardEvent !== "undefined"
-      ? "initKeyboardEvent"
-      : "initKeyEvent";
-  keyboardEvent[initMethod](
-    eventType,
-    true, // bubbles
-    true, // cancelable
-    window,
-    false, // ctrlKeyArg
-    false, // altKeyArg
-    false, // shiftKeyArg
-    false, // metaKeyArg
-    keyCodeArg,
-    charCodeArgs,
-  );
-  return keyboardEvent;
-}
-
-function virtualKeyboardChromeExtension_backspace(eventType) {
-  var keyboardEvent = document.createEvent("Events");
-  keyboardEvent.initEvent(eventType, true, true);
-  keyboardEvent.keyCode = keyboardEvent.which = 8; // Backspace
-  return keyboardEvent;
-}
-
-function virtualKeyboardChromeExtension_submit_buttons(
-  form,
-  inputType = "input",
-) {
-  var inputs = form.getElementsByTagName(inputType);
-  var c = 0;
-  for (var i = 0; i < inputs.length; i++) {
-    if (inputs[i].type == "submit" && c <= 0) {
-      inputs[i].click();
-      c++;
+function clickSubmitButton(form, inputType) {
+  const inputs = form.querySelectorAll(inputType);
+  for (const input of inputs) {
+    if (input.type === "submit") {
+      input.click();
+      return true;
     }
   }
-  return c;
+  return false;
 }
 
-function virtualKeyboardChromeExtension_click(key, skip) {
-  // Check if we're in a same-origin iframe (can communicate with parent)
-  var canCommunicateWithParent = top != self && window.frameElement !== null;
+function getElementPosition(obj, type) {
+  let position = 0;
+  while (obj?.offsetParent) {
+    position += obj[type];
+    obj = obj.offsetParent;
+  }
+  return position;
+}
 
-  if (canCommunicateWithParent) {
-    chrome.runtime.sendMessage({
-      method: "clickFromIframe",
-      key: key,
-      skip: skip,
-      frame: window.frameElement.id,
-    });
-  } else {
-    if (key != "Close") {
-      if (skip == undefined) {
-        skip = false;
-      }
-      if (!skip) {
-        if (virtualKeyboardChromeExtensionClickedElem != null) {
-          virtualKeyboardChromeExtensionClickedElem.focus();
-        }
-        clearTimeout(virtualKeyboardChromeExtensionCloseTimer);
-      }
+function getElementPositionY(obj) {
+  return getElementPosition(obj, "offsetTop");
+}
+
+function getElementPositionX(obj) {
+  return getElementPosition(obj, "offsetLeft");
+}
+
+// =============================================================================
+// KEYBOARD DISPLAY
+// =============================================================================
+
+function closeKeyboard() {
+  state.keyboard.open = false;
+  const keyboard = $(DOM_IDS.KEYBOARD);
+
+  keyboard.style.transform = "translate3d(0,450px,0)";
+  keyboard.style.opacity = "0";
+  keyboard.setAttribute("data-state", "closed");
+
+  setTimeout(() => {
+    if (!state.keyboard.open) {
+      keyboard.style.display = "none";
     }
-    switch (key) {
-      case "empty":
-        break;
-      case "Url":
-        document
-          .getElementById("virtualKeyboardChromeExtensionUrlBarTextBox")
-          .focus();
-        break;
-      case "Settings":
-        window.open(chrome.runtime.getURL("options.html"));
-        break;
-      case "&123":
-        virtualKeyboardChromeExtensionFormat =
-          !virtualKeyboardChromeExtensionFormat;
-        document.getElementById(
-          "virtualKeyboardChromeExtensionMainKbd",
-        ).style.display = virtualKeyboardChromeExtensionFormat ? "none" : "";
-        document.getElementById(
-          "virtualKeyboardChromeExtensionMainNumbers",
-        ).style.display = virtualKeyboardChromeExtensionFormat ? "" : "none";
-        break;
-      case "Close":
-        for (let dlg of dialogs) {
-          if (dlg.oldNoCancelOnOutsideClick)
-            dlg.setAttribute(
-              "no-cancel-on-outside-click",
-              dlg.oldNoCancelOnOutsideClick,
-            );
-          else dlg.removeAttribute("no-cancel-on-outside-click");
-        }
-        dialogs = [];
+  }, TIMING.KEYBOARD_HIDE_DELAY);
 
-        if (virtualKeyboardChromeExtensionState) {
-          virtualKeyboardChromeExtension_closeKeyboard();
-        }
-        document
-          .getElementById("virtualKeyboardChromeExtensionOverlayDemand")
-          .setAttribute("_state", "close");
-        setTimeout(function () {
-          if (virtualKeyboardChromeExtensionState === false) {
-            document.getElementById(
-              "virtualKeyboardChromeExtensionOverlayDemand",
-            ).style.display = "none";
-          }
-        }, 200);
-        break;
-      case "Enter":
-        if (virtualKeyboardChromeExtensionClickedElem != null) {
-          if (virtualKeyboardChromeExtensionElemType == "textarea") {
-            var pos = virtualKeyboardChromeExtensionClickedElem.selectionStart;
-            var posEnd = virtualKeyboardChromeExtensionClickedElem.selectionEnd;
-            virtualKeyboardChromeExtensionClickedElem.value =
-              virtualKeyboardChromeExtensionClickedElem.value.substr(0, pos) +
-              "\n" +
-              virtualKeyboardChromeExtensionClickedElem.value.substr(posEnd);
-            virtualKeyboardChromeExtensionClickedElem.selectionStart = pos + 1;
-            virtualKeyboardChromeExtensionClickedElem.selectionEnd = pos + 1;
-          } else if (virtualKeyboardChromeExtension_isContentEditable()) {
-            // Insert line break for contenteditable
-            var sel = window.getSelection();
-            if (sel.rangeCount > 0) {
-              var range = sel.getRangeAt(0);
-              range.deleteContents();
-              var br = document.createElement("br");
-              range.insertNode(br);
-              range.setStartAfter(br);
-              range.setEndAfter(br);
-              sel.removeAllRanges();
-              sel.addRange(range);
-            }
-            virtualKeyboardChromeExtension_dispatch_event();
-            virtualKeyboardChromeExtension_generate_onchange();
-          } else {
-            var form = virtualKeyboardChromeExtension_getParentByTagName(
-              virtualKeyboardChromeExtensionClickedElem,
-              "form",
-            );
-            if (form != null) {
-              var c = virtualKeyboardChromeExtension_submit_buttons(form);
-              if (c <= 0) {
-                c = virtualKeyboardChromeExtension_submit_buttons(
-                  form,
-                  "button",
-                );
-              }
-              if (c <= 0) {
-                form.dispatchEvent(
-                  virtualKeyboardChromeExtension_fireEvent("submit"),
-                );
-              }
-            }
-            virtualKeyboardChromeExtensionClickedElem.dispatchEvent(
-              virtualKeyboardChromeExtension_fireEvent("keydown", 13),
-            );
-            virtualKeyboardChromeExtension_closeKeyboard();
-          }
-          virtualKeyboardChromeExtension_dispatch_event();
-          virtualKeyboardChromeExtension_generate_onchange();
-        }
-        break;
-      case "Shift":
-        virtualKeyboardChromeExtensionShift =
-          !virtualKeyboardChromeExtensionShift;
-        document.getElementById(
-          "virtualKeyboardChromeExtensionMainKbd",
-        ).className = virtualKeyboardChromeExtensionShift ? "Shift" : "";
-        virtualKeyboardChromeExtension_shiftButtonKeys();
-        break;
-      case "Backspace":
-        if (virtualKeyboardChromeExtension_isContentEditable()) {
-          virtualKeyboardChromeExtension_deleteAtCursor();
-        } else {
-          var pos = virtualKeyboardChromeExtensionClickedElem.selectionStart;
-          var posEnd = virtualKeyboardChromeExtensionClickedElem.selectionEnd;
-          if (posEnd === pos) {
-            pos = pos - 1;
-          }
-          virtualKeyboardChromeExtensionClickedElem.value =
-            virtualKeyboardChromeExtensionClickedElem.value.substr(0, pos) +
-            virtualKeyboardChromeExtensionClickedElem.value.substr(posEnd);
-          virtualKeyboardChromeExtensionClickedElem.selectionStart = pos;
-          virtualKeyboardChromeExtensionClickedElem.selectionEnd = pos;
-        }
-        virtualKeyboardChromeExtensionElemChanged = true;
-        virtualKeyboardChromeExtension_dispatchBackspaceEvents();
-        break;
-      default:
-        if (virtualKeyboardChromeExtensionClickedElem != undefined) {
-          // Handle shift for uppercase
-          if (virtualKeyboardChromeExtensionShift) {
-            if (key.charCodeAt(0) >= 97 && key.charCodeAt(0) <= 122) {
-              key = String.fromCharCode(key.charCodeAt(0) - 32);
-            }
-            if (key.charCodeAt(0) >= 224 && key.charCodeAt(0) <= 252) {
-              key = String.fromCharCode(key.charCodeAt(0) - 32);
-            }
-            // 'ű' and 'ő'
-            if (key.charCodeAt(0) === 337 || key.charCodeAt(0) === 369) {
-              key = String.fromCharCode(key.charCodeAt(0) - 1);
-            }
-          }
-
-          if (virtualKeyboardChromeExtension_isContentEditable()) {
-            virtualKeyboardChromeExtensionClickedElem.dispatchEvent(
-              virtualKeyboardChromeExtension_fireEvent(
-                "keydown",
-                key.charCodeAt(0),
-              ),
-            );
-            virtualKeyboardChromeExtension_insertTextAtCursor(key);
-            virtualKeyboardChromeExtensionElemChanged = true;
-            virtualKeyboardChromeExtension_resetShiftIfNeeded();
-            virtualKeyboardChromeExtensionDraggabling = false;
-            virtualKeyboardChromeExtension_dispatchKeyEvents(key);
-          } else {
-            var maxLength = virtualKeyboardChromeExtensionClickedElem.maxLength;
-            if (
-              maxLength <= 0 ||
-              virtualKeyboardChromeExtensionClickedElem.value.length < maxLength
-            ) {
-              virtualKeyboardChromeExtensionClickedElem.dispatchEvent(
-                virtualKeyboardChromeExtension_fireEvent(
-                  "keydown",
-                  key.charCodeAt(0),
-                ),
-              );
-              var pos =
-                virtualKeyboardChromeExtensionClickedElem.selectionStart;
-              var posEnd =
-                virtualKeyboardChromeExtensionClickedElem.selectionEnd;
-              virtualKeyboardChromeExtensionClickedElem.value =
-                virtualKeyboardChromeExtensionClickedElem.value.substr(0, pos) +
-                key +
-                virtualKeyboardChromeExtensionClickedElem.value.substr(posEnd);
-              virtualKeyboardChromeExtensionClickedElem.selectionStart =
-                pos + 1;
-              virtualKeyboardChromeExtensionClickedElem.selectionEnd = pos + 1;
-              virtualKeyboardChromeExtensionElemChanged = true;
-              virtualKeyboardChromeExtension_resetShiftIfNeeded();
-              virtualKeyboardChromeExtensionDraggabling = false;
-              virtualKeyboardChromeExtension_dispatchKeyEvents(key);
-            }
-          }
-        }
-        break;
+  // Restore scroll position
+  const scrollY = window.scrollY;
+  if (
+    scrollY <= state.scroll.newPos + 50 &&
+    scrollY >= state.scroll.newPos - 50
+  ) {
+    $(DOM_IDS.SCROLL_EXTEND).style.display = "none";
+    if (state.scroll.pagePadding) {
+      document.body.style.marginBottom = "";
     }
+    window.scroll(0, state.scroll.lastPos);
   }
 }
 
-function setting_reloadKeyboardToggle(openState) {
-  chrome.runtime.sendMessage(
-    { method: "getLocalStorage", key: "keyboardEnabled" },
-    function (response) {
-      virtualKeyboardChromeExtensionKeyboardEnabled = response.data;
-      if (
-        (openState && document.activeElement.tagName == "INPUT") ||
-        document.activeElement.tagName == "TEXTAREA"
-      ) {
-        var e = document.activeElement;
-        document.activeElement.blur();
-        setTimeout(function () {
-          e.focus();
-        }, 500);
-      }
-    },
-  );
-}
+function scrollInputIntoView() {
+  if (!state.focused.element) return;
 
-function setting_set(key, value) {
-  chrome.runtime.sendMessage(
-    { method: "setLocalStorage", key: key, value: value },
-    function (response) {},
-  );
-}
+  const keyboard = $(DOM_IDS.KEYBOARD);
+  const keyboardHeight = keyboard.offsetHeight;
+  const elemRect = state.focused.element.getBoundingClientRect();
+  const visibleBottom = window.innerHeight - keyboardHeight;
 
-function openUrl(url) {
-  chrome.runtime.sendMessage(
-    { method: "createTab", url: url },
-    function (response) {},
-  );
-}
+  if (elemRect.bottom > visibleBottom) {
+    const padding = 20;
+    const scrollAmount = elemRect.bottom - visibleBottom + padding;
 
-function virtualKeyboardChromeExtension_getElementPosition(obj, type) {
-  var cur = 0;
-  if (obj && obj.offsetParent) {
-    do {
-      cur += obj[type];
-    } while ((obj = obj.offsetParent));
-  }
-  return cur;
-}
+    state.scroll.lastPos = window.scrollY;
+    state.scroll.newPos = window.scrollY + scrollAmount;
 
-function virtualKeyboardChromeExtension_getElementPositionY(obj) {
-  return virtualKeyboardChromeExtension_getElementPosition(obj, "offsetTop");
-}
-
-function virtualKeyboardChromeExtension_getElementPositionX(obj) {
-  return virtualKeyboardChromeExtension_getElementPosition(obj, "offsetLeft");
-}
-
-function virtualKeyboardChromeExtension_open_part2(pos) {
-  if (virtualKeyboardChromeExtensionCloseTimer != null) {
-    clearTimeout(virtualKeyboardChromeExtensionCloseTimer);
-  }
-  virtualKeyboardChromeExtensionStateLastPos = window.scrollY;
-  if (virtualKeyboardChromeExtensionFullScreenState) {
-    if (
-      (document.body.style.marginBottom == "" &&
-        !virtualKeyboardChromeExtensionPagePadding) ||
-      virtualKeyboardChromeExtensionPagePadding
-    ) {
-      document.body.style.marginBottom =
-        document.getElementById("virtualKeyboardChromeExtension").offsetHeight +
-        "px";
-      virtualKeyboardChromeExtensionPagePadding = true;
-    }
-  }
-  virtualKeyboardChromeExtensionState = true;
-  document.getElementById("virtualKeyboardChromeExtension").style.display = "";
-  chrome.runtime.sendMessage(
-    { method: "getSmallKeyboardCoords" },
-    function (response) {
-      if (response.smallKeyboard == "true") {
-        if (hardwareAcceleration) {
-          document
-            .getElementById("virtualKeyboardChromeExtension")
-            .style.setProperty("-webkit-transform", "translate3d(0,0,0)");
-        }
-        document.getElementById("virtualKeyboardChromeExtension").style.top =
-          response.smallKeyboardTop != undefined
-            ? response.smallKeyboardTop
-            : "auto";
-        document.getElementById("virtualKeyboardChromeExtension").style.bottom =
-          response.smallKeyboardBottom != undefined
-            ? response.smallKeyboardBottom
-            : "0";
-        document.getElementById("virtualKeyboardChromeExtension").style.right =
-          response.smallKeyboardRight != undefined
-            ? response.smallKeyboardRight
-            : "0";
-        document.getElementById("virtualKeyboardChromeExtension").style.left =
-          response.smallKeyboardLeft != undefined
-            ? response.smallKeyboardLeft
-            : "auto";
-        document
-          .getElementById("virtualKeyboardChromeExtension")
-          .style.setProperty("-webkit-transition", "opacity 0.3s");
-      } else {
-        document.getElementById("virtualKeyboardChromeExtension").style.top =
-          "";
-        document.getElementById("virtualKeyboardChromeExtension").style.left =
-          "";
-        document.getElementById("virtualKeyboardChromeExtension").style.right =
-          "";
-        if (hardwareAcceleration) {
-          document
-            .getElementById("virtualKeyboardChromeExtension")
-            .style.setProperty("-webkit-transform", "translate3d(0,0,0)");
-        } else {
-          document.getElementById(
-            "virtualKeyboardChromeExtension",
-          ).style.bottom = "0px";
-        }
-        document
-          .getElementById("virtualKeyboardChromeExtension")
-          .style.setProperty("-webkit-transition", "");
-      }
-      document.getElementById("virtualKeyboardChromeExtension").style.display =
-        "";
-      document.getElementById("virtualKeyboardChromeExtension").style.opacity =
-        "1";
-
-      // Scroll input into view after keyboard is positioned and rendered
-      requestAnimationFrame(function () {
-        virtualKeyboardChromeExtension_make_object_visible();
-      });
-    },
-  );
-  document
-    .getElementById("virtualKeyboardChromeExtension")
-    .setAttribute("_state", "open");
-  var virtualKeyboardChromeExtension_style = window.getComputedStyle(
-    document.getElementById("virtualKeyboardChromeExtension"),
-  );
-  var current_height =
-    parseFloat(virtualKeyboardChromeExtension_style.height) +
-    parseFloat(virtualKeyboardChromeExtension_style.paddingTop) +
-    parseFloat(virtualKeyboardChromeExtension_style.paddingBottom);
-  var current_zoom = parseFloat(virtualKeyboardChromeExtension_style.zoom);
-  if (virtualKeyboardChromeExtensionFullScreenState && intelligentScroll) {
-    document.getElementById(
-      "virtualKeyboardChromeExtensionOverlayScrollExtend",
-    ).style.height = current_height * current_zoom + "px";
-    document.getElementById(
-      "virtualKeyboardChromeExtensionOverlayScrollExtend",
-    ).style.display = "block";
-  }
-  virtualKeyboardChromeExtensionClickedYPos = undefined;
-}
-
-function virtualKeyboardChromeExtension_inputTypesRender() {
-  if (virtualKeyboardChromeExtensionElemType == "input") {
-    if (
-      virtualKeyboardChromeExtensionClickedElem.getAttribute("_originalType") ==
-      undefined
-    ) {
-      virtualKeyboardChromeExtensionClickedElem.setAttribute(
-        "_originalType",
-        virtualKeyboardChromeExtensionClickedElem.type,
-      );
-    }
-    if (virtualKeyboardChromeExtensionClickedElem.type != "password") {
-      virtualKeyboardChromeExtensionClickedElem.type = "text";
-    }
-  }
-  document.getElementById(
-    "virtualKeyboardChromeExtensionMainNumbers",
-  ).style.display = "none";
-  document.getElementById(
-    "virtualKeyboardChromeExtensionNumberBarKbdInput",
-  ).style.display = "none";
-  document.getElementById(
-    "virtualKeyboardChromeExtensionMainKbd",
-  ).style.display = "";
-
-  virtualKeyboardChromeExtensionFormat = false;
-
-  virtualKeyboardChromeClassStyleDisplay("kbEmailInput", "none");
-  if (virtualKeyboardChromeExtensionElemType != "textarea") {
-    if (
-      virtualKeyboardChromeExtensionClickedElem.getAttribute("_originalType") ==
-        "number" ||
-      virtualKeyboardChromeExtensionClickedElem.getAttribute("_originalType") ==
-        "tel"
-    ) {
-      document.getElementById(
-        "virtualKeyboardChromeExtensionNumberBarKbdInput",
-      ).style.display = "";
-      document.getElementById(
-        "virtualKeyboardChromeExtensionMainKbd",
-      ).style.display = "none";
-    } else if (
-      virtualKeyboardChromeExtensionClickedElem.getAttribute("_originalType") ==
-      "email"
-    ) {
-      virtualKeyboardChromeClassStyleDisplay("kbEmailInput", "");
-    }
+    window.scrollBy({ top: scrollAmount, behavior: "smooth" });
   }
 }
 
-function virtualKeyboardChromeExtension_open(posY, posX, force) {
-  // Check if we're in a same-origin iframe (can communicate with parent)
-  var canCommunicateWithParent = top != self && window.frameElement !== null;
+async function openKeyboard(posY, posX, force) {
+  // Check if in same-origin iframe
+  const inIframe = top !== self && window.frameElement !== null;
 
-  if (canCommunicateWithParent) {
-    if (virtualKeyboardChromeExtensionClickedElem.id == "") {
-      virtualKeyboardChromeExtensionClickedElem.id = "CVK_E_" + iframeElemSent;
-      iframeElemSent++;
+  if (inIframe) {
+    if (!state.focused.element.id) {
+      state.focused.element.id = "CVK_E_" + state.iframeCount++;
     }
     chrome.runtime.sendMessage({
       method: "openFromIframe",
-      posY: posY,
-      posX: posX,
-      force: force,
+      posY,
+      posX,
+      force,
       frame: window.frameElement.id,
-      elem: virtualKeyboardChromeExtensionClickedElem.id,
+      elem: state.focused.element.id,
     });
-  } else {
-    if (document.webkitFullscreenElement) {
-      document.webkitFullscreenElement.appendChild(
-        virtualKeyboardChromeExtensionKeyboardElement,
-      );
-    } else {
-      document.body.appendChild(virtualKeyboardChromeExtensionKeyboardElement);
-    }
-    if (
-      virtualKeyboardChromeExtensionKeyboardEnabled == "demand" &&
-      force == undefined &&
-      virtualKeyboardChromeExtensionClickedElem.id !=
-        "virtualKeyboardChromeExtensionUrlBarTextBox"
-    ) {
-      virtualKeyboardChromeExtensionClickedElemDemand =
-        virtualKeyboardChromeExtensionClickedElem;
-      if (posX == undefined) {
-        posX = virtualKeyboardChromeExtension_getElementPositionX(
-          virtualKeyboardChromeExtensionClickedElem,
-        );
-      }
-      if (posY == undefined) {
-        posY = virtualKeyboardChromeExtension_getElementPositionY(
-          virtualKeyboardChromeExtensionClickedElem,
-        );
-      }
-      posX = posX + document.body.scrollLeft;
-      posY = posY + window.scrollY;
-      document.getElementById(
-        "virtualKeyboardChromeExtensionOverlayDemand",
-      ).style.display = "block";
-      document.getElementById(
-        "virtualKeyboardChromeExtensionOverlayDemand",
-      ).style.top = posY + "px";
-      document.getElementById(
-        "virtualKeyboardChromeExtensionOverlayDemand",
-      ).style.left = posX + "px";
-      setTimeout(function () {
-        document
-          .getElementById("virtualKeyboardChromeExtensionOverlayDemand")
-          .setAttribute("_state", "open");
-      }, 50);
-    } else if (virtualKeyboardChromeExtensionKeyboardEnabled != "false") {
-      if (virtualKeyboardChromeExtensionKeyboardLayout1Setting == undefined) {
-        virtualKeyboardChromeExtensionKeyboardLayout1Setting = "en";
-      }
-      if (
-        virtualKeyboardChromeExtensionKeyboardLoaded1 !=
-        virtualKeyboardChromeExtensionKeyboardLayout1Setting
-      ) {
-        var xmlhttp = new XMLHttpRequest();
-        xmlhttp.onreadystatechange = function () {
-          if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-            var data2 = xmlhttp.responseText;
-            document.getElementById(
-              "virtualKeyboardChromeExtensionMainKbdPH",
-            ).innerHTML = data2;
-            init_virtualKeyboardChromeExtension(true);
-            virtualKeyboardChromeExtension_inputTypesRender();
-            virtualKeyboardChromeExtension_open_part2(posY);
-          }
-        };
-        xmlhttp.open(
-          "GET",
-          chrome.runtime.getURL(
-            "layouts/keyboard_" +
-              virtualKeyboardChromeExtensionKeyboardLayout1Setting +
-              ".html",
-          ),
-          true,
-        );
-        xmlhttp.send();
-        virtualKeyboardChromeExtensionKeyboardLoaded1 =
-          virtualKeyboardChromeExtensionKeyboardLayout1Setting;
-      } else {
-        virtualKeyboardChromeExtension_open_part2(posY);
-      }
-    }
-  }
-}
-
-function vk_evt_input_blur() {
-  virtualKeyboardChromeExtension_generate_onchange();
-  if (
-    virtualKeyboardChromeExtensionClickedElem &&
-    virtualKeyboardChromeExtensionClickedElem.getAttribute("_originalType")
-  ) {
-    virtualKeyboardChromeExtensionClickedElem.type =
-      virtualKeyboardChromeExtensionClickedElem.getAttribute("_originalType");
-  }
-  virtualKeyboardChromeExtensionClickedElem = undefined;
-  virtualKeyboardChromeExtensionCloseTimer = setTimeout(function () {
-    virtualKeyboardChromeExtension_click("Close");
-  }, 500);
-}
-
-function vk_disable_pdclose(element) {
-  let el = element;
-  while (el != null) {
-    if (el.parentElement) el = el.parentElement;
-    else if (el.parentNode) el = el.parentNode;
-    else el = el.host;
-
-    if (el && el.nodeName == "PAPER-DIALOG") {
-      if (dialogs.indexOf(el) < 0) {
-        let old = el.getAttribute("no-cancel-on-outside-click");
-        el.oldNoCancelOnOutsideClick = old;
-
-        el.setAttribute("no-cancel-on-outside-click", "");
-        dialogs.push(el);
-      }
-    }
-  }
-}
-function vk_evt_input_event(element, isFocus = false, elementType = "input") {
-  if (element.disabled == true || element.readOnly == true) {
     return;
   }
-  if (isFocus) {
-    vk_disable_pdclose(element);
+
+  // Move keyboard to fullscreen element if needed
+  if (document.webkitFullscreenElement) {
+    document.webkitFullscreenElement.appendChild(state.keyboard.element);
+  } else {
+    document.body.appendChild(state.keyboard.element);
   }
-  clearTimeout(virtualKeyboardChromeExtensionCloseTimer);
-  virtualKeyboardChromeExtensionElemType = elementType;
-  virtualKeyboardChromeExtension_generate_onchange();
-  virtualKeyboardChromeExtensionClickedElem = element;
-  if (isFocus || !virtualKeyboardChromeExtensionState) {
-    virtualKeyboardChromeExtension_open(
-      virtualKeyboardChromeExtensionClickedYPos,
-      virtualKeyboardChromeExtensionClickedXPos,
-    );
+
+  // Load layout if needed
+  if (state.keyboard.loadedLayout !== state.settings.layout) {
+    await loadLayout(state.settings.layout);
   }
-  virtualKeyboardChromeExtension_inputTypesRender();
+
+  openKeyboardUI(posY);
 }
 
-function vk_evt_input_focus() {
-  return vk_evt_input_event(this, true);
+async function loadLayout(layout) {
+  try {
+    const html = await window.LayoutRenderer.renderLayout(layout);
+    if (!html) {
+      console.error(`Failed to render keyboard layout: ${layout}`);
+      return;
+    }
+    $(DOM_IDS.MAIN_KBD_PLACEHOLDER).innerHTML = html;
+    state.keyboard.loadedLayout = layout;
+    initKeyboardKeys(true);
+    renderInputType();
+  } catch (err) {
+    console.error(`Error loading keyboard layout ${layout}:`, err);
+  }
 }
 
-function vk_evt_input_click() {
-  return vk_evt_input_event(this);
+function openKeyboardUI(posY) {
+  clearTimeout(state.closeTimer);
+  state.scroll.lastPos = window.scrollY;
+
+  // Add body padding
+  if (!document.body.style.marginBottom || state.scroll.pagePadding) {
+    document.body.style.marginBottom = $(DOM_IDS.KEYBOARD).offsetHeight + "px";
+    state.scroll.pagePadding = true;
+  }
+
+  state.keyboard.open = true;
+  const keyboard = $(DOM_IDS.KEYBOARD);
+  keyboard.style.display = "";
+  keyboard.style.transform = "translate3d(0,0,0)";
+  keyboard.style.opacity = "1";
+  keyboard.setAttribute("data-state", "open");
+
+  // Set up scroll extend element
+  const style = window.getComputedStyle(keyboard);
+  const height =
+    parseFloat(style.height) +
+    parseFloat(style.paddingTop) +
+    parseFloat(style.paddingBottom);
+  const zoom = parseFloat(style.zoom) || 1;
+
+  const scrollExtend = $(DOM_IDS.SCROLL_EXTEND);
+  scrollExtend.style.height = height * zoom + "px";
+  scrollExtend.style.display = "block";
+
+  requestAnimationFrame(() => scrollInputIntoView());
 }
 
-function vt_evt_textarea_focus() {
-  return vk_evt_input_event(this, true, "textarea");
+function renderInputType() {
+  const elem = state.focused.element;
+  if (!elem) return;
+
+  if (state.focused.type === "input") {
+    if (!elem.getAttribute("data-original-type")) {
+      elem.setAttribute("data-original-type", elem.type);
+    }
+    if (elem.type !== "password") {
+      elem.type = "text";
+    }
+  }
+
+  $(DOM_IDS.MAIN_NUMBERS).style.display = "none";
+  $(DOM_IDS.NUMBER_BAR_INPUT).style.display = "none";
+  $(DOM_IDS.MAIN_KBD).style.display = "";
+  state.keyboard.numbersMode = false;
+
+  setClassDisplay(CSS.EMAIL_INPUT_CLASS, "none");
+
+  if (state.focused.type !== "textarea") {
+    const origType = elem.getAttribute("data-original-type");
+    if (origType === "number" || origType === "tel") {
+      $(DOM_IDS.NUMBER_BAR_INPUT).style.display = "";
+      $(DOM_IDS.MAIN_KBD).style.display = "none";
+    } else if (origType === "email") {
+      setClassDisplay(CSS.EMAIL_INPUT_CLASS, "");
+    }
+  }
 }
 
-function vt_evt_textarea_click() {
-  return vk_evt_input_event(this, false, "textarea");
+// =============================================================================
+// KEY PRESS HANDLING
+// =============================================================================
+
+function handleKeyPress(key, skip = false) {
+  // Check if in same-origin iframe
+  const inIframe = top !== self && window.frameElement !== null;
+
+  if (inIframe) {
+    chrome.runtime.sendMessage({
+      method: "clickFromIframe",
+      key,
+      skip,
+      frame: window.frameElement.id,
+    });
+    return;
+  }
+
+  if (key !== "Close") {
+    if (!skip && state.focused.element) {
+      state.focused.element.focus();
+    }
+    clearTimeout(state.closeTimer);
+  }
+
+  switch (key) {
+    case "empty":
+      break;
+
+    case "Url":
+      $(DOM_IDS.URL_BAR_TEXTBOX).focus();
+      break;
+
+    case "Settings":
+      window.open(chrome.runtime.getURL("options.html"));
+      break;
+
+    case "&123":
+      state.keyboard.numbersMode = !state.keyboard.numbersMode;
+      $(DOM_IDS.MAIN_KBD).style.display = state.keyboard.numbersMode
+        ? "none"
+        : "";
+      $(DOM_IDS.MAIN_NUMBERS).style.display = state.keyboard.numbersMode
+        ? ""
+        : "none";
+      break;
+
+    case "Close":
+      handleClose();
+      break;
+
+    case "Enter":
+      handleEnter();
+      break;
+
+    case "Shift":
+      handleShift();
+      break;
+
+    case "Backspace":
+      handleBackspace();
+      break;
+
+    default:
+      insertCharacter(key);
+      break;
+  }
 }
 
-function vk_evt_contenteditable_focus() {
-  return vk_evt_input_event(this, true, "contenteditable");
+function handleClose() {
+  if (state.keyboard.open) {
+    closeKeyboard();
+  }
 }
 
-function vk_evt_contenteditable_click() {
-  return vk_evt_input_event(this, false, "contenteditable");
-}
+function handleEnter() {
+  const elem = state.focused.element;
+  if (!elem) return;
 
-function vk_evt_input_mousedown(ent) {
-  const evt =
-    virtualKeyboardChromeExtensionTouchEvents == "true"
-      ? ent.touches[0]
-      : window.event;
-  virtualKeyboardChromeExtensionClickedYPos = evt.clientY;
-  virtualKeyboardChromeExtensionClickedXPos = evt.clientX;
-}
-
-function vt_evt_autoTrigger_mover_timeout(elem) {
-  lastHoveredTO = setTimeout(function () {
-    if (lastHovered == elem) {
-      elem.focus();
-      elem.click();
-      elem.className += " active";
-      setTimeout(function () {
-        elem.className = elem.className.replace(" active", "");
-      }, 200);
-      if (autoTriggerAfter >= 0.5) {
-        vt_evt_autoTrigger_mover_timeout(lastHovered);
+  if (state.focused.type === "textarea") {
+    const pos = elem.selectionStart;
+    const posEnd = elem.selectionEnd;
+    elem.value = elem.value.substr(0, pos) + "\n" + elem.value.substr(posEnd);
+    elem.selectionStart = elem.selectionEnd = pos + 1;
+  } else if (isContentEditable()) {
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+      const br = document.createElement("br");
+      range.insertNode(br);
+      range.setStartAfter(br);
+      range.setEndAfter(br);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+    dispatchEvent(elem, "input");
+    fireOnChange();
+  } else {
+    const form = getParentByTagName(elem, "form");
+    if (form) {
+      const submitted =
+        clickSubmitButton(form, "input") || clickSubmitButton(form, "button");
+      if (!submitted) {
+        form.dispatchEvent(new Event("submit", { bubbles: true }));
       }
     }
-  }, autoTriggerAfter);
+    elem.dispatchEvent(createKeyboardEvent("keydown", 13));
+    closeKeyboard();
+  }
+
+  dispatchEvent(elem, "input");
+  fireOnChange();
 }
 
-function vt_evt_autoTrigger_mover(ent) {
-  lastHovered = this;
-  clearTimeout(lastHoveredTO);
-  vt_evt_autoTrigger_mover_timeout(this);
+function handleShift() {
+  state.keyboard.shift = !state.keyboard.shift;
+  $(DOM_IDS.MAIN_KBD).className = state.keyboard.shift ? "Shift" : "";
+  updateShiftKeys();
 }
 
-function vt_evt_autoTrigger_mover_a(ent) {
-  lastHovered = this;
-  clearTimeout(lastHoveredTO);
-  var elem = this;
-  lastHoveredTO = setTimeout(function () {
-    if (lastHovered == elem) {
-      var mouseEvent = document.createEvent("MouseEvent");
-      mouseEvent.initMouseEvent(
-        "click",
-        true,
-        true,
-        window,
-        0,
-        0,
-        0,
-        0,
-        0,
-        false,
-        false,
-        false,
-        false,
-        0,
-        null,
-      );
-      lastHovered.dispatchEvent(mouseEvent);
+function handleBackspace() {
+  const elem = state.focused.element;
+  if (!elem) return;
+
+  if (isContentEditable()) {
+    deleteAtCursor();
+  } else {
+    let pos = elem.selectionStart;
+    const posEnd = elem.selectionEnd;
+    if (posEnd === pos) pos--;
+
+    elem.value = elem.value.substr(0, pos) + elem.value.substr(posEnd);
+    elem.selectionStart = elem.selectionEnd = pos;
+  }
+
+  state.focused.changed = true;
+  dispatchBackspaceEvents();
+}
+
+function insertCharacter(key) {
+  const elem = state.focused.element;
+  if (!elem) return;
+
+  // Apply shift transformation
+  if (state.keyboard.shift) {
+    key = applyShiftToCharacter(key);
+  }
+
+  if (isContentEditable()) {
+    elem.dispatchEvent(createKeyboardEvent("keydown", key.charCodeAt(0)));
+    insertTextAtCursor(key);
+    state.focused.changed = true;
+    resetShiftIfNeeded();
+    dispatchKeyEvents(key);
+  } else {
+    const maxLength = elem.maxLength;
+    if (maxLength <= 0 || elem.value.length < maxLength) {
+      elem.dispatchEvent(createKeyboardEvent("keydown", key.charCodeAt(0)));
+      const pos = elem.selectionStart;
+      const posEnd = elem.selectionEnd;
+      elem.value = elem.value.substr(0, pos) + key + elem.value.substr(posEnd);
+      elem.selectionStart = elem.selectionEnd = pos + 1;
+      state.focused.changed = true;
+      resetShiftIfNeeded();
+      dispatchKeyEvents(key);
     }
-    lastHovered = null;
-    clearTimeout(lastHoveredTO);
-  }, autoTriggerAfter);
-}
-
-function vt_evt_autoTrigger_mout(ent) {
-  lastHovered = null;
-  clearTimeout(lastHoveredTO);
-}
-
-function virtualKeyboardChromeClassStyleDisplay(className, value) {
-  var items = document.getElementsByClassName(className);
-  for (var i = 0; i < items.length; i++) {
-    items[i].style.display = value;
   }
 }
 
-function virtualKeyboardChrome_bind_input(
-  e,
-  autoTrigger,
-  focusCallback,
-  clickCallback,
-) {
-  if (e.getAttribute("_vkEnabled") == undefined) {
-    e.addEventListener("blur", vk_evt_input_blur, false);
-    e.addEventListener(
-      virtualKeyboardChromeExtensionTouchEvents == "true"
-        ? "touchstart"
-        : "mousedown",
-      vk_evt_input_mousedown,
-      false,
+function dispatchKeyEvents(key) {
+  const elem = state.focused.element;
+  if (!elem) return;
+  elem.dispatchEvent(createKeyboardEvent("keypress", 0, key.charCodeAt(0)));
+  elem.dispatchEvent(createKeyboardEvent("keyup", 0, key.charCodeAt(0)));
+  dispatchEvent(elem, "input");
+  dispatchInputEvent(elem);
+}
+
+function dispatchBackspaceEvents() {
+  const elem = state.focused.element;
+  if (!elem) return;
+
+  const backspaceEvent = (type) =>
+    new KeyboardEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      keyCode: 8,
+      which: 8,
+    });
+
+  elem.dispatchEvent(backspaceEvent("keydown"));
+  elem.dispatchEvent(backspaceEvent("keypress"));
+  elem.dispatchEvent(backspaceEvent("keyup"));
+  dispatchEvent(elem, "input");
+}
+
+function resetShiftIfNeeded() {
+  if (state.keyboard.shift) {
+    state.keyboard.shift = false;
+    $(DOM_IDS.MAIN_KBD).className = "";
+    updateShiftKeys();
+  }
+}
+
+function updateShiftKeys() {
+  const keys = $$(`.${CSS.KEY_CASE_DISPLAY_CLASS}`);
+  for (const key of keys) {
+    const attr = state.keyboard.shift ? "data-key-shift" : "data-key";
+    key.innerHTML = `<span>${key.getAttribute(attr) || key.getAttribute("data-key")}</span>`;
+  }
+}
+
+function fireOnChange() {
+  if (state.focused.changed && state.focused.element) {
+    state.focused.changed = false;
+    state.focused.element.dispatchEvent(
+      new Event("change", { bubbles: false }),
     );
-    e.addEventListener("focus", focusCallback, false);
-    e.addEventListener("click", clickCallback, false);
-    if (autoTrigger) {
-      e.addEventListener("mouseover", vt_evt_autoTrigger_mover, false);
-      e.addEventListener("mouseout", vt_evt_autoTrigger_mout, false);
-    }
-    e.setAttribute("_vkEnabled", "true");
   }
 }
 
-var virtualKeyboardChromeExtensionObserver = null;
-// WeakMap allows garbage collection when shadow root is removed
-var virtualKeyboardChromeShadowObservers = new WeakMap();
+// =============================================================================
+// INPUT BINDING
+// =============================================================================
 
-function virtualKeyboardChrome_bindNode(node) {
-  if (node.nodeName == "INPUT") {
+function bindInput(elem, focusCallback, clickCallback) {
+  if (elem.getAttribute("data-vk-enabled")) return;
+
+  elem.addEventListener("blur", handleInputBlur);
+  elem.addEventListener("pointerdown", handleInputPointerDown);
+  elem.addEventListener("focus", focusCallback);
+  elem.addEventListener("click", clickCallback);
+  elem.setAttribute("data-vk-enabled", "true");
+}
+
+function handleInputBlur() {
+  fireOnChange();
+
+  if (state.focused.element?.getAttribute("data-original-type")) {
+    state.focused.element.type =
+      state.focused.element.getAttribute("data-original-type");
+  }
+
+  state.focused.element = null;
+  state.closeTimer = setTimeout(
+    () => handleKeyPress("Close"),
+    TIMING.CLOSE_TIMER_DELAY,
+  );
+}
+
+function handleInputPointerDown(event) {
+  state.focused.clickY = event.clientY;
+  state.focused.clickX = event.clientX;
+}
+
+function handleInputEvent(element, isFocus = false, elementType = "input") {
+  if (element.disabled || element.readOnly) return;
+
+  clearTimeout(state.closeTimer);
+  state.focused.type = elementType;
+  fireOnChange();
+  state.focused.element = element;
+
+  if (isFocus || !state.keyboard.open) {
+    openKeyboard(state.focused.clickY, state.focused.clickX);
+  }
+
+  renderInputType();
+}
+
+// Event handlers for different input types
+function onInputFocus() {
+  handleInputEvent(this, true);
+}
+function onInputClick() {
+  handleInputEvent(this);
+}
+function onTextareaFocus() {
+  handleInputEvent(this, true, "textarea");
+}
+function onTextareaClick() {
+  handleInputEvent(this, false, "textarea");
+}
+function onContentEditableFocus() {
+  handleInputEvent(this, true, "contenteditable");
+}
+function onContentEditableClick() {
+  handleInputEvent(this, false, "contenteditable");
+}
+
+// =============================================================================
+// DOM OBSERVATION
+// =============================================================================
+
+function bindNode(node) {
+  if (node.nodeName === "INPUT") {
+    const type = node.type;
     if (
-      node.type == "text" ||
-      node.type == "password" ||
-      node.type == "search" ||
-      node.type == "email" ||
-      node.type == "number" ||
-      node.type == "tel" ||
-      node.type == "url"
+      ["text", "password", "search", "email", "number", "tel", "url"].includes(
+        type,
+      )
     ) {
-      virtualKeyboardChrome_bind_input(
-        node,
-        autoTrigger,
-        vk_evt_input_focus,
-        vk_evt_input_click,
-      );
+      bindInput(node, onInputFocus, onInputClick);
     }
-  } else if (node.nodeName == "TEXTAREA") {
-    virtualKeyboardChrome_bind_input(
-      node,
-      autoTrigger,
-      vt_evt_textarea_focus,
-      vt_evt_textarea_click,
-    );
-  } else if (node.getAttribute && node.getAttribute("role") === "textbox") {
-    virtualKeyboardChrome_bind_input(
-      node,
-      autoTrigger,
-      vk_evt_contenteditable_focus,
-      vk_evt_contenteditable_click,
-    );
+  } else if (node.nodeName === "TEXTAREA") {
+    bindInput(node, onTextareaFocus, onTextareaClick);
   } else if (
-    node.getAttribute &&
-    node.getAttribute("contenteditable") === "true"
+    node.getAttribute?.("role") === "textbox" ||
+    node.getAttribute?.("contenteditable") === "true"
   ) {
-    virtualKeyboardChrome_bind_input(
-      node,
-      autoTrigger,
-      vk_evt_contenteditable_focus,
-      vk_evt_contenteditable_click,
-    );
+    bindInput(node, onContentEditableFocus, onContentEditableClick);
   }
 }
 
-function virtualKeyboardChrome_processAddedNode(node) {
+function processAddedNode(node) {
   if (node.nodeType !== Node.ELEMENT_NODE) return;
 
-  virtualKeyboardChrome_bindNode(node);
+  bindNode(node);
 
-  // Check all descendants
   if (node.querySelectorAll) {
-    var inputs = node.querySelectorAll(
+    const inputs = node.querySelectorAll(
       'input, textarea, [contenteditable="true"], [role="textbox"]',
     );
-    for (var i = 0; i < inputs.length; i++) {
-      virtualKeyboardChrome_bindNode(inputs[i]);
+    for (const input of inputs) {
+      bindNode(input);
     }
   }
 
-  // Handle shadow DOM
   if (node.shadowRoot) {
-    virtualKeyboardChrome_observeShadowRoot(node.shadowRoot);
+    observeShadowRoot(node.shadowRoot);
   }
 }
 
-function virtualKeyboardChrome_processRemovedNode(node) {
+function processRemovedNode(node) {
   if (node.nodeType !== Node.ELEMENT_NODE) return;
 
-  // Disconnect shadow DOM observer if this node had one
-  if (
-    node.shadowRoot &&
-    virtualKeyboardChromeShadowObservers.has(node.shadowRoot)
-  ) {
-    virtualKeyboardChromeShadowObservers.get(node.shadowRoot).disconnect();
-    virtualKeyboardChromeShadowObservers.delete(node.shadowRoot);
+  if (node.shadowRoot && state.shadowObservers.has(node.shadowRoot)) {
+    state.shadowObservers.get(node.shadowRoot).disconnect();
+    state.shadowObservers.delete(node.shadowRoot);
   }
 
-  // Check descendants for shadow roots
   if (node.querySelectorAll) {
-    var elements = node.querySelectorAll("*");
-    for (var i = 0; i < elements.length; i++) {
-      if (
-        elements[i].shadowRoot &&
-        virtualKeyboardChromeShadowObservers.has(elements[i].shadowRoot)
-      ) {
-        virtualKeyboardChromeShadowObservers
-          .get(elements[i].shadowRoot)
-          .disconnect();
-        virtualKeyboardChromeShadowObservers.delete(elements[i].shadowRoot);
+    for (const el of node.querySelectorAll("*")) {
+      if (el.shadowRoot && state.shadowObservers.has(el.shadowRoot)) {
+        state.shadowObservers.get(el.shadowRoot).disconnect();
+        state.shadowObservers.delete(el.shadowRoot);
       }
     }
   }
 }
 
-function virtualKeyboardChrome_observeShadowRoot(shadowRoot) {
-  // Don't observe the same shadow root twice
-  if (virtualKeyboardChromeShadowObservers.has(shadowRoot)) return;
+function observeShadowRoot(shadowRoot) {
+  if (state.shadowObservers.has(shadowRoot)) return;
 
-  var shadowObserver = new MutationObserver(function (mutations) {
-    mutations.forEach(function (mutation) {
-      mutation.addedNodes.forEach(function (node) {
-        virtualKeyboardChrome_processAddedNode(node);
-      });
-      mutation.removedNodes.forEach(function (node) {
-        virtualKeyboardChrome_processRemovedNode(node);
-      });
-    });
+  const shadowObserver = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      for (const node of mutation.addedNodes) processAddedNode(node);
+      for (const node of mutation.removedNodes) processRemovedNode(node);
+    }
   });
-  shadowObserver.observe(shadowRoot, { childList: true, subtree: true });
-  virtualKeyboardChromeShadowObservers.set(shadowRoot, shadowObserver);
 
-  // Bind existing inputs in shadow DOM
-  var inputs = shadowRoot.querySelectorAll(
+  shadowObserver.observe(shadowRoot, { childList: true, subtree: true });
+  state.shadowObservers.set(shadowRoot, shadowObserver);
+
+  const inputs = shadowRoot.querySelectorAll(
     'input, textarea, [contenteditable="true"], [role="textbox"]',
   );
-  for (var i = 0; i < inputs.length; i++) {
-    virtualKeyboardChrome_bindNode(inputs[i]);
-  }
+  for (const input of inputs) bindNode(input);
 }
 
-function virtualKeyboardChrome_startObserver() {
-  if (virtualKeyboardChromeExtensionObserver) return;
+function startObserver() {
+  if (state.observer) return;
 
-  virtualKeyboardChromeExtensionObserver = new MutationObserver(function (
-    mutations,
-  ) {
-    mutations.forEach(function (mutation) {
-      mutation.addedNodes.forEach(function (node) {
-        virtualKeyboardChrome_processAddedNode(node);
-      });
-      mutation.removedNodes.forEach(function (node) {
-        virtualKeyboardChrome_processRemovedNode(node);
-      });
-    });
+  state.observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      for (const node of mutation.addedNodes) processAddedNode(node);
+      for (const node of mutation.removedNodes) processRemovedNode(node);
+    }
   });
 
-  virtualKeyboardChromeExtensionObserver.observe(document.body, {
-    childList: true,
-    subtree: true,
-  });
+  state.observer.observe(document.body, { childList: true, subtree: true });
 }
 
-function xk_settings_load_main(response) {
-  if (response.openedFirstTime == undefined) {
-    openUrl(chrome.runtime.getURL("options.html"));
-    setting_set("openedFirstTime", "true");
-  }
-  document.getElementById("virtualKeyboardChromeExtension").className =
-    response.smallKeyboard == "true" ? "modeS" : "";
-  virtualKeyboardChromeExtensionFullScreenState =
-    response.smallKeyboard != "true";
-  virtualKeyboardChromeExtensionShiftBehaviour = response.capsLock == "false";
-  virtualKeyboardChromeExtensionTouchEvents = response.touchEvents;
-  if (virtualKeyboardChromeExtensionTouchEvents == undefined) {
-    virtualKeyboardChromeExtensionTouchEvents = "false";
-  }
-
-  document.addEventListener(
-    virtualKeyboardChromeExtensionTouchEvents == "true"
-      ? "touchend"
-      : "mouseup",
-    vk_document_mouseup,
-    false,
-  );
-  document.addEventListener(
-    virtualKeyboardChromeExtensionTouchEvents == "true"
-      ? "touchmove"
-      : "mousemove",
-    vk_document_mousemove,
-    false,
-  );
-
-  virtualKeyboardChromeExtensionKeyboardEnabled = response.keyboardEnabled;
-  virtualKeyboardChromeExtensionKeyboardLayout1Setting =
-    response.keyboardLayout1;
-
-  virtualKeyboardChromeExtensionUrlButton = response.urlButton;
-  if (virtualKeyboardChromeExtensionUrlButton == undefined) {
-    virtualKeyboardChromeExtensionUrlButton = "false";
-  }
-
-  init_virtualKeyboardChromeExtension(true);
-}
-
-function virtualKeyboardChrome_prevent(ent) {
-  ent.preventDefault();
-  ent.stopPropagation();
-}
-
+// Generator for walking all child nodes including shadow DOM
 function* getAllChildNodes(element, includeShadowDom) {
-  if (element.children) {
-    for (let node of element.children) {
-      yield node;
-      if (includeShadowDom && node.shadowRoot != null) {
-        yield node.shadowRoot;
-        let childs = getAllChildNodes(node.shadowRoot, includeShadowDom);
-        for (let cnode of childs) {
-          yield cnode;
-        }
-      }
-      let childs = getAllChildNodes(node, includeShadowDom);
-      for (let cnode of childs) {
-        yield cnode;
-      }
+  if (!element.children) return;
+
+  for (const node of element.children) {
+    yield node;
+    if (includeShadowDom && node.shadowRoot) {
+      yield node.shadowRoot;
+      yield* getAllChildNodes(node.shadowRoot, includeShadowDom);
     }
+    yield* getAllChildNodes(node, includeShadowDom);
   }
 }
 
-function init_virtualKeyboardChromeExtension(firstTime) {
-  if (firstTime) {
-    if (top == self) {
-      if (virtualKeyboardChromeExtensionTouchEvents == undefined) {
+// =============================================================================
+// KEYBOARD KEY INITIALIZATION
+// =============================================================================
+
+function initKeyboardKeys(firstTime) {
+  if (!firstTime) return;
+
+  const inTopFrame = top === self;
+  const isCrossOriginIframe = top !== self && window.frameElement === null;
+
+  if (inTopFrame || isCrossOriginIframe) {
+    const keyboard = $(DOM_IDS.KEYBOARD);
+    keyboard.onclick = preventDefault;
+    keyboard.onpointerdown = preventDefault;
+    keyboard.onpointerup = preventDefault;
+  }
+
+  // Bind keyboard keys
+  const keys = $$(`.${CSS.KEY_CLICK_CLASS}`);
+  for (const key of keys) {
+    if (key.getAttribute("data-vk-enabled")) continue;
+    key.setAttribute("data-vk-enabled", "true");
+
+    key.onclick = function (event) {
+      const keyValue = getKeyWithShift(this);
+      handleKeyPress(keyValue);
+      preventDefault(event);
+    };
+
+    key.onpointerdown = preventDefault;
+    key.onpointermove = preventDefault;
+    key.onpointerup = preventDefault;
+  }
+
+  // Settings menu (layout selector)
+  if (inTopFrame) {
+    initSettingsMenu();
+  }
+}
+
+async function initSettingsMenu() {
+  const result = await storageGet("keyboardLayoutsList");
+  const data = result.keyboardLayoutsList;
+
+  const settingsBtn = $(DOM_IDS.SETTINGS_BUTTON);
+  if (!settingsBtn) return;
+
+  settingsBtn.style.display = "none";
+
+  if (!data) return;
+
+  const layouts = JSON.parse(data);
+  if (layouts.length <= 1) return;
+
+  settingsBtn.style.display = "";
+  const ul = $(DOM_IDS.OVERLAY_SETTINGS_UL);
+  ul.innerHTML = "";
+
+  for (const layout of layouts) {
+    if (!layout.value) continue;
+
+    const li = document.createElement("li");
+    li.textContent = layout.value.toUpperCase();
+    li.className = CSS.OVERLAY_BUTTON_CLASS;
+    li.setAttribute("data-action", "setKeyboard");
+    li.setAttribute("data-layout", layout.value);
+    ul.appendChild(li);
+  }
+
+  // Bind menu buttons
+  for (const btn of $$(`.${CSS.OVERLAY_BUTTON_CLASS}`)) {
+    btn.onpointerdown = function () {
+      for (const b of $$(`.${CSS.OVERLAY_BUTTON_CLASS}`)) {
+        b.setAttribute("data-mouse-over", "");
+      }
+      this.setAttribute("data-mouse-over", "true");
+    };
+
+    btn.onpointerup = async function () {
+      const action = this.getAttribute("data-action");
+
+      if (action === "setKeyboard") {
+        const layout = this.getAttribute("data-layout");
+        await storageSet({ keyboardLayout1: layout });
+        state.settings.layout = layout;
+        setClassDisplay(CSS.EMAIL_INPUT_CLASS, "none");
+
+        if (state.focused.element) {
+          await openKeyboard(undefined, undefined, true);
+          state.focused.element.focus();
+        }
+      } else if (action === "openSettings") {
+        window.open(chrome.runtime.getURL("options.html"));
+      } else if (action === "key") {
+        const keyValue = getKeyWithShift(this);
+        handleKeyPress(keyValue);
+      }
+    };
+  }
+
+  // Menu toggle buttons
+  for (const menuBtn of $$(`.${CSS.MENU_CLASS}`)) {
+    menuBtn.onpointerdown = function (event) {
+      const menuName = this.getAttribute("data-menu");
+      const overlay = $(DOM_IDS.OVERLAY_SETTINGS.replace("Settings", menuName));
+      overlay.style.display = "";
+      overlay.style.left = event.clientX - overlay.offsetWidth / 2 + "px";
+      overlay.style.bottom = window.innerHeight - event.clientY + 20 + "px";
+      overlay.setAttribute("data-state", "open");
+    };
+
+    menuBtn.onpointerup = function () {
+      closeAllOverlays();
+    };
+  }
+}
+
+// =============================================================================
+// URL BAR SETUP
+// =============================================================================
+
+function initUrlBar() {
+  const urlInput = $(DOM_IDS.URL_BAR_TEXTBOX);
+  if (!urlInput) return;
+
+  let refocusing = false;
+  urlInput.onblur = function (event) {
+    if (refocusing) return;
+
+    // Check if focus is moving to keyboard or pointer is over keyboard
+    const relatedTarget = event.relatedTarget;
+    const keyboard = $(DOM_IDS.KEYBOARD);
+    const focusInKeyboard =
+      relatedTarget && keyboard && keyboard.contains(relatedTarget);
+
+    if (focusInKeyboard || state.pointerOverKeyboard) {
+      // User is interacting with keyboard, keep URL bar visible and re-focus input
+      refocusing = true;
+      setTimeout(() => {
+        urlInput.focus();
+        refocusing = false;
+      }, 0);
+      return;
+    }
+
+    $(DOM_IDS.URL_BAR).style.top = "-100px";
+    const urlBtn = $(DOM_IDS.URL_BUTTON);
+    if (urlBtn) urlBtn.setAttribute("highlight", "");
+    fireOnChange();
+    state.focused.element = null;
+    state.closeTimer = setTimeout(
+      () => handleKeyPress("Close"),
+      TIMING.URL_CLOSE_DELAY,
+    );
+  };
+
+  urlInput.onfocus = function (event) {
+    clearTimeout(state.closeTimer);
+    state.focused.type = "input";
+    state.focused.element = urlInput;
+    $(DOM_IDS.URL_BAR).style.top = "0px";
+
+    const urlBtn = $(DOM_IDS.URL_BUTTON);
+    if (urlBtn) urlBtn.setAttribute("highlight", "true");
+
+    if (!state.keyboard.open) {
+      openKeyboard(0, 0, true);
+      urlInput.focus();
+      renderInputType();
+      setTimeout(() => {
+        if (urlBtn) urlBtn.setAttribute("highlight", "true");
+      }, TIMING.URL_BAR_HIGHLIGHT_DELAY);
+    }
+
+    event.preventDefault();
+  };
+
+  urlInput.addEventListener("click", onInputClick);
+  urlInput.setAttribute("data-vk-enabled", "true");
+
+  // URL button always visible
+  const urlBtn = $(DOM_IDS.URL_BUTTON);
+  if (urlBtn) urlBtn.style.display = "";
+}
+
+// =============================================================================
+// DOCUMENT-LEVEL EVENT HANDLERS
+// =============================================================================
+
+function onDocumentPointerUp() {
+  closeAllOverlays();
+}
+
+// =============================================================================
+// SETTINGS LOADING
+// =============================================================================
+
+async function loadSettings() {
+  const result = await storageGet([
+    "openedFirstTime",
+    "keyboardLayout1",
+    "keyboardLayoutsList",
+  ]);
+
+  // First time setup
+  if (!result.openedFirstTime) {
+    const layouts = await window.LayoutRenderer.getLayouts();
+    await storageSet({
+      keyboardLayout1: "en",
+      keyboardLayoutsList: JSON.stringify(layouts),
+      openedFirstTime: "true",
+    });
+
+    state.settings.layout = "en";
+  } else {
+    state.settings.layout = result.keyboardLayout1 || "en";
+  }
+}
+
+// =============================================================================
+// INITIALIZATION
+// =============================================================================
+
+async function init() {
+  await loadSettings();
+
+  // Bind existing inputs
+  for (const node of getAllChildNodes(document, true)) {
+    bindNode(node);
+  }
+
+  // Start observer for dynamic inputs
+  startObserver();
+
+  // Set up document events
+  document.addEventListener("pointerup", onDocumentPointerUp);
+
+  // Track pointer over keyboard for blur handling
+  const keyboard = $(DOM_IDS.KEYBOARD);
+  if (keyboard) {
+    keyboard.addEventListener("pointerenter", () => {
+      state.pointerOverKeyboard = true;
+    });
+    keyboard.addEventListener("pointerleave", () => {
+      state.pointerOverKeyboard = false;
+    });
+  }
+
+  // Init UI components
+  initUrlBar();
+  initKeyboardKeys(true);
+}
+
+// =============================================================================
+// MESSAGE HANDLING FOR IFRAME COMMUNICATION
+// =============================================================================
+
+if (top === self) {
+  chrome.runtime.onMessage.addListener((request) => {
+    if (request.method === "openFromIframe") {
+      fireOnChange();
+      state.focused.element = $(request.frame)?.contentDocument?.getElementById(
+        request.elem,
+      );
+
+      if (state.focused.element) {
+        scrollInputIntoView();
+        const elem = state.focused.element;
+
         if (
-          document
-            .getElementById("virtualKeyboardChromeExtension")
-            .getAttribute("_state") != "open" ||
-          virtualKeyboardChromeExtensionRequestRefresh
+          elem.getAttribute?.("role") === "textbox" ||
+          elem.getAttribute?.("contenteditable") === "true"
         ) {
-          set_default();
-          //chrome.runtime.sendMessage({ method: "loadKeyboardSettings" }, xk_settings_load_main);
-        }
-      } else {
-        document.getElementById(
-          "virtualKeyboardChromeExtensionUrlBarTextBox",
-        ).onblur = function () {
-          document.getElementById(
-            "virtualKeyboardChromeExtensionUrlBar",
-          ).style.top = "-100px";
-          if (document.getElementById("urlButton") !== null) {
-            document.getElementById("urlButton").setAttribute("highlight", "");
-          }
-          virtualKeyboardChromeExtension_generate_onchange();
-          virtualKeyboardChromeExtensionClickedElem = undefined;
-          virtualKeyboardChromeExtensionCloseTimer = setTimeout(function () {
-            virtualKeyboardChromeExtension_click("Close");
-          }, 1000);
-        };
-        document.getElementById(
-          "virtualKeyboardChromeExtensionUrlBarTextBox",
-        ).onfocus = function (evt) {
-          if (virtualKeyboardChromeExtensionCloseTimer != undefined) {
-            clearTimeout(virtualKeyboardChromeExtensionCloseTimer);
-          }
-          virtualKeyboardChromeExtensionElemType = "input";
-          virtualKeyboardChromeExtensionClickedElem = document.getElementById(
-            "virtualKeyboardChromeExtensionUrlBarTextBox",
-          );
-          document.getElementById(
-            "virtualKeyboardChromeExtensionUrlBar",
-          ).style.top = "0px";
-          if (document.getElementById("urlButton") !== null) {
-            document
-              .getElementById("urlButton")
-              .setAttribute("highlight", "true");
-          }
-          if (!virtualKeyboardChromeExtensionState) {
-            virtualKeyboardChromeExtension_open(0, 0, true);
-            document
-              .getElementById("virtualKeyboardChromeExtensionUrlBarTextBox")
-              .focus();
-            virtualKeyboardChromeExtension_inputTypesRender();
-            setTimeout(function () {
-              if (document.getElementById("urlButton") !== null) {
-                document
-                  .getElementById("urlButton")
-                  .setAttribute("highlight", "true");
-              }
-            }, 500);
-          }
-          evt.preventDefault();
-        };
-        document
-          .getElementById("virtualKeyboardChromeExtensionUrlBarTextBox")
-          .addEventListener("click", vk_evt_input_click, false);
-        document
-          .getElementById("virtualKeyboardChromeExtensionUrlBarTextBox")
-          .setAttribute("_vkEnabled", "true");
-
-        if (document.getElementById("urlButton") !== null) {
-          document.getElementById("urlButton").style.display =
-            virtualKeyboardChromeExtensionUrlButton == "true" ? "" : "none";
-        }
-
-        if (virtualKeyboardChromeExtensionTouchEvents == "true") {
-          document.getElementById(
-            "virtualKeyboardChromeExtensionDraggableLeft",
-          ).ontouchstart = function (ent) {
-            virtualKeyboardChromeExtensionDraggabling = true;
-            virtualKeyboardChromeExtensionDraggablingX =
-              ent.touches[0].clientX -
-              document.getElementById("virtualKeyboardChromeExtension")
-                .offsetLeft;
-            virtualKeyboardChromeExtensionDraggablingY =
-              ent.touches[0].clientY -
-              document.getElementById("virtualKeyboardChromeExtension")
-                .offsetTop;
-          };
-          document.getElementById(
-            "virtualKeyboardChromeExtensionDraggableRight",
-          ).ontouchstart = function (ent) {
-            virtualKeyboardChromeExtensionDraggabling = true;
-            virtualKeyboardChromeExtensionDraggablingX =
-              ent.touches[0].clientX -
-              document.getElementById("virtualKeyboardChromeExtension")
-                .offsetLeft;
-            virtualKeyboardChromeExtensionDraggablingY =
-              ent.touches[0].clientY -
-              document.getElementById("virtualKeyboardChromeExtension")
-                .offsetTop;
-          };
+          state.focused.type = "contenteditable";
         } else {
-          document.getElementById(
-            "virtualKeyboardChromeExtensionDraggableLeft",
-          ).onmousedown = function (ent) {
-            virtualKeyboardChromeExtensionDraggabling = true;
-            virtualKeyboardChromeExtensionDraggablingX =
-              ent.clientX -
-              document.getElementById("virtualKeyboardChromeExtension")
-                .offsetLeft;
-            virtualKeyboardChromeExtensionDraggablingY =
-              ent.clientY -
-              document.getElementById("virtualKeyboardChromeExtension")
-                .offsetTop;
-          };
-          document.getElementById(
-            "virtualKeyboardChromeExtensionDraggableRight",
-          ).onmousedown = function (ent) {
-            virtualKeyboardChromeExtensionDraggabling = true;
-            virtualKeyboardChromeExtensionDraggablingX =
-              ent.clientX -
-              document.getElementById("virtualKeyboardChromeExtension")
-                .offsetLeft;
-            virtualKeyboardChromeExtensionDraggablingY =
-              ent.clientY -
-              document.getElementById("virtualKeyboardChromeExtension")
-                .offsetTop;
-          };
+          state.focused.type = elem.tagName.toLowerCase();
         }
 
-        document.getElementById(
-          "virtualKeyboardChromeExtensionOverlayDemand",
-        ).onclick = function (ent) {
-          virtualKeyboardChromeExtensionClickedElemDemand.focus();
-          virtualKeyboardChromeExtension_open(
-            virtualKeyboardChromeExtensionClickedYPos,
-            virtualKeyboardChromeExtensionClickedXPos,
-            true,
-          );
-          setTimeout(function () {
-            document
-              .getElementById("virtualKeyboardChromeExtensionOverlayDemand")
-              .setAttribute("_state", "close");
-            setTimeout(function () {
-              document.getElementById(
-                "virtualKeyboardChromeExtensionOverlayDemand",
-              ).style.display = "none";
-            }, 200);
-          }, 100);
-          virtualKeyboardChrome_prevent(ent);
-        };
-        document.getElementById(
-          "virtualKeyboardChromeExtensionOverlayDemand",
-        ).onmousedown = virtualKeyboardChrome_prevent;
-        document.getElementById(
-          "virtualKeyboardChromeExtensionOverlayDemand",
-        ).onmouseup = virtualKeyboardChrome_prevent;
-
-        if (autoTrigger) {
-          document
-            .getElementById("virtualKeyboardChromeExtensionOverlayDemand")
-            .addEventListener("mouseover", vt_evt_autoTrigger_mover, false);
-          document
-            .getElementById("virtualKeyboardChromeExtensionOverlayDemand")
-            .addEventListener("mouseout", vt_evt_autoTrigger_mout, false);
-        }
+        renderInputType();
+        const pX = request.posX + getElementPositionX($(request.frame));
+        const pY = request.posY + getElementPositionY($(request.frame));
+        openKeyboard(pY, pX, request.force);
       }
-    } else {
-      if (virtualKeyboardChromeExtensionTouchEvents == undefined) {
-        chrome.runtime.sendMessage(
-          { method: "loadKeyboardSettings" },
-          function (response) {
-            virtualKeyboardChromeExtensionTouchEvents = response.touchEvents;
-            if (virtualKeyboardChromeExtensionTouchEvents == undefined) {
-              virtualKeyboardChromeExtensionTouchEvents = "false";
-            }
-            init_virtualKeyboardChromeExtension(true);
-          },
-        );
-      }
-    }
-  }
-  if (virtualKeyboardChromeExtensionTouchEvents != undefined) {
-    var nodes = getAllChildNodes(document, true);
-    for (let e of nodes) {
-      if (e.nodeName == "INPUT") {
-        if (
-          e.type == "text" ||
-          e.type == "password" ||
-          e.type == "search" ||
-          e.type == "email" ||
-          e.type == "number" ||
-          e.type == "tel" ||
-          e.type == "url"
-        ) {
-          virtualKeyboardChrome_bind_input(
-            e,
-            autoTrigger,
-            vk_evt_input_focus,
-            vk_evt_input_click,
-          );
-        }
-      } else if (e.nodeName == "TEXTAREA") {
-        virtualKeyboardChrome_bind_input(
-          e,
-          autoTrigger,
-          vt_evt_textarea_focus,
-          vt_evt_textarea_click,
-        );
-      } else if (e.getAttribute && e.getAttribute("role") === "textbox") {
-        virtualKeyboardChrome_bind_input(
-          e,
-          autoTrigger,
-          vk_evt_contenteditable_focus,
-          vk_evt_contenteditable_click,
-        );
-      } else if (
-        e.getAttribute &&
-        e.getAttribute("contenteditable") === "true"
-      ) {
-        virtualKeyboardChrome_bind_input(
-          e,
-          autoTrigger,
-          vk_evt_contenteditable_focus,
-          vk_evt_contenteditable_click,
-        );
-      }
-    }
-
-    if (autoTriggerLinks) {
-      var e = document.getElementsByTagName("a");
-      for (var i = 0; i < e.length; i++) {
-        if (e[i].getAttribute("_vkEnabled") == undefined) {
-          e[i].setAttribute("_vkEnabled", "true");
-          e[i].addEventListener("mouseover", vt_evt_autoTrigger_mover_a, false);
-          e[i].addEventListener("mouseout", vt_evt_autoTrigger_mout, false);
-        }
-      }
-    }
-
-    if (firstTime) {
-      // Set up preventDefault handlers for top-level OR cross-origin iframes (where keyboard is local)
-      var isCrossOriginIframe = top != self && window.frameElement === null;
-      if (top == self || isCrossOriginIframe) {
-        var v = document.getElementById("virtualKeyboardChromeExtension");
-        v.onclick = function (ent) {
-          ent.preventDefault();
-        };
-        if (virtualKeyboardChromeExtensionTouchEvents == "true") {
-          v.ontouchstart = function (ent) {
-            ent.preventDefault();
-          };
-          v.ontouchend = function (ent) {
-            ent.preventDefault();
-          };
-        }
-        v.onmousedown = function (ent) {
-          ent.preventDefault();
-        };
-        v.onmouseup = function (ent) {
-          ent.preventDefault();
-        };
-      }
-      var e = document.getElementsByClassName("kbdClick");
-      for (var i = 0; i < e.length; i++) {
-        if (e[i].getAttribute("_vkEnabled") == undefined) {
-          e[i].setAttribute("_vkEnabled", "true");
-          e[i].onclick = function (ent) {
-            var k = this.getAttribute("_key");
-            if (virtualKeyboardChromeExtensionShift) {
-              if (this.getAttribute("_keyC") != undefined) {
-                k = this.getAttribute("_keyC");
-              }
-            }
-            virtualKeyboardChromeExtension_click(k);
-            virtualKeyboardChrome_prevent(ent);
-          };
-          if (virtualKeyboardChromeExtensionTouchEvents == "true") {
-            e[i].ontouchstart = function (ent) {
-              var k = this.getAttribute("_key");
-              if (virtualKeyboardChromeExtensionShift) {
-                if (this.getAttribute("_keyC") != undefined) {
-                  k = this.getAttribute("_keyC");
-                }
-              }
-              virtualKeyboardChromeExtension_click(k);
-              var e = this.getAttribute("_key");
-              if (
-                virtualKeyboardChromeExtensionRepeatLetters ||
-                e == "Backspace"
-              ) {
-                var virtualKeyboardChromeExtensionBackspaceTimerCount = 0;
-                console.log(e);
-                if (virtualKeyboardChromeExtensionBackspaceTimer != null) {
-                  console.log(virtualKeyboardChromeExtensionBackspaceTimer);
-                  clearInterval(virtualKeyboardChromeExtensionBackspaceTimer);
-                }
-                virtualKeyboardChromeExtensionBackspaceTimer = setInterval(
-                  function () {
-                    if (
-                      virtualKeyboardChromeExtensionBackspaceTimerCount < 30
-                    ) {
-                      virtualKeyboardChromeExtensionBackspaceTimerCount++;
-                    } else {
-                      virtualKeyboardChromeExtension_click(e, true);
-                    }
-                  },
-                  50,
-                );
-              }
-              virtualKeyboardChrome_prevent(ent);
-            };
-            // Do not clear iterval during touchmove
-            e[i].ontouchmove = function (ent) {
-              virtualKeyboardChrome_prevent(ent);
-            };
-            // Clear interval on touchend – otherwise char repetition will continue forever
-            e[i].ontouchend = function (ent) {
-              clearInterval(virtualKeyboardChromeExtensionBackspaceTimer);
-              virtualKeyboardChrome_prevent(ent);
-            };
-          } else {
-            e[i].onmousedown = function (ent) {
-              var e = this.getAttribute("_key");
-              if (
-                virtualKeyboardChromeExtensionRepeatLetters ||
-                e == "Backspace"
-              ) {
-                var virtualKeyboardChromeExtensionBackspaceTimerCount = 0;
-                if (virtualKeyboardChromeExtensionBackspaceTimer != null) {
-                  clearInterval(virtualKeyboardChromeExtensionBackspaceTimer);
-                }
-                virtualKeyboardChromeExtensionBackspaceTimer = setInterval(
-                  function () {
-                    if (
-                      virtualKeyboardChromeExtensionBackspaceTimerCount < 30
-                    ) {
-                      virtualKeyboardChromeExtensionBackspaceTimerCount++;
-                    } else {
-                      virtualKeyboardChromeExtension_click(e, true);
-                    }
-                  },
-                  50,
-                );
-              }
-              ent.preventDefault();
-              ent.stopPropagation();
-            };
-            e[i].onmousemove = function (ent) {
-              ent.preventDefault();
-              ent.stopPropagation();
-            };
-            e[i].onmouseup = function (ent) {
-              ent.preventDefault();
-            };
-            if (autoTrigger) {
-              e[i].addEventListener(
-                "mouseover",
-                vt_evt_autoTrigger_mover,
-                false,
-              );
-              e[i].addEventListener("mouseout", vt_evt_autoTrigger_mout, false);
-            }
-          }
-        }
-      }
-      if (top == self) {
-        var m = document.getElementsByClassName("kMenu");
-        var startEvent =
-          virtualKeyboardChromeExtensionTouchEvents == "true"
-            ? "ontouchstart"
-            : "onmousedown";
-        var endEvent =
-          virtualKeyboardChromeExtensionTouchEvents == "true"
-            ? "ontouchend"
-            : "onmouseup";
-        for (var i = 0; i < m.length; i++) {
-          m[i][startEvent] = function (ent) {
-            var entObj =
-              virtualKeyboardChromeExtensionTouchEvents == "true"
-                ? ent.touches[0]
-                : window.event;
-            virtualKeyboardChromeExtensionClickedMenuBtn = false;
-            if (virtualKeyboardChromeExtensionOffsetTimeout) {
-              clearTimeout(virtualKeyboardChromeExtensionOffsetTimeout);
-              var m2 = document.getElementsByClassName(
-                "virtualKeyboardChromeExtensionOverlay",
-              );
-              for (var i = 0; i < m2.length; i++) {
-                m2[i].setAttribute("_state", "closed");
-                m2[i].style.display = "none";
-              }
-            }
-            document.getElementById(
-              "virtualKeyboardChromeExtensionOverlay" +
-                this.getAttribute("_menu"),
-            ).style.display = "";
-            document.getElementById(
-              "virtualKeyboardChromeExtensionOverlay" +
-                this.getAttribute("_menu"),
-            ).style.left =
-              entObj.clientX -
-              document.getElementById(
-                "virtualKeyboardChromeExtensionOverlaySettings",
-              ).offsetWidth /
-                2 +
-              "px";
-            document.getElementById(
-              "virtualKeyboardChromeExtensionOverlay" +
-                this.getAttribute("_menu"),
-            ).style.bottom = window.innerHeight - entObj.clientY + 20 + "px";
-            document
-              .getElementById(
-                "virtualKeyboardChromeExtensionOverlay" +
-                  this.getAttribute("_menu"),
-              )
-              .setAttribute("_state", "open");
-          };
-          m[i][endEvent] = function (ent) {
-            var ho = "false";
-            if (this.getAttribute("_hoverOnly") != undefined) {
-              ho = this.getAttribute("_hoverOnly");
-            }
-            if (ho != "true") {
-              virtualKeyboardChromeExtensionClickedMenuBtn = true;
-              ent.preventDefault();
-              virtualKeyboardChromeExtensionClickedMenuBtn = false;
-            }
-            if (!virtualKeyboardChromeExtensionClickedMenuBtn) {
-              var m2 = document.getElementsByClassName(
-                "virtualKeyboardChromeExtensionOverlay",
-              );
-              for (var i = 0; i < m2.length; i++) {
-                m2[i].setAttribute("_state", "closed");
-              }
-              var virtualKeyboardChromeExtensionOffsetTimeout = setTimeout(
-                function () {
-                  for (var i = 0; i < m2.length; i++) {
-                    m2[i].style.display = "none";
-                  }
-                },
-                500,
-              );
-            }
-            virtualKeyboardChromeExtensionClickedMenuBtn = false;
-          };
-        }
-        if (document.getElementById("settingsButton") !== null) {
-          chrome.runtime.sendMessage(
-            { method: "getLocalStorage", key: "keyboardLayoutsList" },
-            function (response) {
-              var data = response.data;
-              document.getElementById("settingsButton").style.display = "none";
-              if (data != undefined) {
-                var a = JSON.parse(data);
-                if (a.length > 1) {
-                  document.getElementById("settingsButton").style.display = "";
-                  document.getElementById(
-                    "virtualKeyboardChromeExtensionOverlaySettingsUl",
-                  ).innerHTML = "";
-                  for (var i = 0; i < a.length; i++) {
-                    if (a[i].value != undefined) {
-                      var le = document.createElement("li");
-                      le.textContent = a[i].value.toUpperCase();
-                      le.className =
-                        "virtualKeyboardChromeExtensionOverlayButton";
-                      le.setAttribute("_action", "setKeyboard");
-                      le.setAttribute("_layout", a[i].value);
-                      document
-                        .getElementById(
-                          "virtualKeyboardChromeExtensionOverlaySettingsUl",
-                        )
-                        .appendChild(le);
-                    }
-                  }
-                  var mi = document.getElementsByClassName(
-                    "virtualKeyboardChromeExtensionOverlayButton",
-                  );
-                  for (var i = 0; i < mi.length; i++) {
-                    var startEvent =
-                      virtualKeyboardChromeExtensionTouchEvents == "true"
-                        ? "ontouchstart"
-                        : "onmousedown";
-                    var endEvent =
-                      virtualKeyboardChromeExtensionTouchEvents == "true"
-                        ? "ontouchend"
-                        : "onmouseup";
-                    mi[i][startEvent] = function (ent) {
-                      var mi2 = document.getElementsByClassName(
-                        "virtualKeyboardChromeExtensionOverlayButton",
-                      );
-                      for (var i2 = 0; i2 < mi2.length; i2++) {
-                        mi2[i2].setAttribute("mo", "");
-                      }
-                      this.setAttribute("mo", "true");
-                    };
-                    mi[i][endEvent] = function (ent) {
-                      virtualKeyboardChromeExtensionClickedMenuBtn = false;
-                      switch (this.getAttribute("_action")) {
-                        case "setKeyboard":
-                          virtualKeyboardChromeExtensionRequestRefresh = true;
-                          setting_set(
-                            "keyboardLayout1",
-                            this.getAttribute("_layout"),
-                          );
-                          virtualKeyboardChromeExtensionKeyboardLayout1Setting =
-                            this.getAttribute("_layout");
-                          virtualKeyboardChromeClassStyleDisplay(
-                            "kbEmailInput",
-                            "none",
-                          );
-                          if (virtualKeyboardChromeExtensionClickedElem) {
-                            virtualKeyboardChromeExtension_open(
-                              undefined,
-                              undefined,
-                              true,
-                            );
-                            virtualKeyboardChromeExtensionClickedElem.focus();
-                          }
-                          break;
-                        case "openSettings":
-                          window.open(chrome.runtime.getURL("options.html"));
-                          break;
-                        case "key":
-                          var k = this.getAttribute("_key");
-                          if (virtualKeyboardChromeExtensionShift) {
-                            if (this.getAttribute("_keyC") != undefined) {
-                              k = this.getAttribute("_keyC");
-                            }
-                          }
-                          virtualKeyboardChromeExtension_click(k);
-                          break;
-                      }
-                    };
-                  }
-                }
-              }
-            },
-          );
-        }
-      }
-    }
-  }
-
-  virtualKeyboardChrome_startObserver();
-}
-
-function vk_document_mouseup(ent) {
-  if (virtualKeyboardChromeExtensionBackspaceTimer != null) {
-    clearInterval(virtualKeyboardChromeExtensionBackspaceTimer);
-  }
-  if (!virtualKeyboardChromeExtensionClickedMenuBtn) {
-    var m = document.getElementsByClassName(
-      "virtualKeyboardChromeExtensionOverlay",
-    );
-    for (var i = 0; i < m.length; i++) {
-      m[i].setAttribute("_state", "closed");
-    }
-    virtualKeyboardChromeExtensionOffsetTimeout = setTimeout(function () {
-      for (var i = 0; i < m.length; i++) {
-        m[i].style.display = "none";
-      }
-    }, 500);
-  }
-  virtualKeyboardChromeExtensionClickedMenuBtn = false;
-  if (virtualKeyboardChromeExtensionDraggabling) {
-    setting_set(
-      "smallKeyboardLeft",
-      document
-        .getElementById("virtualKeyboardChromeExtension")
-        .style.left.toString(),
-    );
-    setting_set(
-      "smallKeyboardRight",
-      document
-        .getElementById("virtualKeyboardChromeExtension")
-        .style.right.toString(),
-    );
-    setting_set(
-      "smallKeyboardTop",
-      document
-        .getElementById("virtualKeyboardChromeExtension")
-        .style.top.toString(),
-    );
-    setting_set(
-      "smallKeyboardBottom",
-      document
-        .getElementById("virtualKeyboardChromeExtension")
-        .style.bottom.toString(),
-    );
-    document
-      .getElementById("virtualKeyboardChromeExtension")
-      .style.setProperty("-webkit-transition", "");
-  }
-  virtualKeyboardChromeExtensionDraggabling = false;
-}
-
-function vk_document_mousemove(ent) {
-  if (virtualKeyboardChromeExtensionDraggabling) {
-    var clientX = ent.clientX;
-    if (clientX == undefined) {
-      clientX = ent.touches[0].clientX;
-    }
-    var clientY = ent.clientY;
-    if (clientY == undefined) {
-      clientY = ent.touches[0].clientY;
-    }
-    var l = clientX - virtualKeyboardChromeExtensionDraggablingX;
-    var lper = (l / window.innerWidth) * 100;
-    var rper = 100 - ((l + 800) / window.innerWidth) * 100;
-    var methodLeft = true;
-    if (l < 0) {
-      l = 0;
-    }
-    if (lper > 50) {
-      methodLeft = false;
-    }
-    if (rper < 0) {
-      rper = 0;
-    }
-    if (lper < 0) {
-      lper = 0;
-    }
-    document
-      .getElementById("virtualKeyboardChromeExtension")
-      .style.setProperty("-webkit-transition", "none");
-    document.getElementById("virtualKeyboardChromeExtension").style.left =
-      methodLeft ? lper + "%" : "auto";
-    document.getElementById("virtualKeyboardChromeExtension").style.right =
-      methodLeft ? "auto" : rper + "%";
-
-    var t = clientY - virtualKeyboardChromeExtensionDraggablingY;
-    var tper = (t / window.innerHeight) * 100;
-    var bper = 100 - ((t + 271) / window.innerHeight) * 100;
-    var methodTop = true;
-    if (t < 0) {
-      t = 0;
-    }
-    if (tper > 50) {
-      methodTop = false;
-    }
-    if (bper < 0) {
-      bper = 0;
-    }
-    if (tper < 0) {
-      tper = 0;
-    }
-    if (methodTop) {
-      document.getElementById("virtualKeyboardChromeExtension").style.top =
-        tper + "%";
-      document.getElementById("virtualKeyboardChromeExtension").style.bottom =
-        "auto";
-    } else {
-      document.getElementById("virtualKeyboardChromeExtension").style.top =
-        "auto";
-      document.getElementById("virtualKeyboardChromeExtension").style.bottom =
-        bper + "%";
-    }
-    document.getElementById("virtualKeyboardChromeExtension").style.marginLeft =
-      "0";
-  }
-}
-
-if (top == self) {
-  chrome.runtime.onMessage.addListener(function (request) {
-    if (request.method == "openFromIframe") {
-      virtualKeyboardChromeExtension_generate_onchange();
-      virtualKeyboardChromeExtensionClickedElem = document
-        .getElementById(request.frame)
-        .contentDocument.getElementById(request.elem);
-      virtualKeyboardChromeExtension_make_object_visible();
-      var elem = virtualKeyboardChromeExtensionClickedElem;
-      if (
-        elem.getAttribute &&
-        (elem.getAttribute("role") === "textbox" ||
-          elem.getAttribute("contenteditable") === "true")
-      ) {
-        virtualKeyboardChromeExtensionElemType = "contenteditable";
-      } else {
-        virtualKeyboardChromeExtensionElemType = elem.tagName.toLowerCase();
-      }
-      virtualKeyboardChromeExtension_inputTypesRender();
-      var pX = request.posX;
-      var pY = request.posY;
-      pY += virtualKeyboardChromeExtension_getElementPositionY(
-        document.getElementById(request.frame),
+    } else if (request.method === "clickFromIframe") {
+      handleKeyPress(request.key, request.skip);
+    } else if (request === "openUrlBar") {
+      setTimeout(
+        () => $(DOM_IDS.URL_BAR_TEXTBOX)?.focus(),
+        TIMING.URL_BAR_FOCUS_DELAY,
       );
-      pX += virtualKeyboardChromeExtension_getElementPositionX(
-        document.getElementById(request.frame),
-      );
-      virtualKeyboardChromeExtension_open(pY, pX, request.force);
-    } else if (request.method == "clickFromIframe") {
-      virtualKeyboardChromeExtension_click(request.key, request.skip);
-    } else if (request == "openUrlBar") {
-      setTimeout(function () {
-        document
-          .getElementById("virtualKeyboardChromeExtensionUrlBarTextBox")
-          .focus();
-      }, 200);
-    } else if (request == "closeKeyboard") {
-      setting_reloadKeyboardToggle(false);
-      virtualKeyboardChromeExtension_click("Close");
-    } else if (request == "openKeyboard") {
-      setting_reloadKeyboardToggle(true);
     }
   });
-  var iframes = document.getElementsByTagName("iframe");
-  for (var i = 0; i < iframes.length; i++) {
-    if (iframes[i].id == "") {
-      iframes[i].id = "CVK_F_" + i;
-    }
+
+  // Assign IDs to iframes
+  const iframes = $$("iframe");
+  let iframeIndex = 0;
+  for (const iframe of iframes) {
+    if (!iframe.id) iframe.id = "CVK_F_" + iframeIndex++;
   }
+}
 
-  var link = document.createElement("link");
-  link.href = chrome.runtime.getURL("style.css");
-  link.type = "text/css";
-  link.rel = "stylesheet";
-  document.getElementsByTagName("head")[0].appendChild(link);
+// =============================================================================
+// LOAD KEYBOARD HTML AND CSS
+// =============================================================================
 
-  var xhr = new XMLHttpRequest();
-  xhr.open("GET", chrome.runtime.getURL("keyboard.html"), true);
-  xhr.onreadystatechange = vk_ajax_load_main;
-  xhr.send();
-} else {
-  // Check if this is a cross-origin iframe (frameElement will be null)
-  var isCrossOriginIframe = window.frameElement === null;
-
-  if (isCrossOriginIframe) {
-    // Cross-origin iframe: load keyboard locally since we can't communicate with parent
-    var link = document.createElement("link");
+async function loadKeyboardHTML() {
+  try {
+    // Load CSS
+    const link = document.createElement("link");
     link.href = chrome.runtime.getURL("style.css");
     link.type = "text/css";
     link.rel = "stylesheet";
-    document.getElementsByTagName("head")[0].appendChild(link);
+    document.head.appendChild(link);
 
-    var xhr = new XMLHttpRequest();
-    xhr.open("GET", chrome.runtime.getURL("keyboard.html"), true);
-    xhr.onreadystatechange = vk_ajax_load_main;
-    xhr.send();
-  } else {
-    // Same-origin iframe: use existing parent communication
-    init_virtualKeyboardChromeExtension(true);
-    virtualKeyboardChrome_startObserver();
+    // Load keyboard HTML
+    const response = await fetch(chrome.runtime.getURL("keyboard.html"));
+    if (!response.ok) {
+      console.error("Failed to load keyboard.html");
+      return;
+    }
+    const html = await response.text();
+
+    state.keyboard.element = document.createElement("div");
+    state.keyboard.element.className = "ha"; // Hardware acceleration
+    state.keyboard.element.innerHTML = html;
+    document.body.appendChild(state.keyboard.element);
+
+    await init();
+  } catch (err) {
+    console.error("Error loading virtual keyboard:", err);
   }
 }
 
-function vk_ajax_load_main() {
-  if (xhr.readyState == 4) {
-    virtualKeyboardChromeExtensionKeyboardElement =
-      document.createElement("div");
-    chrome.runtime.sendMessage(
-      { method: "initLoadKeyboardSettings" },
-      function (response) {
-        //hardwareAcceleration
-        if (response.hardwareAcceleration == "false") {
-          hardwareAcceleration = false;
-        } else {
-          hardwareAcceleration = true;
-          virtualKeyboardChromeExtensionKeyboardElement.className = "ha";
-        }
+// =============================================================================
+// ENTRY POINT
+// =============================================================================
 
-        virtualKeyboardChromeExtensionRepeatLetters =
-          response.repeatLetters != "false";
+const isTopFrame = top === self;
+const isCrossOriginIframe = top !== self && window.frameElement === null;
 
-        // zoomLevel
-        if (response.zoomLevel == undefined) {
-          response.zoomLevel = 0;
-        }
-        if (parseFloat(response.zoomLevel) >= 0.3) {
-          document
-            .getElementById("virtualKeyboardChromeExtension")
-            .style.setProperty("zoom", response.zoomLevel);
-        } else {
-          document.getElementById("virtualKeyboardChromeExtension").style.zoom =
-            "";
-        }
-
-        // autoTrigger
-        if (response.autoTrigger != undefined) {
-          autoTrigger = response.autoTrigger == "true";
-        }
-
-        // autoTriggerLinks
-        if (response.autoTriggerLinks != undefined) {
-          autoTriggerLinks = response.autoTriggerLinks == "true";
-        }
-
-        // intelligentScroll
-        if (response.intelligentScroll != undefined) {
-          intelligentScroll = response.intelligentScroll == "true";
-        }
-
-        // autoTriggerAfter
-        if (response.autoTriggerAfter == undefined) {
-          response.autoTriggerAfter = 1;
-        }
-        autoTriggerAfter = response.autoTriggerAfter * 1000;
-
-        // keyboardLayout1
-        if (response.keyboardLayout1 != undefined) {
-          virtualKeyboardChromeExtensionKeyboardLayout1Setting =
-            response.keyboardLayout1;
-        } else {
-          virtualKeyboardChromeExtensionKeyboardLayout1Setting = "en";
-        }
-      },
-    );
-    virtualKeyboardChromeExtensionKeyboardElement.innerHTML = xhr.responseText;
-    document.body.appendChild(virtualKeyboardChromeExtensionKeyboardElement);
-    init_virtualKeyboardChromeExtension(true);
-    virtualKeyboardChrome_startObserver();
-  }
+if (isTopFrame || isCrossOriginIframe) {
+  loadKeyboardHTML();
+} else {
+  // Same-origin iframe - just bind inputs
+  init();
 }
