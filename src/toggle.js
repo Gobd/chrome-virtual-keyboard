@@ -1,50 +1,41 @@
-window.addEventListener(
-  "load",
-  function () {
-    document.getElementById("toggleOn").onclick = function () {
-      chrome.runtime.sendMessage(
-        { method: "toogleKeyboardOn" },
-        function (response) {
-          window.close();
-        },
-      );
-    };
-    document.getElementById("settings").onclick = function () {
-      window.open(chrome.runtime.getURL("options.html"));
-    };
-    document.getElementById("toggleOff").onclick = function () {
-      chrome.runtime.sendMessage(
-        { method: "toogleKeyboardOff" },
-        function (response) {
-          window.close();
-        },
-      );
-    };
-    document.getElementById("toggleDemand").onclick = function () {
-      chrome.runtime.sendMessage(
-        { method: "toogleKeyboardDemand" },
-        function (response) {
-          window.close();
-        },
-      );
-    };
-    document.getElementById("goToUrl").onclick = function () {
-      chrome.runtime.sendMessage({ method: "openUrlBar" }, function (response) {
-        // Response handled
-      });
-      window.close();
-    };
+// Virtual Keyboard - Popup Toggle
 
-    // Use chrome.storage.local instead of localStorage
-    chrome.storage.local.get("keyboardEnabled", function (result) {
-      if (result.keyboardEnabled == "demand") {
-        document.getElementById("toggleDemand").className = "active";
-      } else if (result.keyboardEnabled != "false") {
-        document.getElementById("toggleOn").className = "active";
-      } else {
-        document.getElementById("toggleOff").className = "active";
-      }
-    });
-  },
-  false,
-);
+const $ = (id) => document.getElementById(id);
+
+window.addEventListener("load", async () => {
+  // Button handlers
+  $("toggleOn").onclick = () => {
+    chrome.runtime.sendMessage({ method: "toggleKeyboardOn" });
+    window.close();
+  };
+
+  $("toggleOff").onclick = () => {
+    chrome.runtime.sendMessage({ method: "toggleKeyboardOff" });
+    window.close();
+  };
+
+  $("toggleDemand").onclick = () => {
+    chrome.runtime.sendMessage({ method: "toggleKeyboardDemand" });
+    window.close();
+  };
+
+  $("settings").onclick = () => {
+    window.open(chrome.runtime.getURL("options.html"));
+  };
+
+  $("goToUrl").onclick = () => {
+    chrome.runtime.sendMessage({ method: "openUrlBar" });
+    window.close();
+  };
+
+  // Highlight current state
+  const result = await chrome.storage.local.get("keyboardEnabled");
+
+  if (result.keyboardEnabled === "demand") {
+    $("toggleDemand").className = "active";
+  } else if (result.keyboardEnabled !== "false") {
+    $("toggleOn").className = "active";
+  } else {
+    $("toggleOff").className = "active";
+  }
+});

@@ -1,173 +1,91 @@
-function kl_add() {
-  var o = document.getElementById("al").options;
-  for (var i = 0; i < o.length; i++) {
-    if (o[i].selected) {
-      var opt = document.createElement("option");
-      opt.text = o[i].innerHTML;
-      opt.value = o[i].value;
-      var os = document.getElementById("sl").options;
-      var exists = false;
-      for (var i2 = 0; i2 < os.length; i2++) {
-        if (os[i2].value == o[i].value) {
-          exists = true;
-        }
-      }
-      if (!exists) {
-        document.getElementById("sl").options.add(opt);
+// Virtual Keyboard Options - Layout selector only
+
+const $ = (id) => document.getElementById(id);
+
+function addLayout() {
+  const available = $("al").options;
+  const selected = $("sl").options;
+
+  for (const opt of available) {
+    if (!opt.selected) continue;
+
+    // Check if already exists
+    let exists = false;
+    for (const s of selected) {
+      if (s.value === opt.value) {
+        exists = true;
+        break;
       }
     }
+
+    if (!exists) {
+      const newOpt = document.createElement("option");
+      newOpt.text = opt.text;
+      newOpt.value = opt.value;
+      $("sl").options.add(newOpt);
+    }
   }
-  kl_save();
+
+  saveLayouts();
 }
 
-function kl_save() {
-  var a = new Array();
-  var o = document.getElementById("sl").options;
-  for (var i = 0; i < o.length; i++) {
-    if (o[i].value != undefined) {
-      a.push({ value: o[i].value, name: o[i].innerHTML });
+function removeLayout() {
+  const selected = $("sl").options;
+  if (selected.length <= 1) return; // Keep at least one
+
+  for (let i = selected.length - 1; i >= 0; i--) {
+    if (selected[i].selected) {
+      $("sl").removeChild(selected[i]);
     }
   }
+
+  saveLayouts();
+}
+
+function saveLayouts() {
+  const layouts = [];
+  const selected = $("sl").options;
+
+  for (const opt of selected) {
+    if (opt.value) {
+      layouts.push({ value: opt.value, name: opt.text });
+    }
+  }
+
   chrome.storage.local.set({
-    keyboardLayoutsList: JSON.stringify(a),
-    keyboardLayout1: a[0].value,
+    keyboardLayoutsList: JSON.stringify(layouts),
+    keyboardLayout1: layouts[0].value,
   });
-  document.getElementById("changeEffect").className = "show";
+
+  $("changeEffect").className = "show";
 }
 
-function kl_load() {
-  chrome.storage.local.get("keyboardLayoutsList", function (result) {
-    if (result.keyboardLayoutsList != undefined) {
-      var a = JSON.parse(result.keyboardLayoutsList);
-      if (a.length > 0) {
-        document
-          .getElementById("sl")
-          .removeChild(document.getElementById("sl").options[0]);
-        for (var i = 0; i < a.length; i++) {
-          var opt = document.createElement("option");
-          opt.text = a[i].name;
-          opt.value = a[i].value;
-          if (a[i].value != undefined) {
-            document.getElementById("sl").options.add(opt);
-          }
-        }
-      }
-    }
-  });
-}
+async function loadLayouts() {
+  const result = await chrome.storage.local.get("keyboardLayoutsList");
 
-function kl_remove() {
-  var o = document.getElementById("sl").options;
-  if (o.length > 1) {
-    for (var i = 0; i < o.length; i++) {
-      if (o[i].selected) {
-        document.getElementById("sl").removeChild(o[i]);
-      }
-    }
+  if (!result.keyboardLayoutsList) return;
+
+  const layouts = JSON.parse(result.keyboardLayoutsList);
+  if (layouts.length === 0) return;
+
+  // Clear default and populate
+  $("sl").innerHTML = "";
+
+  for (const layout of layouts) {
+    if (!layout.value) continue;
+
+    const opt = document.createElement("option");
+    opt.text = layout.name;
+    opt.value = layout.value;
+    $("sl").options.add(opt);
   }
-  kl_save();
 }
 
-window.addEventListener(
-  "load",
-  function () {
-    document.body.className = "loaded";
-    kl_load();
-    document
-      .getElementById("kl_remove")
-      .addEventListener("click", kl_remove, false);
-    document.getElementById("kl_add").addEventListener("click", kl_add, false);
+window.addEventListener("load", () => {
+  document.body.className = "loaded";
 
-    var c = document.getElementsByClassName("setting");
-    var settingKeys = [];
-    for (var i = 0; i < c.length; i++) {
-      settingKeys.push(c[i].getAttribute("_setting"));
-    }
+  loadLayouts();
 
-    // Load all settings at once
-    chrome.storage.local.get(settingKeys, function (storage) {
-      var c = document.getElementsByClassName("setting");
-      for (var i = 0; i < c.length; i++) {
-        var sk = c[i].getAttribute("_setting");
-        if (c[i].getAttribute("type") == "checkbox") {
-          if (
-            storage[sk] == undefined &&
-            c[i].getAttribute("_default") != undefined
-          ) {
-            let obj = {};
-            obj[sk] = c[i].getAttribute("_default");
-            chrome.storage.local.set(obj);
-            storage[sk] = c[i].getAttribute("_default");
-          }
-          if (storage[sk] == "true") {
-            c[i].checked = true;
-          }
-        } else if (c[i].getAttribute("type") == "range") {
-          if (storage[sk] == undefined) {
-            c[i].value = 0;
-          } else {
-            c[i].value = storage[sk];
-          }
-        } else {
-          c[i].value = storage[sk];
-        }
-        c[i].onchange = function () {
-          var skey = this.getAttribute("_setting");
-          let obj = {};
-          if (this.getAttribute("type") == "checkbox") {
-            obj[skey] = this.checked ? "true" : "false";
-          } else {
-            obj[skey] = this.value;
-          }
-          chrome.storage.local.set(obj);
-          document.getElementById("changeEffect").className = "show";
-          if (this.getAttribute("_changed") != undefined) {
-            callFunc(this.getAttribute("_changed"));
-          }
-        };
-        if (c[i].getAttribute("_changed") != undefined) {
-          callFunc(c[i].getAttribute("_changed"));
-        }
-      }
-    });
-  },
-  false,
-);
-
-function callFunc(callback) {
-  window[callback]();
-}
-
-function slider_zoom() {
-  var v = document.getElementById("zoomLevel").value;
-  if (v < 0.3) {
-    v = "Auto";
-  } else {
-    v = (v * 100).toFixed(0) + "%";
-  }
-  document.getElementById("zoomLevelValue").innerHTML = v;
-}
-
-function checkbox_smallKeyboard() {
-  var s = document.getElementById("smallKeyboard").checked;
-  document.getElementById("zoomLevelLabel").style.display = s
-    ? "none"
-    : "block";
-}
-
-function checkbox_touchEvents() {
-  var s = document.getElementById("touchEvents").checked;
-  document.getElementById("autoTriggerPH").style.display = s ? "none" : "block";
-}
-
-function slider_autoTriggerAfter() {
-  var v = document.getElementById("autoTriggerAfter").value + " sec";
-  document.getElementById("autoTriggerAfterValue").innerHTML = v;
-}
-
-function checkbox_autoTrigger() {
-  var s = !document.getElementById("autoTrigger").checked;
-  document.getElementById("autoTriggerOnPH").style.display = s
-    ? "none"
-    : "block";
-}
+  $("kl_add").addEventListener("click", addLayout);
+  $("kl_remove").addEventListener("click", removeLayout);
+});

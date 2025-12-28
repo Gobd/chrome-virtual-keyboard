@@ -1,28 +1,22 @@
 #virtualKeyboardChromeExtension {
   padding: 15px !important;
   background-color: #111317 !important;
-  background: -webkit-gradient(
-    linear,
-    0% 100%,
-    0% 0%,
-    from(black),
-    to(#333)
-  ) !important;
+  background: linear-gradient(to top, black, #333) !important;
   position: fixed !important;
   bottom: -450px;
   opacity: 0;
   left: 0;
   right: 0;
-  -webkit-transition-property: all;
-  -webkit-transition-duration: 0.4s;
-  -webkit-user-select: none;
+  transition-property: all;
+  transition-duration: 0.4s;
+  user-select: none;
   z-index: 10000000;
-  -webkit-box-shadow: inset 0px 1px 1px rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0px 1px 1px rgba(255, 255, 255, 0.2);
   zoom: 1;
 }
 .ha #virtualKeyboardChromeExtension {
   bottom: 0;
-  -webkit-transform: translate3d(0, 450px, 0);
+  transform: translate3d(0, 450px, 0);
 }
 #virtualKeyboardChromeExtension.modeS {
   width: 750px;
@@ -49,7 +43,7 @@
   #virtualKeyboardChromeExtension.modeS
   #virtualKeyboardChromeExtensionDraggableRight {
   bottom: 0;
-  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
 }
 #virtualKeyboardChromeExtension.modeS
   #virtualKeyboardChromeExtensionDraggableLeft,
@@ -62,13 +56,7 @@
   top: 0;
   bottom: 0;
   background-color: rgba(255, 255, 255, 0.2);
-  background: -webkit-gradient(
-    linear,
-    0% 100%,
-    0% 0%,
-    from(rgb(60, 60, 60)),
-    to(rgb(145, 145, 145))
-  );
+  background: linear-gradient(to top, rgb(60, 60, 60), rgb(145, 145, 145));
 }
 
 #virtualKeyboardChromeExtension.modeS
@@ -89,7 +77,7 @@
   background-repeat: no-repeat !important;
   cursor: pointer;
   opacity: 0 !important;
-  -webkit-transition: all 0.2s !important;
+  transition: all 0.2s !important;
   margin-left: -25px;
 }
 #virtualKeyboardChromeExtensionOverlayDemand[_state="open"] {
@@ -232,7 +220,7 @@
 }
 #virtualKeyboardChromeExtensionUrlBar {
   position: fixed;
-  -webkit-transition: all 0.3s;
+  transition: all 0.3s;
   left: 50%;
   margin-left: -300px;
   width: 600px !important;
@@ -241,7 +229,7 @@
   padding: 5px !important;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
   border-radius: 0px 0px 3px 3px;
-  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
 }
 #virtualKeyboardChromeExtensionUrlBarTextBox {
   font-size: 30px !important;
@@ -252,13 +240,13 @@
 }
 .virtualKeyboardChromeExtensionOverlay {
   font-family: "Segoe UI", Tahoma, Sans-Serif !important;
-  background: -webkit-gradient(linear, 0% 100%, 0% 0%, from(black), to(#333));
+  background: linear-gradient(to top, black, #333);
   position: fixed;
   z-index: 10000001;
   padding: 5px !important;
   border-radius: 5px;
   box-shadow: 0 0 10px #000;
-  -webkit-transition:
+  transition:
     opacity 0.4s,
     margin 0.2s;
 }
@@ -281,7 +269,7 @@
   padding: 20px 20px;
   color: #fff;
   cursor: pointer;
-  -webkit-transition: all 0.4s;
+  transition: all 0.4s;
   border-radius: 5px;
   font-weight: bold;
   font-size: 14px;
@@ -318,8 +306,8 @@
   cursor: pointer;
   border: 0px !important;
   overflow: hidden;
-  -webkit-transition-property: all;
-  -webkit-transition-duration: 0.3s;
+  transition-property: all;
+  transition-duration: 0.3s;
   text-shadow: 0 0 10px rgba(0, 0, 0, 0.4) !important;
   border-radius: 6px !important;
   position: absolute;
@@ -366,7 +354,7 @@
 #virtualKeyboardChromeExtension table td.kbdS span,
 #virtualKeyboardChromeExtension table td.kbdD span,
 #virtualKeyboardChromeExtension table td.kbdShift span {
-  -webkit-box-shadow:
+  box-shadow:
     inset 0px 1px 0px rgba(255, 255, 255, 0.4),
     inset 0px -1px 1px rgba(0, 0, 0, 1);
   padding-top: 20px !important;
@@ -437,12 +425,7 @@
 }
 
 #virtualKeyboardChromeExtension .kbNumberMain {
-  /*padding: 25px 30px !important;*/
   padding: 30px 20px !important;
-}
-#virtualKeyboardChromeExtension .kbNumberMain span {
-  /*padding: 0 !important;
-	padding-top: 17px !important;*/
 }
 
 #virtualKeyboardChromeExtensionNumberBarKbdInput table {
@@ -450,13 +433,13 @@
   margin: 5px auto !important;
 }
 .touchEnable input[type="checkbox"] {
-  -webkit-box-shadow:
+  box-shadow:
     inset 0 1px 2px white,
     0 1px 2px rgba(0, 0, 0, 0.2);
-  -webkit-appearance: none;
-  -webkit-margin-start: 0;
-  -webkit-margin-end: 5px;
-  background: -webkit-linear-gradient(#fafafa, gainsboro);
+  appearance: none;
+  margin-inline-start: 0;
+  margin-inline-end: 5px;
+  background: linear-gradient(#fafafa, gainsboro);
   border-radius: 3px;
   border: 1px solid #a0a0a0;
   display: inline-block;
@@ -469,14 +452,14 @@
   width: 26px;
 }
 .touchEnable input[type="radio"] {
-  -webkit-box-shadow:
+  box-shadow:
     inset 0 1px 2px white,
     0 1px 2px rgba(0, 0, 0, 0.2);
-  -webkit-appearance: none;
-  -webkit-margin-start: 0;
-  -webkit-margin-end: 5px;
-  -webkit-transition: border 500ms;
-  background: -webkit-linear-gradient(#fafafa, gainsboro);
+  appearance: none;
+  margin-inline-start: 0;
+  margin-inline-end: 5px;
+  transition: border 500ms;
+  background: linear-gradient(#fafafa, gainsboro);
   border-radius: 100%;
   border: 1px solid #a0a0a0;
   display: inline-block;
@@ -495,8 +478,8 @@
   position: absolute;
 }
 .touchEnable input[type="radio"]:checked::before {
-  -webkit-box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
-  -webkit-margin-start: 4px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  margin-inline-start: 4px;
   background: gray;
   border-radius: 10px;
   content: "";
@@ -512,11 +495,11 @@
 }
 
 .touchEnable button {
-  -webkit-box-shadow:
+  box-shadow:
     inset 0 1px 2px white,
     0 1px 2px rgba(0, 0, 0, 0.2);
-  -webkit-user-select: none;
-  background: -webkit-linear-gradient(#fafafa, gainsboro);
+  user-select: none;
+  background: linear-gradient(#fafafa, gainsboro);
   border-radius: 3px;
   border: 1px solid #a0a0a0;
   cursor: default;
@@ -530,16 +513,16 @@
 .touchEnable input[type="search"],
 .touchEnable input[type="password"],
 .touchEnable textarea {
-  -webkit-box-shadow:
+  box-shadow:
     inset 0 2px 2px rgba(0, 0, 0, 0.1),
     0 1px 0 white,
     0 0 1px transparent,
     0 0 1px transparent,
     0 0 1px transparent;
-  -webkit-margin-end: 7px;
-  -webkit-margin-start: 2px;
-  -webkit-transition:
-    -webkit-box-shadow 100ms,
+  margin-inline-end: 7px;
+  margin-inline-start: 2px;
+  transition:
+    box-shadow 100ms,
     background 100ms,
     border 500ms;
   border-radius: 3px;
