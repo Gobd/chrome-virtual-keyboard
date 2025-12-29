@@ -102,36 +102,13 @@
   }
 }
 
-@media only screen and (max-width: 1200px) {
-  #virtualKeyboardChromeExtension [data-key="Backspace"].kbdClick span {
-    background-image: url(/icons/backspace.png) !important;
-    font-size: 0px !important;
-    color: transparent !important;
-    text-shadow: none !important;
-  }
-}
-@media only screen and (max-width: 1200px) {
-  #virtualKeyboardChromeExtension [data-key="Enter"].kbdClick span {
-    background-image: url(/icons/enter.png) !important;
-    font-size: 0px !important;
-    color: transparent !important;
-    text-shadow: none !important;
-  }
-}
-
-#virtualKeyboardChromeExtension [data-key="Enter"] span {
-  background-image: url(/icons/enter-e.png);
-}
-
-#virtualKeyboardChromeExtension [data-key="Backspace"] span {
-  background-image: url(/icons/backspace-e.png);
-}
-
-#virtualKeyboardChromeExtension .kbdHBS span {
-  background-image: url(/icons/backspace.png);
-  font-size: 0px !important;
-  color: transparent !important;
-  text-shadow: none !important;
+/* Icon keys use Unicode characters - no images needed */
+#virtualKeyboardChromeExtension .kBack,
+#virtualKeyboardChromeExtension .kEnter,
+#virtualKeyboardChromeExtension .kShift,
+#virtualKeyboardChromeExtension .kClose,
+#virtualKeyboardChromeExtension .kSettings {
+  font-size: 28px !important;
 }
 
 #virtualKeyboardChromeExtension [data-key="Url"] span,
@@ -245,20 +222,15 @@
   background-repeat: no-repeat;
   line-height: 14px !important;
 }
-#virtualKeyboardChromeExtension table td span.kShift {
-  background-image: url(/icons/shift.png);
-}
-#virtualKeyboardChromeExtension table td span.kBack {
-  background-image: url(/icons/backspace.png);
-}
-#virtualKeyboardChromeExtension table td span.kClose {
-  background-image: url(/icons/close.png);
-}
-#virtualKeyboardChromeExtension table td span.kEnter {
-  background-image: url(/icons/enter.png);
-}
-#virtualKeyboardChromeExtension table td.kSettings span {
-  background-image: url(/icons/settings.png);
+/* Unicode icon styles - positioned in center of key */
+#virtualKeyboardChromeExtension table td span.kShift,
+#virtualKeyboardChromeExtension table td span.kBack,
+#virtualKeyboardChromeExtension table td span.kClose,
+#virtualKeyboardChromeExtension table td span.kEnter,
+#virtualKeyboardChromeExtension table td span.kSettings {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 #virtualKeyboardChromeExtension table td span.kAbc {
   font-size: 22px !important;

@@ -24,10 +24,10 @@ This is a fork of the [original Virtual Keyboard extension](https://github.com/x
 
 This extension requires the following permissions:
 
-| Permission  | Why It's Needed                                                                                |
-| ----------- | ---------------------------------------------------------------------------------------------- |
-| `storage`   | Saves your keyboard layout preference so it persists between browser sessions |
-| `activeTab` | Allows the extension to interact with the current tab when you click the extension icon        |
+| Permission  | Why It's Needed                                                                         |
+| ----------- | --------------------------------------------------------------------------------------- |
+| `storage`   | Saves your keyboard layout preference so it persists between browser sessions           |
+| `activeTab` | Allows the extension to interact with the current tab when you click the extension icon |
 
 The content script is configured to run on all pages (`<all_urls>`) to detect when you focus on input fields and display the keyboard.
 
