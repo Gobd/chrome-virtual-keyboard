@@ -534,7 +534,7 @@ function createNumbersKeyboard() {
   return createKeyboardFromRows(DOM_IDS.MAIN_NUMBERS, [
     ["_", "\\", ":", ";", ")", "(", "/", "^", "1", "2", "3", "Backspace"],
     ["€", "$", "£", "&", "@", '"', "*", "~", "4", "5", "6", "Enter"],
-    ["?", "!", "'", "_", "<", ">", "-", "`", "7", "8", "9", "&123"],
+    ["?", "!", "'", "=", "<", ">", "-", "`", "7", "8", "9", "&123"],
     ["[", "]", "{", "}", "#", ",", "+", "%", "0", "0", ".", "Close"],
   ]);
 }
@@ -781,9 +781,11 @@ export async function loadLayout(layoutId) {
   // Render new layout with options
   const showLanguageButton = settingsState.get("showLanguageButton");
   const showSettingsButton = settingsState.get("showSettingsButton");
+  const autostart = settingsState.get("autostart");
   const fragment = renderLayout(layoutId, {
     showLanguageButton,
-    showSettingsButton,
+    showSettingsButton: showSettingsButton && !autostart, // Hide in autostart mode
+    showCloseButton: !autostart, // Hide close button in autostart mode
   });
   placeholder.appendChild(fragment);
 
@@ -862,6 +864,7 @@ export async function open(force = false) {
  */
 export function close() {
   if (!keyboardState.get("open")) return;
+  if (settingsState.get("autostart")) return; // Prevent closing in autostart mode
 
   keyboardState.set("open", false);
   keyboardElement.dataset.state = "closed";

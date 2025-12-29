@@ -86,6 +86,7 @@ export const STORAGE_KEYS = {
   SPACEBAR_CURSOR_SWIPE: "spacebarCursorSwipe",
   KEYBOARD_DRAGGABLE: "keyboardDraggable",
   KEYBOARD_POSITION: "keyboardPosition",
+  AUTOSTART: "autostart",
 };
 
 export const MESSAGE_TYPES = {
@@ -152,6 +153,7 @@ export const KEY_TYPES = {
   },
   _spacer: {
     class: "vk-spacer",
+    label: "",
     noDataKey: true,
     noClick: true,
   },

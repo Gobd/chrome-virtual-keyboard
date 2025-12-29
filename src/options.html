@@ -47,15 +47,26 @@
             Show language switcher button
           </label>
         </p>
-        <p>
+        <p id="showSettingsButtonContainer">
           <label>
             <input type="checkbox" id="showSettingsButton" checked />
             Show settings button on keyboard
           </label>
           <br />
-          <small style="color: #888; margin-left: 22px">
+          <small id="showSettingsButtonHelp" style="color: #888; margin-left: 22px">
             If disabled, access settings via the extension icon in your browser
             toolbar
+          </small>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" id="autostart" />
+            Always show keyboard (autostart)
+          </label>
+          <br />
+          <small style="color: #888; margin-left: 22px">
+            Keyboard opens automatically and cannot be closed. Hides the open
+            and close buttons.
           </small>
         </p>
 

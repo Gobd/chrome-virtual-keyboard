@@ -196,6 +196,23 @@ export async function setKeyboardPosition(position) {
 }
 
 /**
+ * Get autostart setting
+ * @returns {Promise<boolean>}
+ */
+export async function getAutostart() {
+  const result = await get(STORAGE_KEYS.AUTOSTART);
+  return result[STORAGE_KEYS.AUTOSTART] === true;
+}
+
+/**
+ * Set autostart setting
+ * @param {boolean} enabled
+ */
+export async function setAutostart(enabled) {
+  await set({ [STORAGE_KEYS.AUTOSTART]: enabled });
+}
+
+/**
  * Check if this is the first time the extension has been opened
  * @returns {Promise<boolean>}
  */
@@ -227,6 +244,7 @@ export async function loadAllSettings() {
     STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE,
     STORAGE_KEYS.KEYBOARD_DRAGGABLE,
     STORAGE_KEYS.KEYBOARD_POSITION,
+    STORAGE_KEYS.AUTOSTART,
   ]);
 
   return {
@@ -240,6 +258,7 @@ export async function loadAllSettings() {
     spacebarCursorSwipe: result[STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE] === true,
     keyboardDraggable: result[STORAGE_KEYS.KEYBOARD_DRAGGABLE] === true,
     keyboardPosition: result[STORAGE_KEYS.KEYBOARD_POSITION] || null,
+    autostart: result[STORAGE_KEYS.AUTOSTART] === true,
   };
 }
 
@@ -259,6 +278,7 @@ export async function initializeDefaults(defaultLayouts) {
     [STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE]: false,
     [STORAGE_KEYS.KEYBOARD_DRAGGABLE]: false,
     [STORAGE_KEYS.KEYBOARD_POSITION]: null,
+    [STORAGE_KEYS.AUTOSTART]: false,
   });
 }
 
@@ -299,6 +319,8 @@ export default {
   setKeyboardDraggable,
   getKeyboardPosition,
   setKeyboardPosition,
+  getAutostart,
+  setAutostart,
   isFirstTime,
   markOpened,
   loadAllSettings,

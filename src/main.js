@@ -35,6 +35,7 @@ let openButtonElement = null;
 function createOpenButton() {
   if (openButtonElement) return;
   if (!settingsState.get("showOpenButton")) return;
+  if (settingsState.get("autostart")) return; // Don't show open button in autostart mode
 
   const button = document.createElement("button");
   button.id = DOM_IDS.OPEN_BUTTON;
@@ -43,22 +44,26 @@ function createOpenButton() {
   button.title = "Open virtual keyboard";
   button.dataset.hidden = "false";
 
-  // Inline styles since this is outside shadow DOM
+  // Reset all inherited styles, then apply our own
   Object.assign(button.style, {
+    all: "initial",
     position: "fixed",
     bottom: "20px",
     right: "20px",
     width: "50px",
     height: "50px",
     borderRadius: "50%",
-    border: "none",
     background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
     boxShadow: "0 2px 8px rgba(0, 0, 0, 0.3)",
     cursor: "pointer",
-    fontSize: "44px",
+    fontSize: "28px",
+    fontFamily: "system-ui, -apple-system, sans-serif",
     color: "#fff",
     zIndex: "9999999",
     transition: "transform 0.2s, opacity 0.3s, box-shadow 0.2s",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
   });
 
   button.addEventListener("click", handleOpenButtonClick);
@@ -146,6 +151,7 @@ async function loadSettings() {
       spacebarCursorSwipe: false,
       keyboardDraggable: false,
       keyboardPosition: null,
+      autostart: false,
     });
   } else {
     settingsState.set({
@@ -157,6 +163,7 @@ async function loadSettings() {
       spacebarCursorSwipe: settings.spacebarCursorSwipe,
       keyboardDraggable: settings.keyboardDraggable,
       keyboardPosition: settings.keyboardPosition,
+      autostart: settings.autostart,
     });
   }
 
@@ -217,6 +224,31 @@ async function loadSettings() {
         import("./keyboard/Keyboard.js").then((Keyboard) => {
           Keyboard.loadLayout(currentLayout);
         });
+      }
+    }
+    if (changes.autostart !== undefined) {
+      const autostartEnabled = changes.autostart.newValue === true;
+      settingsState.set("autostart", autostartEnabled);
+      if (autostartEnabled) {
+        // Hide open button and open keyboard
+        hideOpenButton();
+        import("./keyboard/Keyboard.js").then((Keyboard) => {
+          Keyboard.loadLayout(settingsState.get("layout"));
+          Keyboard.open(true);
+        });
+      } else {
+        // Show open button if setting allows
+        if (settingsState.get("showOpenButton")) {
+          createOpenButton();
+          showOpenButton();
+        }
+        // Reload layout to show close button again
+        const currentLayout = settingsState.get("layout");
+        if (currentLayout) {
+          import("./keyboard/Keyboard.js").then((Keyboard) => {
+            Keyboard.loadLayout(currentLayout);
+          });
+        }
       }
     }
   });
@@ -328,8 +360,13 @@ async function init() {
   // Set up iframe communication
   setupIframeCommunication();
 
-  // Create open button
+  // Create open button (only if not in autostart mode)
   createOpenButton();
+
+  // Auto-open keyboard if autostart is enabled
+  if (settingsState.get("autostart")) {
+    Keyboard.open(true);
+  }
 }
 
 // =============================================================================

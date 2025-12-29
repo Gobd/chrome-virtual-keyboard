@@ -5,6 +5,23 @@ import { getLayoutsList } from "../core/storage.js";
 
 const $ = (id) => document.getElementById(id);
 
+function updateSettingsButtonState() {
+  const autostart = $("autostart").checked;
+  const checkbox = $("showSettingsButton");
+  const help = $("showSettingsButtonHelp");
+
+  checkbox.disabled = autostart;
+  if (autostart) {
+    checkbox.checked = false;
+    help.textContent = "Disabled when 'Always show keyboard' is enabled";
+    help.style.color = "#c00";
+  } else {
+    help.textContent =
+      "If disabled, access settings via the extension icon in your browser toolbar";
+    help.style.color = "#888";
+  }
+}
+
 function saveDisplaySettings() {
   const showOpenButton = $("showOpenButton").checked;
   const showLanguageButton = $("showLanguageButton").checked;
@@ -12,6 +29,7 @@ function saveDisplaySettings() {
   const keyboardZoom = parseInt($("keyboardZoom").value, 10) || 100;
   const keyboardDraggable = $("keyboardDraggable").checked;
   const spacebarCursorSwipe = $("spacebarCursorSwipe").checked;
+  const autostart = $("autostart").checked;
 
   chrome.storage.local.set({
     [STORAGE_KEYS.SHOW_OPEN_BUTTON]: showOpenButton,
@@ -20,6 +38,7 @@ function saveDisplaySettings() {
     [STORAGE_KEYS.KEYBOARD_ZOOM]: keyboardZoom,
     [STORAGE_KEYS.KEYBOARD_DRAGGABLE]: keyboardDraggable,
     [STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE]: spacebarCursorSwipe,
+    [STORAGE_KEYS.AUTOSTART]: autostart,
   });
 
   $("changeEffect").className = "show";
@@ -33,6 +52,7 @@ async function loadDisplaySettings() {
     STORAGE_KEYS.KEYBOARD_ZOOM,
     STORAGE_KEYS.KEYBOARD_DRAGGABLE,
     STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE,
+    STORAGE_KEYS.AUTOSTART,
   ]);
 
   $("showOpenButton").checked = result[STORAGE_KEYS.SHOW_OPEN_BUTTON] !== false;
@@ -45,6 +65,7 @@ async function loadDisplaySettings() {
     result[STORAGE_KEYS.KEYBOARD_DRAGGABLE] === true;
   $("spacebarCursorSwipe").checked =
     result[STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE] === true;
+  $("autostart").checked = result[STORAGE_KEYS.AUTOSTART] === true;
 }
 
 function addLayout() {
@@ -120,11 +141,12 @@ async function loadLayouts() {
   }
 }
 
-window.addEventListener("load", () => {
+window.addEventListener("load", async () => {
   document.body.className = "loaded";
 
   loadLayouts();
-  loadDisplaySettings();
+  await loadDisplaySettings();
+  updateSettingsButtonState();
 
   $("kl_add").addEventListener("click", addLayout);
   $("kl_remove").addEventListener("click", removeLayout);
@@ -135,6 +157,10 @@ window.addEventListener("load", () => {
   $("keyboardZoom").addEventListener("change", saveDisplaySettings);
   $("keyboardDraggable").addEventListener("change", saveDisplaySettings);
   $("spacebarCursorSwipe").addEventListener("change", saveDisplaySettings);
+  $("autostart").addEventListener("change", () => {
+    updateSettingsButtonState();
+    saveDisplaySettings();
+  });
   $("resetPosition").addEventListener("click", () => {
     chrome.storage.local.set({ [STORAGE_KEYS.KEYBOARD_POSITION]: null });
     $("changeEffect").className = "show";

@@ -41,6 +41,19 @@
   /* Z-index */
   --vk-z-index: 10000000;
   --vk-overlay-z-index: 10000001;
+
+  /* Reset inherited properties that can leak through Shadow DOM */
+  line-height: normal;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Universal reset within shadow DOM - block inherited styles from page */
+:host *,
+:host *::before,
+:host *::after {
+  box-sizing: border-box;
+  line-height: normal;
 }
 
 /* =============================================================================
@@ -93,6 +106,8 @@
   margin: 5px 0;
   width: 100%;
   max-width: 100%;
+  line-height: normal;
+  height: auto;
 }
 
 /* =============================================================================
@@ -113,6 +128,7 @@
   align-items: center;
   justify-content: center;
   font-size: var(--vk-key-font-size);
+  line-height: 1.2;
   text-align: center;
   cursor: pointer;
   box-shadow:
@@ -125,6 +141,9 @@
   text-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
   flex: 1;
   min-width: 0;
+  height: auto;
+  min-height: 0;
+  max-height: none;
 }
 
 .vk-key:active,
@@ -136,6 +155,9 @@
 .vk-key span {
   display: block;
   line-height: 1;
+  height: auto;
+  padding: 0;
+  margin: 0;
 }
 
 /* =============================================================================
