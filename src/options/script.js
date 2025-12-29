@@ -24,6 +24,7 @@ function updateSettingsButtonState() {
 
 function saveDisplaySettings() {
   const showOpenButton = $("showOpenButton").checked;
+  const showNumberBar = $("showNumberBar").checked;
   const showLanguageButton = $("showLanguageButton").checked;
   const showSettingsButton = $("showSettingsButton").checked;
   const keyboardZoom = parseInt($("keyboardZoom").value, 10) || 100;
@@ -33,6 +34,7 @@ function saveDisplaySettings() {
 
   chrome.storage.local.set({
     [STORAGE_KEYS.SHOW_OPEN_BUTTON]: showOpenButton,
+    [STORAGE_KEYS.SHOW_NUMBER_BAR]: showNumberBar,
     [STORAGE_KEYS.SHOW_LANGUAGE_BUTTON]: showLanguageButton,
     [STORAGE_KEYS.SHOW_SETTINGS_BUTTON]: showSettingsButton,
     [STORAGE_KEYS.KEYBOARD_ZOOM]: keyboardZoom,
@@ -47,6 +49,7 @@ function saveDisplaySettings() {
 async function loadDisplaySettings() {
   const result = await chrome.storage.local.get([
     STORAGE_KEYS.SHOW_OPEN_BUTTON,
+    STORAGE_KEYS.SHOW_NUMBER_BAR,
     STORAGE_KEYS.SHOW_LANGUAGE_BUTTON,
     STORAGE_KEYS.SHOW_SETTINGS_BUTTON,
     STORAGE_KEYS.KEYBOARD_ZOOM,
@@ -56,6 +59,7 @@ async function loadDisplaySettings() {
   ]);
 
   $("showOpenButton").checked = result[STORAGE_KEYS.SHOW_OPEN_BUTTON] !== false;
+  $("showNumberBar").checked = result[STORAGE_KEYS.SHOW_NUMBER_BAR] !== false;
   $("showLanguageButton").checked =
     result[STORAGE_KEYS.SHOW_LANGUAGE_BUTTON] === true;
   $("showSettingsButton").checked =
@@ -152,6 +156,7 @@ window.addEventListener("load", async () => {
   $("kl_remove").addEventListener("click", removeLayout);
 
   $("showOpenButton").addEventListener("change", saveDisplaySettings);
+  $("showNumberBar").addEventListener("change", saveDisplaySettings);
   $("showLanguageButton").addEventListener("change", saveDisplaySettings);
   $("showSettingsButton").addEventListener("change", saveDisplaySettings);
   $("keyboardZoom").addEventListener("change", saveDisplaySettings);

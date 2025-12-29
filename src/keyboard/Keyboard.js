@@ -257,6 +257,9 @@ export async function init() {
   if (savedPosition && settingsState.get("keyboardDraggable")) {
     applyKeyboardPosition(savedPosition.x, savedPosition.y);
   }
+
+  // Apply number bar visibility
+  updateNumberBarVisibility();
 }
 
 /**
@@ -1345,9 +1348,21 @@ function broadcastKeyboardState(isOpen) {
   }
 }
 
+/**
+ * Update visibility of the number bar based on settings
+ */
+export function updateNumberBarVisibility() {
+  if (!shadowRoot) return;
+  const numberBar = shadowRoot.getElementById("vk-number-bar");
+  if (!numberBar) return;
+  const show = settingsState.get("showNumberBar") !== false;
+  numberBar.style.display = show ? "" : "none";
+}
+
 export default {
   init,
   open,
   close,
   loadLayout,
+  updateNumberBarVisibility,
 };

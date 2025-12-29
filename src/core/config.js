@@ -82,6 +82,7 @@ export const STORAGE_KEYS = {
   SHOW_OPEN_BUTTON: "showOpenButton",
   SHOW_LANGUAGE_BUTTON: "showLanguageButton",
   SHOW_SETTINGS_BUTTON: "showSettingsButton",
+  SHOW_NUMBER_BAR: "showNumberBar",
   KEYBOARD_ZOOM: "keyboardZoom",
   SPACEBAR_CURSOR_SWIPE: "spacebarCursorSwipe",
   KEYBOARD_DRAGGABLE: "keyboardDraggable",

@@ -147,6 +147,7 @@ async function loadSettings() {
       showOpenButton: true,
       showLanguageButton: false,
       showSettingsButton: true,
+      showNumberBar: true,
       keyboardZoom: 100,
       spacebarCursorSwipe: false,
       keyboardDraggable: false,
@@ -159,6 +160,7 @@ async function loadSettings() {
       showOpenButton: settings.showOpenButton,
       showLanguageButton: settings.showLanguageButton,
       showSettingsButton: settings.showSettingsButton,
+      showNumberBar: settings.showNumberBar,
       keyboardZoom: settings.keyboardZoom,
       spacebarCursorSwipe: settings.spacebarCursorSwipe,
       keyboardDraggable: settings.keyboardDraggable,
@@ -225,6 +227,15 @@ async function loadSettings() {
           Keyboard.loadLayout(currentLayout);
         });
       }
+    }
+    if (changes.showNumberBar !== undefined) {
+      settingsState.set(
+        "showNumberBar",
+        changes.showNumberBar.newValue !== false,
+      );
+      import("./keyboard/Keyboard.js").then((Keyboard) => {
+        Keyboard.updateNumberBarVisibility();
+      });
     }
     if (changes.autostart !== undefined) {
       const autostartEnabled = changes.autostart.newValue === true;
