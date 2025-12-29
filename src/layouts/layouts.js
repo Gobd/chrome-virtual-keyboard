@@ -10,12 +10,11 @@
 //
 // SPECIAL KEYS:
 // -------------
-// "Backspace"      - Standard backspace (kbdHB class)
-// "BackspaceSmall" - Smaller backspace for wide keyboards (kbdHBS class)
-// "Enter"          - Standard enter key (kbdHBE class)
-// "EnterBottom"    - Enter in bottom row (kbdD class, for Hungarian)
-// "Shift"          - Shift with icon (kShift class)
-// "ShiftLabel"     - Shift with "Shift" text label (for Hungarian)
+// "Backspace"      - Standard backspace
+// "BackspaceSmall" - Smaller backspace for wide keyboards
+// "Enter"          - Standard enter key
+// "EnterBottom"    - Enter in bottom row (for Hungarian)
+// "Shift"          - Shift with icon
 // "Space"          - Spacebar
 // "Close"          - Close keyboard button
 // "Url"            - URL button
@@ -26,8 +25,7 @@
 // SPECIAL SYNTAX:
 // ---------------
 // "?|@"  - Email input toggle: shows "?" normally, "@" for email inputs
-//          First char = shown normally (kbHideEmailInput class)
-//          Second char = shown for email inputs (kbEmailInput class)
+//          First part = shown normally, Second part = shown for email inputs
 //
 // LAYOUT STRUCTURE:
 // -----------------
@@ -39,29 +37,15 @@
 //   "overlays": { "MenuId": [...] }             // Optional long-press menus
 // }
 //
-// Default bottom row (if not specified): ["&123", "Settings", "Space", "Close"]
+// Default bottom row (if not specified): ["&123", "Settings", "Space", "Url", "Close"]
 
-const layouts = {
+export const layouts = {
   en: {
     name: "English (QWERTY)",
     rows: [
       ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "Backspace"],
       ["_spacer", "a", "s", "d", "f", "g", "h", "j", "k", "l", "'", "Enter"],
-      [
-        "Shift",
-        "z",
-        "x",
-        "c",
-        "v",
-        "b",
-        "n",
-        "m",
-        ",",
-        ".",
-        "?|@",
-        "Url",
-        "Shift",
-      ],
+      ["Shift", "z", "x", "c", "v", "b", "n", "m", ",", ".", "?|@", "Shift"],
     ],
   },
 
@@ -362,7 +346,16 @@ const layouts = {
       ],
     ],
     // Custom bottom row with punctuation around spacebar
-    bottomRow: ["&123", "Settings", ".", "Space", ",", "Close"],
+    bottomRow: [
+      "&123",
+      "Language",
+      ".",
+      "Space",
+      ",",
+      "Url",
+      "Settings",
+      "Close",
+    ],
   },
 
   // Korean uses Hangul Jamo - some keys have shift variants, some have long-press menus
@@ -457,9 +450,8 @@ const layouts = {
         { key: "á", shift: "Á" },
         { key: "ű", shift: "Ű" },
       ],
-      // ShiftLabel = Shift key with text label instead of icon
       [
-        "ShiftLabel",
+        "Shift",
         { key: "í", shift: "Í" },
         "y",
         "x",
@@ -473,11 +465,19 @@ const layouts = {
         { key: "ó", shift: "Ó" },
         ",",
         ".",
-        "?",
+        "?|@",
       ],
     ],
     // Enter is in bottom row for Hungarian
-    bottomRow: ["&123", "Settings", "Space", "Close", "EnterBottom"],
+    bottomRow: [
+      "&123",
+      "Language",
+      "Space",
+      "Url",
+      "Settings",
+      "Close",
+      "EnterBottom",
+    ],
   },
 
   no: {
@@ -587,7 +587,7 @@ const layouts = {
       Plz: ["z", { key: "ż", shift: "Ż" }],
       Plx: ["x", { key: "ź", shift: "Ź" }],
       Plc: ["c", { key: "ć", shift: "Ć" }],
-      Pln: ["c", { key: "ń", shift: "Ń" }], // Note: first item is "c" in original HTML (likely a bug)
+      Pln: ["n", { key: "ń", shift: "Ń" }], // Fixed: was "c" in original
     },
   },
 
@@ -830,9 +830,37 @@ const layouts = {
         "Shift",
       ],
     ],
-    bottomRow: ["&123", "Settings", ".", "Space", ",", "Close"],
+    bottomRow: [
+      "&123",
+      "Language",
+      ".",
+      "Space",
+      ",",
+      "Url",
+      "Settings",
+      "Close",
+    ],
   },
 };
 
-// Export for use by layoutRenderer.js
-window.KEYBOARD_LAYOUTS = layouts;
+/**
+ * Get list of all available layouts
+ * @returns {Array<{value: string, name: string}>}
+ */
+export function getLayoutsList() {
+  return Object.entries(layouts).map(([value, layout]) => ({
+    value,
+    name: layout.name,
+  }));
+}
+
+/**
+ * Get a specific layout by ID
+ * @param {string} layoutId
+ * @returns {Object|null}
+ */
+export function getLayout(layoutId) {
+  return layouts[layoutId] || null;
+}
+
+export default layouts;

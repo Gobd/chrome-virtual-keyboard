@@ -1,26 +1,28 @@
 // Build script for Chrome Virtual Keyboard extension
 // Uses esbuild to bundle ES modules for content script
 
-const esbuild = require('esbuild');
-const fs = require('fs');
-const path = require('path');
+const esbuild = require("esbuild");
+const fs = require("fs");
+const path = require("path");
 
-const SRC_DIR = 'src_new';
-const DIST_DIR = 'dist';
+const isTest = process.argv.includes("--test");
+
+const SRC_DIR = "src";
+const DIST_DIR = "dist";
 
 // Files to copy without bundling
 const STATIC_FILES = [
-  'manifest.json',
-  'style.css',
-  'toggle.html',
-  'toggle.js',
-  'options.html',
-  'background.js',
-  'LICENSE',
-  'ARCHITECTURE.md',
+  "manifest.json",
+  "style.css",
+  "toggle.html",
+  "toggle.js",
+  "options.html",
+  "background.js",
+  "LICENSE",
+  "ARCHITECTURE.md",
 ];
 
-const STATIC_DIRS = ['options', 'buttons', 'core'];
+const STATIC_DIRS = ["options", "buttons", "core"];
 
 // Ensure dist directory exists
 function ensureDir(dir) {
@@ -55,7 +57,7 @@ function copyDir(src, dest) {
 
 // Copy static files
 function copyStatic() {
-  console.log('Copying static files...');
+  console.log("Copying static files...");
 
   for (const file of STATIC_FILES) {
     const src = path.join(SRC_DIR, file);
@@ -76,19 +78,25 @@ function copyStatic() {
 
 // Build configuration
 const buildOptions = {
-  entryPoints: [path.join(SRC_DIR, 'main.js')],
+  entryPoints: [path.join(SRC_DIR, "main.js")],
   bundle: true,
-  outfile: path.join(DIST_DIR, 'main.js'),
-  format: 'iife',
-  target: ['chrome120'],
+  outfile: path.join(DIST_DIR, "main.js"),
+  format: "iife",
+  target: ["chrome120"],
   minify: false, // Keep readable for debugging
   sourcemap: false,
-  logLevel: 'info',
+  logLevel: "info",
+  // For test builds, use open shadow DOM so tests can access elements
+  define: isTest ? { __SHADOW_MODE__: '"open"' } : {},
 };
 
 // Main build function
 async function build() {
-  console.log('Building Chrome Virtual Keyboard...\n');
+  console.log("Building Chrome Virtual Keyboard...");
+  if (isTest) {
+    console.log("  (test mode: open shadow DOM)");
+  }
+  console.log("");
 
   // Clean dist
   if (fs.existsSync(DIST_DIR)) {
@@ -100,15 +108,15 @@ async function build() {
   copyStatic();
 
   // Bundle main.js
-  console.log('\nBundling main.js...');
+  console.log("\nBundling main.js...");
   await esbuild.build(buildOptions);
 
-  console.log('\nBuild complete! Output in dist/');
+  console.log("\nBuild complete! Output in dist/");
 }
 
 // Watch mode
 async function watch() {
-  console.log('Watching for changes...\n');
+  console.log("Watching for changes...\n");
 
   // Initial build
   await build();
@@ -116,14 +124,14 @@ async function watch() {
   // Watch for changes
   const ctx = await esbuild.context({
     ...buildOptions,
-    logLevel: 'info',
+    logLevel: "info",
   });
 
   await ctx.watch();
 
   // Also watch static files
   const staticWatcher = (eventType, filename) => {
-    if (filename && !filename.startsWith('.')) {
+    if (filename && !filename.startsWith(".")) {
       console.log(`\nStatic file changed: ${filename}`);
       copyStatic();
     }
@@ -131,16 +139,16 @@ async function watch() {
 
   fs.watch(SRC_DIR, { recursive: true }, (eventType, filename) => {
     // esbuild handles JS files, we handle static files
-    if (filename && !filename.endsWith('.js')) {
+    if (filename && !filename.endsWith(".js")) {
       staticWatcher(eventType, filename);
     }
   });
 
-  console.log('\nWatching for changes. Press Ctrl+C to stop.');
+  console.log("\nWatching for changes. Press Ctrl+C to stop.");
 }
 
 // Run
-const isWatch = process.argv.includes('--watch');
+const isWatch = process.argv.includes("--watch");
 
 if (isWatch) {
   watch().catch((err) => {

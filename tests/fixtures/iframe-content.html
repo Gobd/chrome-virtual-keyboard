@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Iframe Content</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        padding: 15px;
+        margin: 0;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        font-size: 14px;
+      }
+      input,
+      textarea {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 12px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 16px;
+        box-sizing: border-box;
+      }
+      [contenteditable] {
+        width: 100%;
+        min-height: 50px;
+        padding: 8px;
+        margin-bottom: 12px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 16px;
+        box-sizing: border-box;
+      }
+      .section {
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #eee;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="section">
+      <label for="iframe-text">Text Input</label>
+      <input type="text" id="iframe-text" placeholder="Type in iframe..." />
+    </div>
+
+    <div class="section">
+      <label for="iframe-email">Email Input</label>
+      <input type="email" id="iframe-email" placeholder="email@example.com" />
+    </div>
+
+    <div class="section">
+      <label for="iframe-password">Password Input</label>
+      <input type="password" id="iframe-password" placeholder="Password..." />
+    </div>
+
+    <div class="section">
+      <label for="iframe-search">Search Input</label>
+      <input type="search" id="iframe-search" placeholder="Search..." />
+    </div>
+
+    <div class="section">
+      <label for="iframe-number">Number Input</label>
+      <input type="number" id="iframe-number" placeholder="123" />
+    </div>
+
+    <div class="section">
+      <label for="iframe-tel">Telephone Input</label>
+      <input type="tel" id="iframe-tel" placeholder="555-1234" />
+    </div>
+
+    <div class="section">
+      <label for="iframe-url">URL Input</label>
+      <input type="url" id="iframe-url" placeholder="https://example.com" />
+    </div>
+
+    <div class="section">
+      <label for="iframe-textarea">Textarea</label>
+      <textarea
+        id="iframe-textarea"
+        placeholder="Multi-line in iframe..."
+      ></textarea>
+    </div>
+
+    <div class="section">
+      <label>Contenteditable</label>
+      <div contenteditable="true" id="iframe-contenteditable">
+        Edit in iframe...
+      </div>
+    </div>
+
+    <div class="section">
+      <label>Role Textbox</label>
+      <div role="textbox" contenteditable="true" id="iframe-role-textbox">
+        Role textbox in iframe...
+      </div>
+    </div>
+  </body>
+</html>
