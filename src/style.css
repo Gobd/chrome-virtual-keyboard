@@ -53,7 +53,8 @@
   position: fixed;
   bottom: 0;
   left: 50%;
-  transform: translateX(calc(-50% + var(--vk-offset-x))) translate3d(0, var(--vk-height), 0);
+  transform: translateX(calc(-50% + var(--vk-offset-x)))
+    translate3d(0, var(--vk-height), 0);
   opacity: 0;
   padding: var(--vk-padding);
   background: var(--vk-bg);
@@ -72,7 +73,8 @@
 }
 
 #virtual-keyboard.keyboard-closed {
-  transform: translateX(calc(-50% + var(--vk-offset-x))) translate3d(0, var(--vk-height), 0);
+  transform: translateX(calc(-50% + var(--vk-offset-x)))
+    translate3d(0, var(--vk-height), 0);
   opacity: 0;
 }
 

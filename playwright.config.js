@@ -1,4 +1,5 @@
 import { defineConfig } from "@playwright/test";
+import os from "os";
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -6,7 +7,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 4 : undefined, // undefined = half of CPU cores
+  workers: Math.min(os.cpus().length, 8),
   reporter: "html",
   timeout: 30000,
 
