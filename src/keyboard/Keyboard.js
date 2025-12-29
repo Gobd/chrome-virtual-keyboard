@@ -28,6 +28,27 @@ let keyboardElement = null;
 let shadowRoot = null;
 let scrollExtendElement = null;
 let overlayCloseTimeout = null;
+let dragHandleElement = null;
+
+// Spacebar swipe state
+let spacebarSwipeState = {
+  active: false,
+  startX: 0,
+  lastX: 0,
+  spaceKey: null,
+};
+
+// Keyboard drag state
+let dragState = {
+  active: false,
+  startX: 0,
+  startY: 0,
+  startPosX: 0,
+  startPosY: 0,
+};
+
+const SWIPE_THRESHOLD = 10; // Pixels to move before considering it a swipe
+const SWIPE_SENSITIVITY = 20; // Pixels of swipe per cursor position change
 
 // Cached DOM element references
 const cachedElements = {
@@ -199,6 +220,9 @@ export async function init() {
   // Set up event delegation
   setupEventDelegation();
 
+  // Set up spacebar swipe for cursor movement
+  setupSpacebarSwipe();
+
   // Track pointer over keyboard for URL bar blur handling
   keyboardElement.addEventListener("pointerenter", () => {
     runtimeState.set("pointerOverKeyboard", true);
@@ -223,12 +247,23 @@ export async function init() {
 
   // Apply zoom setting
   applyZoom();
+
+  // Apply drag handle visibility and position
+  updateDragHandleVisibility();
+  const savedPosition = settingsState.get("keyboardPosition");
+  if (savedPosition && settingsState.get("keyboardDraggable")) {
+    applyKeyboardPosition(savedPosition.x, savedPosition.y);
+  }
 }
 
 /**
  * Build the internal keyboard structure
  */
 async function buildKeyboardStructure() {
+  // Create drag handle for repositioning
+  const dragHandle = createDragHandle();
+  keyboardElement.appendChild(dragHandle);
+
   // Create URL bar
   const urlBar = createUrlBar();
   keyboardElement.appendChild(urlBar);
@@ -512,6 +547,16 @@ function setupEventDelegation() {
   keyboardElement.addEventListener("click", (e) => {
     const key = e.target.closest(`.${CSS_CLASSES.KEY_CLICK}`);
     if (key) {
+      // Check if this is a spacebar click that should be prevented (due to swipe)
+      if (
+        key.classList.contains("vk-key-space") &&
+        spacebarSwipeState.preventClick
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+
       e.preventDefault();
       e.stopPropagation();
       const keyValue = getKeyWithShift(key);
@@ -645,6 +690,23 @@ function setupStateSubscriptions() {
 
   // Zoom setting change
   settingsState.subscribe("keyboardZoom", applyZoom);
+
+  // Keyboard draggable setting change
+  settingsState.subscribe("keyboardDraggable", (draggable) => {
+    updateDragHandleVisibility();
+    if (!draggable) {
+      resetKeyboardPosition(true); // Save to storage when disabling
+    }
+  });
+
+  // Apply saved keyboard position
+  settingsState.subscribe("keyboardPosition", (position) => {
+    if (position && settingsState.get("keyboardDraggable")) {
+      applyKeyboardPosition(position.x, position.y);
+    } else if (!position) {
+      resetKeyboardPosition();
+    }
+  });
 }
 
 /**
@@ -940,6 +1002,232 @@ function applyZoom() {
   const zoom = settingsState.get("keyboardZoom") / 100;
   keyboardElement.style.zoom = zoom;
   invalidateKeyboardHeightCache();
+}
+
+/**
+ * Move cursor in the focused input
+ * @param {number} direction - -1 for left, 1 for right
+ */
+function moveCursor(direction) {
+  const element = focusState.get("element");
+  if (!element) return;
+
+  const type = focusState.get("type");
+
+  if (type === "contenteditable") {
+    const selection = element.ownerDocument.defaultView.getSelection();
+    if (selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      if (direction < 0) {
+        // Move left
+        selection.modify("move", "backward", "character");
+      } else {
+        // Move right
+        selection.modify("move", "forward", "character");
+      }
+    }
+  } else {
+    // Input or textarea
+    try {
+      const pos = element.selectionStart;
+      const newPos = Math.max(
+        0,
+        Math.min(element.value.length, pos + direction),
+      );
+      element.selectionStart = element.selectionEnd = newPos;
+    } catch (e) {
+      // Some input types don't support selection
+    }
+  }
+}
+
+/**
+ * Setup spacebar swipe for cursor movement
+ */
+function setupSpacebarSwipe() {
+  keyboardElement.addEventListener("pointerdown", (e) => {
+    if (!settingsState.get("spacebarCursorSwipe")) return;
+
+    const spaceKey = e.target.closest(".vk-key-space");
+    if (spaceKey) {
+      spacebarSwipeState = {
+        active: true,
+        startX: e.clientX,
+        lastX: e.clientX,
+        spaceKey: spaceKey,
+        hasSwiped: false,
+      };
+      spaceKey.setPointerCapture(e.pointerId);
+    }
+  });
+
+  keyboardElement.addEventListener("pointermove", (e) => {
+    if (!spacebarSwipeState.active) return;
+
+    const deltaX = e.clientX - spacebarSwipeState.lastX;
+    const totalDelta = e.clientX - spacebarSwipeState.startX;
+
+    // Check if we've passed the swipe threshold
+    if (Math.abs(totalDelta) > SWIPE_THRESHOLD) {
+      spacebarSwipeState.hasSwiped = true;
+    }
+
+    // Move cursor based on swipe distance
+    if (Math.abs(deltaX) >= SWIPE_SENSITIVITY) {
+      const direction = deltaX > 0 ? 1 : -1;
+      moveCursor(direction);
+      spacebarSwipeState.lastX = e.clientX;
+    }
+  });
+
+  keyboardElement.addEventListener("pointerup", (e) => {
+    if (!spacebarSwipeState.active) return;
+
+    const wasSwiping = spacebarSwipeState.hasSwiped;
+    spacebarSwipeState.active = false;
+
+    if (spacebarSwipeState.spaceKey) {
+      spacebarSwipeState.spaceKey.releasePointerCapture(e.pointerId);
+    }
+
+    // If we didn't swipe, let the click handler insert a space
+    // The click event will fire after pointerup
+    if (wasSwiping) {
+      // Prevent the click from firing by marking it
+      spacebarSwipeState.preventClick = true;
+      setTimeout(() => {
+        spacebarSwipeState.preventClick = false;
+      }, 50);
+    }
+
+    spacebarSwipeState.spaceKey = null;
+  });
+
+  keyboardElement.addEventListener("pointercancel", (e) => {
+    spacebarSwipeState.active = false;
+    spacebarSwipeState.spaceKey = null;
+  });
+}
+
+/**
+ * Create and setup the drag handle for repositioning
+ */
+function createDragHandle() {
+  dragHandleElement = document.createElement("div");
+  dragHandleElement.className = "vk-drag-handle";
+  dragHandleElement.innerHTML = "⋮⋮";
+  dragHandleElement.style.display = "none";
+
+  dragHandleElement.addEventListener("pointerdown", (e) => {
+    if (!settingsState.get("keyboardDraggable")) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const rect = keyboardElement.getBoundingClientRect();
+    dragState = {
+      active: true,
+      startX: e.clientX,
+      startY: e.clientY,
+      startPosX: rect.left + rect.width / 2,
+      startPosY: rect.bottom,
+    };
+
+    dragHandleElement.setPointerCapture(e.pointerId);
+    keyboardElement.classList.add("vk-dragging");
+  });
+
+  dragHandleElement.addEventListener("pointermove", (e) => {
+    if (!dragState.active) return;
+
+    const deltaX = e.clientX - dragState.startX;
+    const deltaY = e.clientY - dragState.startY;
+
+    const newX = dragState.startPosX + deltaX;
+    const newY = dragState.startPosY + deltaY;
+
+    // Apply position (centered horizontally)
+    applyKeyboardPosition(newX, newY);
+  });
+
+  dragHandleElement.addEventListener("pointerup", (e) => {
+    if (!dragState.active) return;
+
+    dragState.active = false;
+    dragHandleElement.releasePointerCapture(e.pointerId);
+    keyboardElement.classList.remove("vk-dragging");
+
+    // Save position
+    const rect = keyboardElement.getBoundingClientRect();
+    const position = {
+      x: rect.left + rect.width / 2,
+      y: rect.bottom,
+    };
+    settingsState.set("keyboardPosition", position);
+    storage.setKeyboardPosition(position);
+  });
+
+  dragHandleElement.addEventListener("pointercancel", (e) => {
+    dragState.active = false;
+    keyboardElement.classList.remove("vk-dragging");
+  });
+
+  return dragHandleElement;
+}
+
+/**
+ * Apply keyboard position
+ * @param {number} x - Center X position
+ * @param {number} y - Bottom Y position
+ */
+function applyKeyboardPosition(x, y) {
+  if (!keyboardElement) return;
+
+  const rect = keyboardElement.getBoundingClientRect();
+  const width = rect.width;
+  const height = rect.height;
+
+  // Constrain to viewport
+  const minX = width / 2;
+  const maxX = window.innerWidth - width / 2;
+  const minY = height;
+  const maxY = window.innerHeight;
+
+  x = Math.max(minX, Math.min(maxX, x));
+  y = Math.max(minY, Math.min(maxY, y));
+
+  // Use CSS variable for horizontal offset (preserves transform animations)
+  const offsetX = x - window.innerWidth / 2;
+  const bottom = window.innerHeight - y;
+
+  keyboardElement.style.setProperty("--vk-offset-x", `${offsetX}px`);
+  keyboardElement.style.bottom = `${bottom}px`;
+}
+
+/**
+ * Reset keyboard position to default (centered at bottom)
+ * @param {boolean} saveToStorage - Whether to persist the reset to storage
+ */
+function resetKeyboardPosition(saveToStorage = false) {
+  if (!keyboardElement) return;
+
+  keyboardElement.style.setProperty("--vk-offset-x", "0px");
+  keyboardElement.style.bottom = "";
+
+  if (saveToStorage) {
+    settingsState.set("keyboardPosition", null);
+    storage.setKeyboardPosition(null);
+  }
+}
+
+/**
+ * Update drag handle visibility based on settings
+ */
+function updateDragHandleVisibility() {
+  if (!dragHandleElement) return;
+  dragHandleElement.style.display = settingsState.get("keyboardDraggable")
+    ? ""
+    : "none";
 }
 
 /**

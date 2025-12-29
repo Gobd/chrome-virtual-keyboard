@@ -14,7 +14,7 @@
     "test:ui": "pnpm exec playwright test --ui",
     "test:headed": "pnpm exec playwright test --headed",
     "test:debug": "pnpm exec playwright test --debug",
-    "test:install": "pnpm exec playwright install chromium",
+    "test:install": "pnpm exec playwright install chromium --with-deps",
     "test:report": "pnpm exec playwright show-report",
     "coverage": "rm -rf coverage && COVERAGE=1 pnpm exec playwright test"
   },

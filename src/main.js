@@ -141,14 +141,55 @@ async function loadSettings() {
       layout: "en",
       showOpenButton: true,
       keyboardZoom: 100,
+      spacebarCursorSwipe: false,
+      keyboardDraggable: false,
+      keyboardPosition: null,
     });
   } else {
     settingsState.set({
       layout: settings.layout,
       showOpenButton: settings.showOpenButton,
       keyboardZoom: settings.keyboardZoom,
+      spacebarCursorSwipe: settings.spacebarCursorSwipe,
+      keyboardDraggable: settings.keyboardDraggable,
+      keyboardPosition: settings.keyboardPosition,
     });
   }
+
+  // Listen for storage changes to update settings live
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== "local") return;
+
+    if (changes.keyboardZoom) {
+      settingsState.set("keyboardZoom", changes.keyboardZoom.newValue || 100);
+    }
+    if (changes.spacebarCursorSwipe !== undefined) {
+      settingsState.set(
+        "spacebarCursorSwipe",
+        changes.spacebarCursorSwipe.newValue === true,
+      );
+    }
+    if (changes.keyboardDraggable !== undefined) {
+      settingsState.set(
+        "keyboardDraggable",
+        changes.keyboardDraggable.newValue === true,
+      );
+    }
+    if (changes.showOpenButton !== undefined) {
+      settingsState.set(
+        "showOpenButton",
+        changes.showOpenButton.newValue !== false,
+      );
+      if (changes.showOpenButton.newValue === false) {
+        hideOpenButton();
+      } else {
+        createOpenButton();
+      }
+    }
+    if (changes.keyboardPosition !== undefined) {
+      settingsState.set("keyboardPosition", changes.keyboardPosition.newValue);
+    }
+  });
 }
 
 // =============================================================================

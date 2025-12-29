@@ -81,6 +81,9 @@ export const STORAGE_KEYS = {
   KEYBOARD_LAYOUTS_LIST: "keyboardLayoutsList",
   SHOW_OPEN_BUTTON: "showOpenButton",
   KEYBOARD_ZOOM: "keyboardZoom",
+  SPACEBAR_CURSOR_SWIPE: "spacebarCursorSwipe",
+  KEYBOARD_DRAGGABLE: "keyboardDraggable",
+  KEYBOARD_POSITION: "keyboardPosition",
 };
 
 export const MESSAGE_TYPES = {

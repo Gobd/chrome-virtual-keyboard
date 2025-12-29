@@ -149,6 +149,9 @@ export const settingsState = createStore({
   layout: "en",
   showOpenButton: true,
   keyboardZoom: 100,
+  spacebarCursorSwipe: false,
+  keyboardDraggable: false,
+  keyboardPosition: null,
 });
 
 // URL bar state

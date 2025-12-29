@@ -17,12 +17,13 @@ const COVERAGE_DATA_DIR = path.resolve("./.coverage-data");
  */
 export const test = base.extend({
   // Override the context fixture to use persistent context
-  context: async ({}, use) => {
-    // Create a temporary user data directory
+  context: async ({}, use, testInfo) => {
+    // Create a temporary user data directory with unique ID per test
+    const uniqueId = `${testInfo.workerIndex}-${testInfo.testId}-${Date.now()}`;
     const userDataDir = path.join(
       process.cwd(),
       ".playwright-user-data",
-      `test-${Date.now()}`,
+      `test-${uniqueId}`,
     );
 
     // Launch with persistent context (required for extensions)
