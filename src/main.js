@@ -141,6 +141,7 @@ async function loadSettings() {
       layout: "en",
       showOpenButton: true,
       showLanguageButton: false,
+      showSettingsButton: true,
       keyboardZoom: 100,
       spacebarCursorSwipe: false,
       keyboardDraggable: false,
@@ -151,6 +152,7 @@ async function loadSettings() {
       layout: settings.layout,
       showOpenButton: settings.showOpenButton,
       showLanguageButton: settings.showLanguageButton,
+      showSettingsButton: settings.showSettingsButton,
       keyboardZoom: settings.keyboardZoom,
       spacebarCursorSwipe: settings.spacebarCursorSwipe,
       keyboardDraggable: settings.keyboardDraggable,
@@ -197,6 +199,19 @@ async function loadSettings() {
         changes.showLanguageButton.newValue === true,
       );
       // Reload layout to show/hide language button
+      const currentLayout = settingsState.get("layout");
+      if (currentLayout) {
+        import("./keyboard/Keyboard.js").then((Keyboard) => {
+          Keyboard.loadLayout(currentLayout);
+        });
+      }
+    }
+    if (changes.showSettingsButton !== undefined) {
+      settingsState.set(
+        "showSettingsButton",
+        changes.showSettingsButton.newValue !== false,
+      );
+      // Reload layout to show/hide settings button
       const currentLayout = settingsState.get("layout");
       if (currentLayout) {
         import("./keyboard/Keyboard.js").then((Keyboard) => {

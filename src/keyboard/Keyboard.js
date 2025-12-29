@@ -638,16 +638,19 @@ function toggleOverlay(menuId, buttonElement) {
     overlay.style.display = "";
     overlay.style.visibility = "hidden";
 
+    const zoom = settingsState.get("keyboardZoom") / 100 || 1;
     const overlayWidth = overlay.offsetWidth;
     const overlayHeight = overlay.offsetHeight;
 
-    // Get button position relative to keyboard
+    // Get button position relative to keyboard (in screen coords, already zoomed)
     const buttonRect = buttonElement.getBoundingClientRect();
     const keyboardRect = keyboardElement.getBoundingClientRect();
 
     // Calculate position relative to keyboard element
-    const buttonLeft = buttonRect.left - keyboardRect.left;
-    const buttonTop = buttonRect.top - keyboardRect.top;
+    // Divide by zoom since getBoundingClientRect returns zoomed values
+    // but CSS left/top will be zoomed again
+    const buttonLeft = (buttonRect.left - keyboardRect.left) / zoom;
+    const buttonTop = (buttonRect.top - keyboardRect.top) / zoom;
     const padding = 5;
 
     // Try positioning at left edge of keyboard first
@@ -655,16 +658,17 @@ function toggleOverlay(menuId, buttonElement) {
     const top = buttonTop - overlayHeight - 10;
 
     // Check if overlay would overflow viewport on the right
-    const overlayRightEdge = keyboardRect.left + left + overlayWidth;
+    // Use zoomed overlay width for screen coordinate comparison
+    const overlayRightEdge = keyboardRect.left + (left * zoom) + (overlayWidth * zoom);
     if (overlayRightEdge > window.innerWidth - padding) {
       // Position from right side instead
-      left = keyboardRect.width - overlayWidth - padding;
+      left = (keyboardRect.width / zoom) - overlayWidth - padding;
     }
 
     // Check if overlay would overflow viewport on the left
-    const overlayLeftEdge = keyboardRect.left + left;
+    const overlayLeftEdge = keyboardRect.left + (left * zoom);
     if (overlayLeftEdge < padding) {
-      left = padding - keyboardRect.left;
+      left = (padding - keyboardRect.left) / zoom;
     }
 
     overlay.style.left = `${left}px`;
@@ -775,7 +779,8 @@ export async function loadLayout(layoutId) {
 
   // Render new layout with options
   const showLanguageButton = settingsState.get("showLanguageButton");
-  const fragment = renderLayout(layoutId, { showLanguageButton });
+  const showSettingsButton = settingsState.get("showSettingsButton");
+  const fragment = renderLayout(layoutId, { showLanguageButton, showSettingsButton });
   placeholder.appendChild(fragment);
 
   keyboardState.set("loadedLayout", layoutId);
@@ -1210,8 +1215,8 @@ function createDragHandle() {
 
 /**
  * Apply keyboard position
- * @param {number} x - Center X position
- * @param {number} y - Bottom Y position
+ * @param {number} x - Center X position (in screen coordinates)
+ * @param {number} y - Bottom Y position (in screen coordinates)
  */
 function applyKeyboardPosition(x, y) {
   if (!keyboardElement) return;
@@ -1219,6 +1224,7 @@ function applyKeyboardPosition(x, y) {
   const rect = keyboardElement.getBoundingClientRect();
   const width = rect.width;
   const height = rect.height;
+  const zoom = settingsState.get("keyboardZoom") / 100 || 1;
 
   // Constrain to viewport
   const minX = width / 2;
@@ -1229,9 +1235,10 @@ function applyKeyboardPosition(x, y) {
   x = Math.max(minX, Math.min(maxX, x));
   y = Math.max(minY, Math.min(maxY, y));
 
-  // Use CSS variable for horizontal offset (preserves transform animations)
-  const offsetX = x - window.innerWidth / 2;
-  const bottom = window.innerHeight - y;
+  // Calculate offset in screen coordinates, then adjust for zoom
+  // since the CSS transform is also affected by zoom
+  const offsetX = (x - window.innerWidth / 2) / zoom;
+  const bottom = (window.innerHeight - y) / zoom;
 
   keyboardElement.style.setProperty("--vk-offset-x", `${offsetX}px`);
   keyboardElement.style.bottom = `${bottom}px`;

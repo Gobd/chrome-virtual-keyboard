@@ -14,6 +14,7 @@ import {
  * @param {string} layoutId - Layout identifier (e.g., 'en', 'fr')
  * @param {Object} options - Render options
  * @param {boolean} options.showLanguageButton - Whether to show the language button
+ * @param {boolean} options.showSettingsButton - Whether to show the settings button
  * @returns {DocumentFragment} DOM fragment containing the keyboard
  */
 export function renderLayout(layoutId, options = {}) {
@@ -23,7 +24,7 @@ export function renderLayout(layoutId, options = {}) {
     return document.createDocumentFragment();
   }
 
-  const { showLanguageButton = true } = options;
+  const { showLanguageButton = true, showSettingsButton = true } = options;
 
   const fragment = document.createDocumentFragment();
   const labels = layout.labels || {};
@@ -40,12 +41,16 @@ export function renderLayout(layoutId, options = {}) {
     fragment.appendChild(renderRow(row, labels));
   }
 
-  // Render bottom row, optionally filtering out Language button
+  // Render bottom row, optionally filtering out Language/Settings buttons
   let bottomRow = layout.bottomRow || [...DEFAULT_BOTTOM_ROW];
   if (!showLanguageButton) {
     bottomRow = bottomRow.filter((key) => key !== "Language");
   }
-  fragment.appendChild(renderRow(bottomRow, labels, { widenSpace: !showLanguageButton }));
+  if (!showSettingsButton) {
+    bottomRow = bottomRow.filter((key) => key !== "Settings");
+  }
+  const hiddenButtonCount = (!showLanguageButton ? 1 : 0) + (!showSettingsButton ? 1 : 0);
+  fragment.appendChild(renderRow(bottomRow, labels, { widenSpace: hiddenButtonCount > 0 }));
 
   return fragment;
 }

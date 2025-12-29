@@ -149,6 +149,7 @@ export const settingsState = createStore({
   layout: "en",
   showOpenButton: true,
   showLanguageButton: false,
+  showSettingsButton: true,
   keyboardZoom: 100,
   spacebarCursorSwipe: false,
   keyboardDraggable: false,
