@@ -543,25 +543,23 @@ test.describe("Virtual Keyboard - Cursor Position", () => {
     }) => {
       await page.fill("#text-input", "hello world");
 
-      // Get input bounding box
-      const inputBox = await page.locator("#text-input").boundingBox();
-
-      // Click roughly in the middle of the text
-      // This simulates a user clicking to position cursor
-      await page.click("#text-input", {
-        position: { x: inputBox.width / 3, y: inputBox.height / 2 },
-      });
-
+      // Click to focus and open keyboard
+      await page.click("#text-input");
       await waitForKeyboardOpen(page);
 
-      // Type something - it should go where we clicked
+      // Now explicitly set cursor position
+      // This avoids font-rendering differences across platforms
+      await page.evaluate(() => {
+        const input = document.querySelector("#text-input");
+        input.setSelectionRange(5, 5); // Position cursor after "hello"
+      });
+
+      // Type something - it should go where we positioned the cursor
       await typeWithKeyboard(page, "X");
 
       const value = await page.inputValue("#text-input");
-      // The X should be somewhere in the text, not at the end
-      // (exact position depends on font rendering, but it shouldn't be at end)
-      expect(value).toContain("X");
-      expect(value.endsWith("X")).toBe(false);
+      // The X should be at position 5, resulting in "helloX world"
+      expect(value).toBe("helloX world");
     });
   });
 });
