@@ -16,9 +16,11 @@ This is a fork of the [original Virtual Keyboard extension](https://github.com/x
 - **`role="textbox"` Support** - The keyboard now activates on elements with `role="textbox"` in addition to standard input fields (useful for custom form components and accessibility)
 - **Improved iframe Support** - Better handling of keyboard in same-origin iframe scenarios
 - **Efficient DOM Monitoring** - Replaced inefficient polling (scanning entire DOM every second) with MutationObserver for detecting new input fields. This uses zero CPU when the page is idle and responds instantly to dynamically added inputs
-- **Open Button** - Floating keyboard button in the lower-right corner to manually show the keyboard at any time
-- **`.com` Button** - Quick-insert ".com" when typing in the URL bar
-- **Simplified Settings** - Removed options for small movable keyboard and auto-trigger delay. The keyboard now always auto-triggers on focus and touch events work automatically
+- **Cursor Positioning** - Type anywhere in a field, not just at the end. Drag on the spacebar to move the cursor
+- **Open Button** - Optional floating keyboard button in the lower-right corner to manually show the keyboard (can be disabled in settings)
+- **`.com` Button** - Quick-insert ".com" when typing in email fields or the URL bar
+
+All features from the original extension are preserved.
 
 ## Permissions
 
@@ -34,9 +36,24 @@ The content script is configured to run on all pages (`<all_urls>`) to detect wh
 ## Development
 
 ```bash
-pnpm install    # Install dependencies
-pnpm format     # Format code with Prettier
-pnpm package    # Create zip for Chrome Web Store submission
+pnpm install          # Install dependencies
+pnpm build            # Build extension to dist/
+pnpm watch            # Build and watch for changes
+pnpm format           # Format code with Prettier
+pnpm format:check     # Check formatting without writing
+pnpm package          # Create zip for Chrome Web Store submission
+```
+
+### Testing
+
+```bash
+pnpm test:install     # Install Playwright browser (first time setup)
+pnpm test             # Run Playwright tests
+pnpm test:headed      # Run tests with visible browser
+pnpm test:ui          # Run tests with Playwright UI
+pnpm test:debug       # Run tests in debug mode
+pnpm test:report      # View test report
+pnpm coverage         # Run tests with coverage
 ```
 
 Extension source files are in the `src/` directory.

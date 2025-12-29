@@ -44,7 +44,7 @@ export const TIMING = {
 };
 
 export const KEYBOARD = {
-  HEIGHT: 450,
+  HEIGHT: 370,
   Z_INDEX: 10000000,
   OVERLAY_Z_INDEX: 10000001,
   DEFAULT_ZOOM: 100,
@@ -80,6 +80,8 @@ export const STORAGE_KEYS = {
   KEYBOARD_LAYOUT: "keyboardLayout1",
   KEYBOARD_LAYOUTS_LIST: "keyboardLayoutsList",
   SHOW_OPEN_BUTTON: "showOpenButton",
+  SHOW_LANGUAGE_BUTTON: "showLanguageButton",
+  SHOW_SETTINGS_BUTTON: "showSettingsButton",
   KEYBOARD_ZOOM: "keyboardZoom",
   SPACEBAR_CURSOR_SWIPE: "spacebarCursorSwipe",
   KEYBOARD_DRAGGABLE: "keyboardDraggable",
@@ -118,6 +120,7 @@ export const KEY_TYPES = {
   },
   Space: {
     class: "vk-key vk-key-space",
+    label: "",
     dataKey: " ",
   },
   Close: {

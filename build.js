@@ -14,8 +14,6 @@ const DIST_DIR = "dist";
 const STATIC_FILES = [
   "manifest.json",
   "style.css",
-  "toggle.html",
-  "toggle.js",
   "options.html",
   "background.js",
   "LICENSE",

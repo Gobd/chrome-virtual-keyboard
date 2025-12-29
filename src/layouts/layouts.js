@@ -20,6 +20,7 @@
 // "Url"            - URL button
 // "&123"           - Toggle numbers/symbols mode
 // "Settings"       - Settings menu button
+// "Language"       - Language switcher (menu)
 // "_spacer"        - Empty cell for row alignment
 //
 // SPECIAL SYNTAX:
@@ -37,7 +38,7 @@
 //   "overlays": { "MenuId": [...] }             // Optional long-press menus
 // }
 //
-// Default bottom row (if not specified): ["&123", "Settings", "Space", "Url", "Close"]
+// Default bottom row (if not specified): ["&123", "Language", "Space", "Url", "Settings", "Close"]
 
 export const layouts = {
   en: {

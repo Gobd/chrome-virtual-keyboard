@@ -55,7 +55,7 @@ function createOpenButton() {
     background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
     boxShadow: "0 2px 8px rgba(0, 0, 0, 0.3)",
     cursor: "pointer",
-    fontSize: "24px",
+    fontSize: "44px",
     color: "#fff",
     zIndex: "9999999",
     transition: "transform 0.2s, opacity 0.3s, box-shadow 0.2s",
@@ -140,6 +140,8 @@ async function loadSettings() {
     settingsState.set({
       layout: "en",
       showOpenButton: true,
+      showLanguageButton: false,
+      showSettingsButton: true,
       keyboardZoom: 100,
       spacebarCursorSwipe: false,
       keyboardDraggable: false,
@@ -149,6 +151,8 @@ async function loadSettings() {
     settingsState.set({
       layout: settings.layout,
       showOpenButton: settings.showOpenButton,
+      showLanguageButton: settings.showLanguageButton,
+      showSettingsButton: settings.showSettingsButton,
       keyboardZoom: settings.keyboardZoom,
       spacebarCursorSwipe: settings.spacebarCursorSwipe,
       keyboardDraggable: settings.keyboardDraggable,
@@ -188,6 +192,32 @@ async function loadSettings() {
     }
     if (changes.keyboardPosition !== undefined) {
       settingsState.set("keyboardPosition", changes.keyboardPosition.newValue);
+    }
+    if (changes.showLanguageButton !== undefined) {
+      settingsState.set(
+        "showLanguageButton",
+        changes.showLanguageButton.newValue === true,
+      );
+      // Reload layout to show/hide language button
+      const currentLayout = settingsState.get("layout");
+      if (currentLayout) {
+        import("./keyboard/Keyboard.js").then((Keyboard) => {
+          Keyboard.loadLayout(currentLayout);
+        });
+      }
+    }
+    if (changes.showSettingsButton !== undefined) {
+      settingsState.set(
+        "showSettingsButton",
+        changes.showSettingsButton.newValue !== false,
+      );
+      // Reload layout to show/hide settings button
+      const currentLayout = settingsState.get("layout");
+      if (currentLayout) {
+        import("./keyboard/Keyboard.js").then((Keyboard) => {
+          Keyboard.loadLayout(currentLayout);
+        });
+      }
     }
   });
 }

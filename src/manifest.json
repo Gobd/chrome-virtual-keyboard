@@ -10,7 +10,6 @@
   },
   "permissions": ["storage", "activeTab"],
   "action": {
-    "default_popup": "toggle.html",
     "default_icon": {
       "16": "buttons/keyboard_3.png",
       "48": "buttons/keyboard_1.png",
@@ -32,14 +31,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": [
-        "style.css",
-        "options.html",
-        "options/*",
-        "toggle.html",
-        "toggle.js",
-        "buttons/*"
-      ],
+      "resources": ["style.css", "options.html", "options/*", "buttons/*"],
       "matches": ["<all_urls>"]
     }
   ]

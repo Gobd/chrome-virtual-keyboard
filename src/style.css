@@ -28,9 +28,8 @@
   --vk-url-bar-bg: rgba(255, 255, 255, 0.8);
 
   /* Sizing */
-  --vk-height: 450px;
-  --vk-padding: 15px;
-  --vk-key-padding: 30px;
+  --vk-padding: 12px;
+  --vk-key-padding: 0.28em;
   --vk-key-radius: 6px;
   --vk-key-font-size: 32px;
   --vk-action-font-size: 22px;
@@ -52,11 +51,17 @@
   --vk-offset-x: 0px;
   position: fixed;
   bottom: 0;
-  left: 50%;
-  transform: translateX(calc(-50% + var(--vk-offset-x)))
-    translate3d(0, var(--vk-height), 0);
+  left: 0;
+  right: 0;
+  overflow: visible;
+  margin-left: auto;
+  margin-right: auto;
+  transform: translateX(var(--vk-offset-x)) translateY(100%);
   opacity: 0;
   padding: var(--vk-padding);
+  max-width: fit-content;
+  width: 100%;
+  box-sizing: border-box;
   background: var(--vk-bg);
   box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2);
   z-index: var(--vk-z-index);
@@ -68,13 +73,12 @@
 }
 
 #virtual-keyboard.keyboard-open {
-  transform: translateX(calc(-50% + var(--vk-offset-x))) translate3d(0, 0, 0);
+  transform: translateX(var(--vk-offset-x)) translateY(0);
   opacity: 1;
 }
 
 #virtual-keyboard.keyboard-closed {
-  transform: translateX(calc(-50% + var(--vk-offset-x)))
-    translate3d(0, var(--vk-height), 0);
+  transform: translateX(var(--vk-offset-x)) translateY(100%);
   opacity: 0;
 }
 
@@ -87,6 +91,8 @@
   justify-content: center;
   gap: 6px;
   margin: 5px 0;
+  width: 100%;
+  max-width: 100%;
 }
 
 /* =============================================================================
@@ -95,13 +101,17 @@
 
 .vk-key {
   position: relative;
-  padding: var(--vk-key-padding) 20px;
+  padding: var(--vk-key-padding) 0.5em;
   margin: 0;
   border: none;
   border-radius: var(--vk-key-radius);
   background: var(--vk-key-bg);
   color: var(--vk-key-color);
   font-family: inherit;
+  flex: 0 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: var(--vk-key-font-size);
   text-align: center;
   cursor: pointer;
@@ -144,6 +154,11 @@
   background: var(--vk-space-key-bg);
 }
 
+/* Wider space key (when language button is hidden) */
+.vk-key-space-wide {
+  flex: 4;
+}
+
 /* Shift key */
 .vk-key-shift {
   background: var(--vk-action-key-bg);
@@ -184,7 +199,7 @@
 /* Language button (menu button, not a clickable key) */
 .vk-lang-btn {
   position: relative;
-  padding: var(--vk-key-padding) 20px;
+  padding: var(--vk-key-padding) 0.5em;
   margin: 0;
   border: none;
   border-radius: var(--vk-key-radius);
@@ -289,7 +304,7 @@
 }
 
 #vk-number-bar .vk-key {
-  padding: 30px 20px;
+  padding: var(--vk-key-padding) 0.5em;
 }
 
 /* Hide number bar on small screens */
@@ -313,7 +328,7 @@
    ============================================================================= */
 
 #vk-main-numbers .vk-key {
-  padding: 30px;
+  padding: var(--vk-key-padding);
 }
 
 /* =============================================================================
@@ -321,7 +336,7 @@
    ============================================================================= */
 
 .vk-overlay {
-  position: fixed;
+  position: absolute;
   z-index: var(--vk-overlay-z-index);
   padding: 5px;
   border-radius: 5px;
@@ -416,32 +431,57 @@
 
 .vk-drag-handle {
   position: absolute;
-  top: -25px;
+  top: -28px;
   left: 50%;
   transform: translateX(-50%);
-  padding: 4px 20px;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 10px 10px 0 0;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 14px;
-  letter-spacing: 2px;
+  padding: 8px 16px;
   cursor: grab;
   user-select: none;
   touch-action: none;
-  transition:
-    background 0.2s,
-    color 0.2s;
 }
 
-.vk-drag-handle:hover {
-  background: rgba(255, 255, 255, 0.25);
-  color: rgba(255, 255, 255, 0.9);
+.vk-drag-handle::before {
+  content: "";
+  display: block;
+  width: 40px;
+  height: 4px;
+  background: rgba(128, 128, 128, 0.8);
+  border-radius: 2px;
+  box-shadow:
+    0 8px 0 rgba(128, 128, 128, 0.8),
+    0 0 2px rgba(255, 255, 255, 0.8),
+    0 8px 2px rgba(255, 255, 255, 0.8),
+    0 0 4px rgba(0, 0, 0, 0.6),
+    0 8px 4px rgba(0, 0, 0, 0.6);
+  transition:
+    background 0.2s,
+    box-shadow 0.2s;
+}
+
+.vk-drag-handle:hover::before {
+  background: rgba(100, 100, 100, 0.9);
+  box-shadow:
+    0 8px 0 rgba(100, 100, 100, 0.9),
+    0 0 2px rgba(255, 255, 255, 0.9),
+    0 8px 2px rgba(255, 255, 255, 0.9),
+    0 0 5px rgba(0, 0, 0, 0.7),
+    0 8px 5px rgba(0, 0, 0, 0.7);
 }
 
 .vk-drag-handle:active,
 #virtual-keyboard.vk-dragging .vk-drag-handle {
   cursor: grabbing;
-  background: rgba(255, 255, 255, 0.3);
+}
+
+.vk-drag-handle:active::before,
+#virtual-keyboard.vk-dragging .vk-drag-handle::before {
+  background: rgba(80, 80, 80, 1);
+  box-shadow:
+    0 8px 0 rgba(80, 80, 80, 1),
+    0 0 3px rgba(255, 255, 255, 1),
+    0 8px 3px rgba(255, 255, 255, 1),
+    0 0 6px rgba(0, 0, 0, 0.8),
+    0 8px 6px rgba(0, 0, 0, 0.8);
 }
 
 #virtual-keyboard.vk-dragging {

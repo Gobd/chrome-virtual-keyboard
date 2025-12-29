@@ -3,6 +3,11 @@
 
 import { MESSAGE_TYPES } from "./core/config.js";
 
+// Open settings when extension icon is clicked
+chrome.action.onClicked.addListener(() => {
+  chrome.runtime.openOptionsPage();
+});
+
 /**
  * Get the active tab in the current window
  * @returns {Promise<chrome.tabs.Tab>}
