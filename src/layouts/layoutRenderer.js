@@ -9,19 +9,29 @@ const DEFAULT_BOTTOM_ROW = ["&123", "Settings", "Space", "Close"];
 
 // Key type definitions with their CSS classes
 const KEY_TYPES = {
-  Backspace: { class: "kbdHB", label: "Backspace" },
-  BackspaceSmall: { class: "kbdHBS", label: "Backspace" },
-  Enter: { class: "kbdHBE", label: "Enter" },
-  EnterBottom: { class: "kbdD", label: "Enter" },
-  Shift: { class: "kbdShift", spanClass: "kShift", noLabel: true },
+  Backspace: { class: "kbdHB", spanClass: "kBack", label: "\u232B" },
+  BackspaceSmall: {
+    class: "kbdHBS",
+    spanClass: "kBack",
+    label: "\u232B",
+    dataKey: "Backspace",
+  },
+  Enter: { class: "kbdHBE", spanClass: "kEnter", label: "\u21B5" },
+  EnterBottom: {
+    class: "kbdD",
+    spanClass: "kEnter",
+    label: "\u21B5",
+    dataKey: "Enter",
+  },
+  Shift: { class: "kbdShift", spanClass: "kShift", label: "\u21E7" },
   ShiftLabel: { class: "kbdShift", label: "Shift" },
   Space: { class: "kbdS", dataKey: " ", noLabel: true },
-  Close: { class: "kbdD", spanClass: "kClose", noLabel: true },
+  Close: { class: "kbdD", spanClass: "kClose", label: "\u2715" },
   "&123": { class: "kbdD", spanClass: "kAbc", label: "&123" },
   Settings: {
     class: "kbdD kSettings kMenu",
-    spanClass: "",
-    noLabel: true,
+    spanClass: "kSettings",
+    label: "\u2699",
     attrs: { "data-menu": "Settings", width: "10", id: "settingsButton" },
   },
   Url: { class: "kbdH", label: "URL", attrs: { id: "urlButton" } },

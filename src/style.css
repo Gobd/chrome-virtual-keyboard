@@ -5,8 +5,9 @@
   position: fixed !important;
   bottom: -450px;
   opacity: 0;
-  left: 0;
-  right: 0;
+  left: 50%;
+  width: 100vw;
+  transform: translateX(-50%);
   transition-property: all;
   transition-duration: 0.4s;
   user-select: none;
@@ -16,61 +17,8 @@
 }
 .ha #virtualKeyboardChromeExtension {
   bottom: 0;
-  transform: translate3d(0, 450px, 0);
+  transform: translateX(-50%) translate3d(0, 450px, 0);
 }
-#virtualKeyboardChromeExtension.modeS {
-  width: 750px;
-  left: 50%;
-  right: auto;
-  zoom: 1 !important;
-}
-#virtualKeyboardChromeExtension.modeS .virtualKeyboardChromeExtensionMainKeys,
-#virtualKeyboardChromeExtension.modeS
-  #virtualKeyboardChromeExtensionNumberBarKbd1,
-#virtualKeyboardChromeExtension.modeS
-  #virtualKeyboardChromeExtensionMainNumbers {
-  zoom: 0.7 !important;
-}
-
-#virtualKeyboardChromeExtensionDraggableLeft,
-#virtualKeyboardChromeExtensionDraggableRight {
-  display: none;
-}
-.ha
-  #virtualKeyboardChromeExtension.modeS
-  #virtualKeyboardChromeExtensionDraggableLeft,
-.ha
-  #virtualKeyboardChromeExtension.modeS
-  #virtualKeyboardChromeExtensionDraggableRight {
-  bottom: 0;
-  transform: translate3d(0, 0, 0);
-}
-#virtualKeyboardChromeExtension.modeS
-  #virtualKeyboardChromeExtensionDraggableLeft,
-#virtualKeyboardChromeExtension.modeS
-  #virtualKeyboardChromeExtensionDraggableRight {
-  display: block;
-  width: 20px;
-  position: absolute;
-  left: -20px;
-  top: 0;
-  bottom: 0;
-  background-color: rgba(255, 255, 255, 0.2);
-  background: linear-gradient(to top, rgb(60, 60, 60), rgb(145, 145, 145));
-}
-
-#virtualKeyboardChromeExtension.modeS
-  #virtualKeyboardChromeExtensionDraggableRight {
-  left: auto;
-  right: -20px;
-}
-#virtualKeyboardChromeExtension.modeS [data-key="Backspace"].kbdClick span {
-  background-image: url(/icons/backspace.png) !important;
-  font-size: 0px !important;
-  color: transparent !important;
-  text-shadow: none !important;
-}
-
 @media only screen and (max-height: 950px) {
   #virtualKeyboardChromeExtension {
     zoom: 0.95;
@@ -154,36 +102,13 @@
   }
 }
 
-@media only screen and (max-width: 1200px) {
-  #virtualKeyboardChromeExtension [data-key="Backspace"].kbdClick span {
-    background-image: url(/icons/backspace.png) !important;
-    font-size: 0px !important;
-    color: transparent !important;
-    text-shadow: none !important;
-  }
-}
-@media only screen and (max-width: 1200px) {
-  #virtualKeyboardChromeExtension [data-key="Enter"].kbdClick span {
-    background-image: url(/icons/enter.png) !important;
-    font-size: 0px !important;
-    color: transparent !important;
-    text-shadow: none !important;
-  }
-}
-
-#virtualKeyboardChromeExtension [data-key="Enter"] span {
-  background-image: url(/icons/enter-e.png);
-}
-
-#virtualKeyboardChromeExtension [data-key="Backspace"] span {
-  background-image: url(/icons/backspace-e.png);
-}
-
-#virtualKeyboardChromeExtension .kbdHBS span {
-  background-image: url(/icons/backspace.png);
-  font-size: 0px !important;
-  color: transparent !important;
-  text-shadow: none !important;
+/* Icon keys use Unicode characters - no images needed */
+#virtualKeyboardChromeExtension .kBack,
+#virtualKeyboardChromeExtension .kEnter,
+#virtualKeyboardChromeExtension .kShift,
+#virtualKeyboardChromeExtension .kClose,
+#virtualKeyboardChromeExtension .kSettings {
+  font-size: 28px !important;
 }
 
 #virtualKeyboardChromeExtension [data-key="Url"] span,
@@ -297,20 +222,15 @@
   background-repeat: no-repeat;
   line-height: 14px !important;
 }
-#virtualKeyboardChromeExtension table td span.kShift {
-  background-image: url(/icons/shift.png);
-}
-#virtualKeyboardChromeExtension table td span.kBack {
-  background-image: url(/icons/backspace.png);
-}
-#virtualKeyboardChromeExtension table td span.kClose {
-  background-image: url(/icons/close.png);
-}
-#virtualKeyboardChromeExtension table td span.kEnter {
-  background-image: url(/icons/enter.png);
-}
-#virtualKeyboardChromeExtension table td.kSettings span {
-  background-image: url(/icons/settings.png);
+/* Unicode icon styles - positioned in center of key */
+#virtualKeyboardChromeExtension table td span.kShift,
+#virtualKeyboardChromeExtension table td span.kBack,
+#virtualKeyboardChromeExtension table td span.kClose,
+#virtualKeyboardChromeExtension table td span.kEnter,
+#virtualKeyboardChromeExtension table td span.kSettings {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 #virtualKeyboardChromeExtension table td span.kAbc {
   font-size: 22px !important;
@@ -407,104 +327,40 @@
   width: 400px !important;
   margin: 5px auto !important;
 }
-.touchEnable input[type="checkbox"] {
-  box-shadow:
-    inset 0 1px 2px white,
-    0 1px 2px rgba(0, 0, 0, 0.2);
-  appearance: none;
-  margin-inline-start: 0;
-  margin-inline-end: 5px;
-  background: linear-gradient(#fafafa, gainsboro);
-  border-radius: 3px;
-  border: 1px solid #a0a0a0;
-  display: inline-block;
-  height: 26px;
-  margin-bottom: 0;
-  margin-top: 0;
-  position: relative;
-  top: 3px;
-  vertical-align: baseline;
-  width: 26px;
+/* Floating keyboard open button */
+#virtualKeyboardOpenButton {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 50px;
+  height: 50px;
+  min-width: 50px;
+  min-height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(to top, #222, #444);
+  border: none;
+  cursor: pointer;
+  z-index: 9999999;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 42px;
+  color: #fff;
+  padding: 0;
+  line-height: 1;
+  aspect-ratio: 1 / 1;
 }
-.touchEnable input[type="radio"] {
-  box-shadow:
-    inset 0 1px 2px white,
-    0 1px 2px rgba(0, 0, 0, 0.2);
-  appearance: none;
-  margin-inline-start: 0;
-  margin-inline-end: 5px;
-  transition: border 500ms;
-  background: linear-gradient(#fafafa, gainsboro);
-  border-radius: 100%;
-  border: 1px solid #a0a0a0;
-  display: inline-block;
-  height: 25px;
-  margin-top: 0;
-  position: relative;
-  top: 2px;
-  vertical-align: baseline;
-  width: 25px;
+#virtualKeyboardOpenButton:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
-.touchEnable input[type="checkbox"]:checked::before {
-  color: gray;
-  content: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAAKCAYAAABi8KSDAAAAmElEQVR42nXQMQ6EIBAFUI5OQ6TwHibacAIaIx4AbbiAtQGk429wg8lEKX4xzJswwAA0s64rpmlCrZvQGAPO+Z1xHPFgay1Ks8JlWQp6IqWEcw5s33cIIe7DeZ5LXvA4DqSUwPq+J80veF3Xf41t29B1XRPGGOkDtdafMIRwQ4LLNcMwEOi9J5B8Xc4ZSqkmrJgMnOdZ4Ss/HaFLUf+pI9MAAAAASUVORK5CYII=");
-  height: 16px;
-  left: 2px;
-  position: absolute;
+#virtualKeyboardOpenButton:active {
+  transform: scale(0.95);
 }
-.touchEnable input[type="radio"]:checked::before {
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
-  margin-inline-start: 4px;
-  background: gray;
-  border-radius: 10px;
-  content: "";
-  display: inline-block;
-  height: 15px;
-  left: 0;
-  margin-top: 4px;
-  opacity: 1;
-  position: absolute;
-  top: 0;
-  vertical-align: top;
-  width: 15px;
-}
-
-.touchEnable button {
-  box-shadow:
-    inset 0 1px 2px white,
-    0 1px 2px rgba(0, 0, 0, 0.2);
-  user-select: none;
-  background: linear-gradient(#fafafa, gainsboro);
-  border-radius: 3px;
-  border: 1px solid #a0a0a0;
-  cursor: default;
-  font-size: 13px;
-  font-weight: 400;
-  margin: 0;
-  padding: 15px 40px;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
-}
-.touchEnable input[type="text"],
-.touchEnable input[type="search"],
-.touchEnable input[type="password"],
-.touchEnable textarea {
-  box-shadow:
-    inset 0 2px 2px rgba(0, 0, 0, 0.1),
-    0 1px 0 white,
-    0 0 1px transparent,
-    0 0 1px transparent,
-    0 0 1px transparent;
-  margin-inline-end: 7px;
-  margin-inline-start: 2px;
-  transition:
-    box-shadow 100ms,
-    background 100ms,
-    border 500ms;
-  border-radius: 3px;
-  border: 1px solid #a0a0a0;
-  font-size: 13px;
-  font-weight: 400;
-  margin: 0;
-  padding: 7px;
-  font-size: 20px;
+#virtualKeyboardOpenButton[data-hidden="true"] {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8);
 }

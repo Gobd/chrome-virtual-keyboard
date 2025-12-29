@@ -21,6 +21,7 @@ const DOM_IDS = {
   URL_BAR_TEXTBOX: "virtualKeyboardChromeExtensionUrlBarTextBox",
   SETTINGS_BUTTON: "settingsButton",
   URL_BUTTON: "urlButton",
+  OPEN_BUTTON: "virtualKeyboardOpenButton",
 };
 
 // CSS selectors and classes
@@ -41,13 +42,6 @@ const TIMING = {
   KEYBOARD_HIDE_DELAY: 500,
   URL_BAR_HIGHLIGHT_DELAY: 500,
   URL_BAR_FOCUS_DELAY: 200,
-};
-
-// Character shift mapping for special characters
-const SHIFT_CHAR_MAP = {
-  // Hungarian special characters
-  "\u0151": "\u0150", // ő -> Ő
-  "\u0171": "\u0170", // ű -> Ű
 };
 
 // =============================================================================
@@ -76,12 +70,16 @@ const state = {
   },
   settings: {
     layout: "en",
+    showOpenButton: true,
+    keyboardZoom: 100,
   },
+  urlBarOpen: false,
   closeTimer: null,
   iframeCount: 0,
   pointerOverKeyboard: false,
   observer: null,
   shadowObservers: new WeakMap(),
+  openButton: null,
 };
 
 // =============================================================================
@@ -128,6 +126,14 @@ function $(id) {
   return document.getElementById(id);
 }
 
+function loadCSS() {
+  const link = document.createElement("link");
+  link.href = chrome.runtime.getURL("style.css");
+  link.type = "text/css";
+  link.rel = "stylesheet";
+  document.head.appendChild(link);
+}
+
 function $$(selector, root = document) {
   return root.querySelectorAll(selector);
 }
@@ -163,6 +169,14 @@ function insertTextAtCursor(text) {
     selection.removeAllRanges();
     selection.addRange(range);
   }
+}
+
+function insertTextAtPosition(input, text) {
+  const pos = input.selectionStart;
+  const posEnd = input.selectionEnd;
+  input.value = input.value.slice(0, pos) + text + input.value.slice(posEnd);
+  input.selectionStart = input.selectionEnd = pos + text.length;
+  dispatchEvent(input, "input");
 }
 
 function deleteAtCursor() {
@@ -216,11 +230,6 @@ function getKeyWithShift(element) {
 }
 
 function applyShiftToCharacter(char) {
-  // Check special character map first
-  if (SHIFT_CHAR_MAP[char]) {
-    return SHIFT_CHAR_MAP[char];
-  }
-
   const charCode = char.charCodeAt(0);
 
   // Lowercase a-z (97-122) -> Uppercase A-Z (65-90)
@@ -239,21 +248,6 @@ function applyShiftToCharacter(char) {
 // =============================================================================
 // UTILITY FUNCTIONS
 // =============================================================================
-
-function getParentByTagName(element, tagName) {
-  let currentParent = element.parentNode;
-  const targetTag = tagName.toLowerCase();
-  let iterationCount = 0;
-
-  while (iterationCount < 500 && currentParent) {
-    if (currentParent.tagName?.toLowerCase() === targetTag) {
-      return currentParent;
-    }
-    currentParent = currentParent.parentNode;
-    iterationCount++;
-  }
-  return null;
-}
 
 function clickSubmitButton(form, inputType) {
   const inputs = form.querySelectorAll(inputType);
@@ -291,9 +285,13 @@ function closeKeyboard() {
   state.keyboard.open = false;
   const keyboard = $(DOM_IDS.KEYBOARD);
 
-  keyboard.style.transform = "translate3d(0,450px,0)";
+  keyboard.style.transform = "translateX(-50%) translate3d(0,450px,0)";
   keyboard.style.opacity = "0";
   keyboard.setAttribute("data-state", "closed");
+
+  // Show the open button and broadcast to iframes
+  showOpenButton();
+  broadcastKeyboardState(false);
 
   setTimeout(() => {
     if (!state.keyboard.open) {
@@ -354,8 +352,8 @@ async function openKeyboard(posY, posX, force) {
   }
 
   // Move keyboard to fullscreen element if needed
-  if (document.webkitFullscreenElement) {
-    document.webkitFullscreenElement.appendChild(state.keyboard.element);
+  if (document.fullscreenElement) {
+    document.fullscreenElement.appendChild(state.keyboard.element);
   } else {
     document.body.appendChild(state.keyboard.element);
   }
@@ -388,6 +386,10 @@ function openKeyboardUI(posY) {
   clearTimeout(state.closeTimer);
   state.scroll.lastPos = window.scrollY;
 
+  // Hide the open button and broadcast to iframes
+  hideOpenButton();
+  broadcastKeyboardState(true);
+
   // Add body padding
   if (!document.body.style.marginBottom || state.scroll.pagePadding) {
     document.body.style.marginBottom = $(DOM_IDS.KEYBOARD).offsetHeight + "px";
@@ -397,7 +399,7 @@ function openKeyboardUI(posY) {
   state.keyboard.open = true;
   const keyboard = $(DOM_IDS.KEYBOARD);
   keyboard.style.display = "";
-  keyboard.style.transform = "translate3d(0,0,0)";
+  keyboard.style.transform = "translateX(-50%) translate3d(0,0,0)";
   keyboard.style.opacity = "1";
   keyboard.setAttribute("data-state", "open");
 
@@ -477,7 +479,13 @@ function handleKeyPress(key, skip = false) {
       break;
 
     case "Url":
-      $(DOM_IDS.URL_BAR_TEXTBOX).focus();
+      if (state.urlBarOpen) {
+        // URL bar is open, insert ".com"
+        insertTextAtPosition($(DOM_IDS.URL_BAR_TEXTBOX), ".com");
+      } else {
+        // Open URL bar
+        $(DOM_IDS.URL_BAR_TEXTBOX).focus();
+      }
       break;
 
     case "Settings":
@@ -529,7 +537,7 @@ function handleEnter() {
   if (state.focused.type === "textarea") {
     const pos = elem.selectionStart;
     const posEnd = elem.selectionEnd;
-    elem.value = elem.value.substr(0, pos) + "\n" + elem.value.substr(posEnd);
+    elem.value = elem.value.slice(0, pos) + "\n" + elem.value.slice(posEnd);
     elem.selectionStart = elem.selectionEnd = pos + 1;
   } else if (isContentEditable()) {
     const selection = window.getSelection();
@@ -546,7 +554,7 @@ function handleEnter() {
     dispatchEvent(elem, "input");
     fireOnChange();
   } else {
-    const form = getParentByTagName(elem, "form");
+    const form = elem.closest("form");
     if (form) {
       const submitted =
         clickSubmitButton(form, "input") || clickSubmitButton(form, "button");
@@ -579,7 +587,7 @@ function handleBackspace() {
     const posEnd = elem.selectionEnd;
     if (posEnd === pos) pos--;
 
-    elem.value = elem.value.substr(0, pos) + elem.value.substr(posEnd);
+    elem.value = elem.value.slice(0, pos) + elem.value.slice(posEnd);
     elem.selectionStart = elem.selectionEnd = pos;
   }
 
@@ -608,7 +616,7 @@ function insertCharacter(key) {
       elem.dispatchEvent(createKeyboardEvent("keydown", key.charCodeAt(0)));
       const pos = elem.selectionStart;
       const posEnd = elem.selectionEnd;
-      elem.value = elem.value.substr(0, pos) + key + elem.value.substr(posEnd);
+      elem.value = elem.value.slice(0, pos) + key + elem.value.slice(posEnd);
       elem.selectionStart = elem.selectionEnd = pos + 1;
       state.focused.changed = true;
       resetShiftIfNeeded();
@@ -993,6 +1001,7 @@ function initUrlBar() {
     $(DOM_IDS.URL_BAR).style.top = "-100px";
     const urlBtn = $(DOM_IDS.URL_BUTTON);
     if (urlBtn) urlBtn.setAttribute("highlight", "");
+    setUrlButtonMode(false);
     fireOnChange();
     state.focused.element = null;
     state.closeTimer = setTimeout(
@@ -1009,6 +1018,7 @@ function initUrlBar() {
 
     const urlBtn = $(DOM_IDS.URL_BUTTON);
     if (urlBtn) urlBtn.setAttribute("highlight", "true");
+    setUrlButtonMode(true);
 
     if (!state.keyboard.open) {
       openKeyboard(0, 0, true);
@@ -1030,6 +1040,87 @@ function initUrlBar() {
   if (urlBtn) urlBtn.style.display = "";
 }
 
+function setUrlButtonMode(isDotCom) {
+  const urlBtn = $(DOM_IDS.URL_BUTTON);
+  if (!urlBtn) return;
+
+  const span = urlBtn.querySelector("span");
+  if (span) {
+    span.textContent = isDotCom ? ".com" : "URL";
+  }
+  state.urlBarOpen = isDotCom;
+}
+
+// =============================================================================
+// OPEN BUTTON (FLOATING KEYBOARD TRIGGER)
+// =============================================================================
+
+function createOpenButton() {
+  if ($(DOM_IDS.OPEN_BUTTON)) return; // Already exists
+  if (!state.settings.showOpenButton) return; // Setting disabled
+
+  const button = document.createElement("button");
+  button.id = DOM_IDS.OPEN_BUTTON;
+  button.type = "button";
+  button.textContent = "⌨";
+  button.title = "Open virtual keyboard";
+
+  button.addEventListener("click", handleOpenButtonClick);
+  button.addEventListener("pointerdown", preventDefault);
+
+  document.body.appendChild(button);
+  state.openButton = button;
+}
+
+function handleOpenButtonClick(event) {
+  preventDefault(event);
+
+  // Check if in same-origin iframe
+  const inIframe = top !== self && window.frameElement !== null;
+
+  if (inIframe) {
+    // Relay to top frame
+    chrome.runtime.sendMessage({
+      method: "openFromButton",
+    });
+  } else {
+    // Open keyboard directly (no focused element, just show it)
+    openKeyboardFromButton();
+  }
+}
+
+async function openKeyboardFromButton() {
+  // Load layout if needed
+  if (state.keyboard.loadedLayout !== state.settings.layout) {
+    await loadLayout(state.settings.layout);
+  }
+  openKeyboardUI(0);
+}
+
+function showOpenButton() {
+  const button = $(DOM_IDS.OPEN_BUTTON);
+  if (button) {
+    button.setAttribute("data-hidden", "false");
+  }
+}
+
+function hideOpenButton() {
+  const button = $(DOM_IDS.OPEN_BUTTON);
+  if (button) {
+    button.setAttribute("data-hidden", "true");
+  }
+}
+
+function broadcastKeyboardState(isOpen) {
+  // Only broadcast from top frame
+  if (top === self) {
+    chrome.runtime.sendMessage({
+      method: "keyboardStateChange",
+      isOpen,
+    });
+  }
+}
+
 // =============================================================================
 // DOCUMENT-LEVEL EVENT HANDLERS
 // =============================================================================
@@ -1047,6 +1138,8 @@ async function loadSettings() {
     "openedFirstTime",
     "keyboardLayout1",
     "keyboardLayoutsList",
+    "showOpenButton",
+    "keyboardZoom",
   ]);
 
   // First time setup
@@ -1056,11 +1149,17 @@ async function loadSettings() {
       keyboardLayout1: "en",
       keyboardLayoutsList: JSON.stringify(layouts),
       openedFirstTime: "true",
+      showOpenButton: true,
+      keyboardZoom: 100,
     });
 
     state.settings.layout = "en";
+    state.settings.showOpenButton = true;
+    state.settings.keyboardZoom = 100;
   } else {
     state.settings.layout = result.keyboardLayout1 || "en";
+    state.settings.showOpenButton = result.showOpenButton !== false;
+    state.settings.keyboardZoom = result.keyboardZoom || 100;
   }
 }
 
@@ -1091,11 +1190,24 @@ async function init() {
     keyboard.addEventListener("pointerleave", () => {
       state.pointerOverKeyboard = false;
     });
+
+    // Apply zoom setting
+    applyKeyboardZoom();
   }
 
   // Init UI components
   initUrlBar();
   initKeyboardKeys(true);
+
+  // Create the floating open button
+  createOpenButton();
+}
+
+function applyKeyboardZoom() {
+  const keyboard = $(DOM_IDS.KEYBOARD);
+  if (!keyboard) return;
+
+  keyboard.style.zoom = state.settings.keyboardZoom / 100;
 }
 
 // =============================================================================
@@ -1128,9 +1240,12 @@ if (top === self) {
         const pY = request.posY + getElementPositionY($(request.frame));
         openKeyboard(pY, pX, request.force);
       }
+    } else if (request.method === "openFromButton") {
+      // Open keyboard from iframe button click (no focused element)
+      openKeyboardFromButton();
     } else if (request.method === "clickFromIframe") {
       handleKeyPress(request.key, request.skip);
-    } else if (request === "openUrlBar") {
+    } else if (request.method === "openUrlBar") {
       setTimeout(
         () => $(DOM_IDS.URL_BAR_TEXTBOX)?.focus(),
         TIMING.URL_BAR_FOCUS_DELAY,
@@ -1146,18 +1261,24 @@ if (top === self) {
   }
 }
 
+// Listen for keyboard state broadcasts in all frames (including iframes)
+chrome.runtime.onMessage.addListener((request) => {
+  if (request.method === "keyboardStateChange") {
+    if (request.isOpen) {
+      hideOpenButton();
+    } else {
+      showOpenButton();
+    }
+  }
+});
+
 // =============================================================================
 // LOAD KEYBOARD HTML AND CSS
 // =============================================================================
 
 async function loadKeyboardHTML() {
   try {
-    // Load CSS
-    const link = document.createElement("link");
-    link.href = chrome.runtime.getURL("style.css");
-    link.type = "text/css";
-    link.rel = "stylesheet";
-    document.head.appendChild(link);
+    loadCSS();
 
     // Load keyboard HTML
     const response = await fetch(chrome.runtime.getURL("keyboard.html"));
@@ -1188,6 +1309,7 @@ const isCrossOriginIframe = top !== self && window.frameElement === null;
 if (isTopFrame || isCrossOriginIframe) {
   loadKeyboardHTML();
 } else {
-  // Same-origin iframe - just bind inputs
+  // Same-origin iframe - load CSS and bind inputs (no keyboard HTML needed)
+  loadCSS();
   init();
 }
