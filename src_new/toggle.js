@@ -6,6 +6,6 @@ document.getElementById('openUrl').addEventListener('click', () => {
 });
 
 document.getElementById('openSettings').addEventListener('click', () => {
-  window.open(chrome.runtime.getURL('options.html'));
+  chrome.runtime.openOptionsPage();
   window.close();
 });

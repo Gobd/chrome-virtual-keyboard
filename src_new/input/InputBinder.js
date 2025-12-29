@@ -166,13 +166,6 @@ export function processAddedNode(node) {
     bindAllInputs(node);
   }
 
-  // Check for shadow root
-  if (node.shadowRoot) {
-    emit(EVENTS.IFRAME_MESSAGE, {
-      type: 'shadowRootFound',
-      shadowRoot: node.shadowRoot,
-    });
-  }
 }
 
 export default {

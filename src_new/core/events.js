@@ -78,39 +78,17 @@ export const EVENTS = {
   // Keyboard events
   KEYBOARD_OPEN: 'keyboard:open',
   KEYBOARD_CLOSE: 'keyboard:close',
-  KEYBOARD_TOGGLE: 'keyboard:toggle',
-  KEYBOARD_LAYOUT_CHANGE: 'keyboard:layoutChange',
-
-  // Key events
-  KEY_PRESS: 'key:press',
-  KEY_SHIFT: 'key:shift',
-  KEY_BACKSPACE: 'key:backspace',
-  KEY_ENTER: 'key:enter',
 
   // Input events
   INPUT_FOCUS: 'input:focus',
   INPUT_BLUR: 'input:blur',
-  INPUT_CHANGE: 'input:change',
 
   // URL bar events
   URL_BAR_OPEN: 'urlBar:open',
-  URL_BAR_CLOSE: 'urlBar:close',
-
-  // Settings events
-  SETTINGS_CHANGE: 'settings:change',
-
-  // Overlay events
-  OVERLAY_OPEN: 'overlay:open',
-  OVERLAY_CLOSE: 'overlay:close',
-  OVERLAY_CLOSE_ALL: 'overlay:closeAll',
 
   // Open button events
   OPEN_BUTTON_SHOW: 'openButton:show',
   OPEN_BUTTON_HIDE: 'openButton:hide',
-  OPEN_BUTTON_CLICK: 'openButton:click',
-
-  // Iframe communication
-  IFRAME_MESSAGE: 'iframe:message',
 };
 
 // Export default object for convenient import

@@ -79,10 +79,20 @@ function clearLayoutCache() {
  * @returns {NodeList}
  */
 function getCachedShiftKeys() {
-  if (!cachedElements.shiftKeys && shadowRoot) {
-    cachedElements.shiftKeys = shadowRoot.querySelectorAll(`.${CSS_CLASSES.KEY_CASE_DISPLAY}`);
+  return getOrCache('shiftKeys', () => shadowRoot.querySelectorAll(`.${CSS_CLASSES.KEY_CASE_DISPLAY}`)) || [];
+}
+
+/**
+ * Generic cache helper - get or populate cache on first access
+ * @param {string} key - Cache key
+ * @param {Function} queryFn - Function to get value if not cached
+ * @returns {*} Cached value
+ */
+function getOrCache(key, queryFn) {
+  if (!cachedElements[key] && shadowRoot) {
+    cachedElements[key] = queryFn();
   }
-  return cachedElements.shiftKeys || [];
+  return cachedElements[key] || (Array.isArray(cachedElements[key]) ? [] : null);
 }
 
 /**
@@ -90,14 +100,29 @@ function getCachedShiftKeys() {
  * @returns {{emailKeys: NodeList, hideEmailKeys: NodeList}}
  */
 function getCachedEmailKeys() {
-  if (!cachedElements.emailKeys && shadowRoot) {
-    cachedElements.emailKeys = shadowRoot.querySelectorAll(`.${CSS_CLASSES.EMAIL_INPUT}`);
-    cachedElements.hideEmailKeys = shadowRoot.querySelectorAll(`.${CSS_CLASSES.HIDE_EMAIL_INPUT}`);
-  }
   return {
-    emailKeys: cachedElements.emailKeys || [],
-    hideEmailKeys: cachedElements.hideEmailKeys || [],
+    emailKeys: getOrCache('emailKeys', () => shadowRoot.querySelectorAll(`.${CSS_CLASSES.EMAIL_INPUT}`)),
+    hideEmailKeys: getOrCache('hideEmailKeys', () => shadowRoot.querySelectorAll(`.${CSS_CLASSES.HIDE_EMAIL_INPUT}`)),
   };
+}
+
+/**
+ * Set URL bar open/closed state (single source of truth)
+ * @param {boolean} isOpen - Whether URL bar should be open
+ * @param {boolean} clearInput - Whether to clear the input value
+ */
+function setUrlBarOpen(isOpen, clearInput = false) {
+  const { urlBar, urlBarTextbox } = getCachedElements();
+  if (!urlBar) return;
+
+  urlBar.dataset.open = String(isOpen);
+  urlBar.style.display = isOpen ? '' : 'none';
+  urlBarState.set('open', isOpen);
+  setUrlButtonMode(isOpen);
+
+  if (clearInput && urlBarTextbox) {
+    urlBarTextbox.value = '';
+  }
 }
 
 /**
@@ -258,11 +283,12 @@ function createUrlBar() {
     urlBarCloseTimeout = setTimeout(() => {
       // Only close if still blurred (not refocused)
       if (document.activeElement !== input && !refocusing) {
+        // Use local urlBar reference (closure) since cache may not be populated yet
         urlBar.dataset.open = 'false';
-        urlBar.style.display = 'none'; // Hide URL bar
+        urlBar.style.display = 'none';
         urlBarState.set('open', false);
         setUrlButtonMode(false);
-        input.value = ''; // Clear the URL bar input
+        input.value = '';
 
         focusState.set('element', null);
         runtimeState.set('closeTimer', setTimeout(() => {
@@ -279,8 +305,9 @@ function createUrlBar() {
       type: 'input',
       element: input,
     });
+    // Use local urlBar reference (closure) since cache may not be populated yet
     urlBar.dataset.open = 'true';
-    urlBar.style.display = ''; // Show URL bar
+    urlBar.style.display = '';
     urlBarState.set('open', true);
     setUrlButtonMode(true);
 
@@ -343,46 +370,80 @@ async function createLanguageOverlay() {
 }
 
 /**
- * Create the number input keyboard (for number/tel inputs)
+ * Special key configurations for button creation
  */
-function createNumberInputKeyboard() {
+const SPECIAL_KEY_CONFIG = {
+  Backspace: { className: 'vk-key-backspace', icon: 'vk-icon-backspace' },
+  Enter: { className: 'vk-key-enter', icon: 'vk-icon-enter' },
+  '&123': { className: 'vk-key-action', text: 'ABC' },
+  Close: { className: 'vk-key-action', icon: 'vk-icon-close' },
+};
+
+/**
+ * Create a keyboard button element
+ * @param {string} key - Key value
+ * @param {string} [extraClass] - Extra CSS class to add
+ * @returns {HTMLButtonElement}
+ */
+function createKeyButton(key, extraClass = '') {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.dataset.key = key;
+
+  const config = SPECIAL_KEY_CONFIG[key];
+  if (config) {
+    btn.className = `vk-key ${config.className} ${CSS_CLASSES.KEY_CLICK}`;
+    const span = document.createElement('span');
+    if (config.icon) {
+      span.className = `vk-icon ${config.icon}`;
+    } else if (config.text) {
+      span.textContent = config.text;
+    }
+    btn.appendChild(span);
+  } else {
+    btn.className = `vk-key ${extraClass} ${CSS_CLASSES.KEY_CLICK}`.trim();
+    const span = document.createElement('span');
+    span.textContent = key === 'Enter' ? '↵' : key;
+    btn.appendChild(span);
+  }
+
+  return btn;
+}
+
+/**
+ * Create a keyboard from rows of keys
+ * @param {string} id - Container element ID
+ * @param {string[][]} rows - Array of key rows
+ * @param {string} [keyClass] - Extra class for regular keys
+ * @returns {HTMLDivElement}
+ */
+function createKeyboardFromRows(id, rows, keyClass = '') {
   const container = document.createElement('div');
-  container.id = DOM_IDS.NUMBER_BAR_INPUT;
+  container.id = id;
   container.style.display = 'none';
 
-  const keys = [
-    ['7', '8', '9', '#'],
-    ['4', '5', '6', '-', ')'],
-    ['1', '2', '3', '+', '('],
-    ['0', '.', '*', '$', 'Enter'],
-  ];
-
-  for (const row of keys) {
+  for (const row of rows) {
     const rowDiv = document.createElement('div');
     rowDiv.className = 'vk-row';
     for (const key of row) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = `vk-key ${CSS_CLASSES.KEY_CLICK}`;
-      btn.dataset.key = key;
-      const span = document.createElement('span');
-      span.textContent = key === 'Enter' ? '↵' : key;
-      btn.appendChild(span);
-      rowDiv.appendChild(btn);
+      rowDiv.appendChild(createKeyButton(key, keyClass));
     }
     container.appendChild(rowDiv);
   }
 
-  // Add backspace
-  const backspaceBtn = document.createElement('button');
-  backspaceBtn.type = 'button';
-  backspaceBtn.className = `vk-key vk-key-backspace ${CSS_CLASSES.KEY_CLICK}`;
-  backspaceBtn.dataset.key = 'Backspace';
-  const backspaceSpan = document.createElement('span');
-  backspaceSpan.className = 'vk-icon vk-icon-backspace';
-  backspaceBtn.appendChild(backspaceSpan);
-
   return container;
+}
+
+/**
+ * Create the number input keyboard (for number/tel inputs)
+ */
+function createNumberInputKeyboard() {
+  return createKeyboardFromRows(DOM_IDS.NUMBER_BAR_INPUT, [
+    ['7', '8', '9', '#'],
+    ['4', '5', '6', '-', ')'],
+    ['1', '2', '3', '+', '('],
+    ['0', '.', '*', '$', 'Enter'],
+  ]);
 }
 
 /**
@@ -393,26 +454,9 @@ function createNumberBar() {
   container.id = 'vk-number-bar';
   container.className = 'vk-row';
 
-  for (let i = 1; i <= 9; i++) {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = `vk-key vk-number-key ${CSS_CLASSES.KEY_CLICK}`;
-    btn.dataset.key = String(i);
-    const span = document.createElement('span');
-    span.textContent = String(i);
-    btn.appendChild(span);
-    container.appendChild(btn);
+  for (const key of ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']) {
+    container.appendChild(createKeyButton(key, 'vk-number-key'));
   }
-
-  // Add 0
-  const zeroBtn = document.createElement('button');
-  zeroBtn.type = 'button';
-  zeroBtn.className = `vk-key vk-number-key ${CSS_CLASSES.KEY_CLICK}`;
-  zeroBtn.dataset.key = '0';
-  const zeroSpan = document.createElement('span');
-  zeroSpan.textContent = '0';
-  zeroBtn.appendChild(zeroSpan);
-  container.appendChild(zeroBtn);
 
   return container;
 }
@@ -421,57 +465,12 @@ function createNumberBar() {
  * Create the numbers/symbols keyboard
  */
 function createNumbersKeyboard() {
-  const container = document.createElement('div');
-  container.id = DOM_IDS.MAIN_NUMBERS;
-  container.style.display = 'none';
-
-  const rows = [
+  return createKeyboardFromRows(DOM_IDS.MAIN_NUMBERS, [
     ['_', '\\', ':', ';', ')', '(', '/', '^', '1', '2', '3', 'Backspace'],
     ['€', '$', '£', '&', '@', '"', '*', '~', '4', '5', '6', 'Enter'],
     ['?', '!', "'", '_', '<', '>', '-', '`', '7', '8', '9', '&123'],
     ['[', ']', '{', '}', '#', ',', '+', '%', '0', '0', '.', 'Close'],
-  ];
-
-  for (const row of rows) {
-    const rowDiv = document.createElement('div');
-    rowDiv.className = 'vk-row';
-    for (const key of row) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.dataset.key = key;
-
-      if (key === 'Backspace') {
-        btn.className = `vk-key vk-key-backspace ${CSS_CLASSES.KEY_CLICK}`;
-        const span = document.createElement('span');
-        span.className = 'vk-icon vk-icon-backspace';
-        btn.appendChild(span);
-      } else if (key === 'Enter') {
-        btn.className = `vk-key vk-key-enter ${CSS_CLASSES.KEY_CLICK}`;
-        const span = document.createElement('span');
-        span.className = 'vk-icon vk-icon-enter';
-        btn.appendChild(span);
-      } else if (key === '&123') {
-        btn.className = `vk-key vk-key-action ${CSS_CLASSES.KEY_CLICK}`;
-        const span = document.createElement('span');
-        span.textContent = 'ABC';
-        btn.appendChild(span);
-      } else if (key === 'Close') {
-        btn.className = `vk-key vk-key-action ${CSS_CLASSES.KEY_CLICK}`;
-        const span = document.createElement('span');
-        span.className = 'vk-icon vk-icon-close';
-        btn.appendChild(span);
-      } else {
-        btn.className = `vk-key ${CSS_CLASSES.KEY_CLICK}`;
-        const span = document.createElement('span');
-        span.textContent = key;
-        btn.appendChild(span);
-      }
-      rowDiv.appendChild(btn);
-    }
-    container.appendChild(rowDiv);
-  }
-
-  return container;
+  ]);
 }
 
 /**
@@ -554,11 +553,10 @@ function toggleOverlay(menuId, clientX, clientY) {
                   shadowRoot.getElementById(DOM_IDS.OVERLAY_LANGUAGE);
   if (!overlay) return;
 
-  if (overlay.dataset.state === 'open') {
-    closeAllOverlays();
-  } else {
-    // Close any other open overlays first
-    closeAllOverlays();
+  const isOpen = overlay.dataset.state === 'open';
+  closeAllOverlays();
+
+  if (!isOpen) {
     // Show this overlay
     overlay.style.display = '';
     overlay.style.left = `${clientX - overlay.offsetWidth / 2}px`;
@@ -581,8 +579,10 @@ function closeAllOverlays() {
     clearTimeout(overlayCloseTimeout);
   }
 
+  // Store reference to avoid re-querying in timeout
+  const overlaysList = Array.from(overlays);
   overlayCloseTimeout = setTimeout(() => {
-    for (const overlay of overlays) {
+    for (const overlay of overlaysList) {
       if (overlay.dataset.state === 'closed') {
         overlay.style.display = 'none';
       }
@@ -626,15 +626,9 @@ function setupEventListeners() {
   on(EVENTS.KEYBOARD_CLOSE, close);
 
   on(EVENTS.URL_BAR_OPEN, () => {
-    const { urlBar, urlBarTextbox } = getCachedElements();
-    if (urlBar && urlBarTextbox) {
-      // Show URL bar first, then focus
-      urlBar.style.display = '';
-      urlBar.dataset.open = 'true';
-      urlBarState.set('open', true);
-      setUrlButtonMode(true);
-      urlBarTextbox.focus();
-    }
+    setUrlBarOpen(true);
+    const { urlBarTextbox } = getCachedElements();
+    if (urlBarTextbox) urlBarTextbox.focus();
   });
 }
 
@@ -650,6 +644,7 @@ export async function loadLayout(layoutId) {
 
   // Clear layout-specific cached elements (shift keys, email keys)
   clearLayoutCache();
+  invalidateKeyboardHeightCache();
 
   // Render new layout
   const fragment = renderLayout(layoutId);
@@ -737,16 +732,8 @@ export function close() {
   keyboardElement.classList.add(CSS_CLASSES.KEYBOARD_CLOSED);
 
   // Close URL bar if open
-  const { urlBar, urlBarTextbox } = getCachedElements();
-  if (urlBar && urlBarState.get('open')) {
-    urlBar.dataset.open = 'false';
-    urlBar.style.display = 'none';
-    urlBarState.set('open', false);
-    setUrlButtonMode(false);
-    // Clear the URL bar input
-    if (urlBarTextbox) {
-      urlBarTextbox.value = '';
-    }
+  if (urlBarState.get('open')) {
+    setUrlBarOpen(false, true);
   }
 
   // Show open button
@@ -769,11 +756,26 @@ export function close() {
   }, TIMING.KEYBOARD_HIDE_DELAY);
 }
 
+// Cached keyboard height to avoid repeated getComputedStyle calls
+let cachedKeyboardHeight = null;
+
 /**
- * Update the scroll extend element height
+ * Invalidate cached keyboard height (call when layout or zoom changes)
  */
-function updateScrollExtend() {
-  if (!scrollExtendElement || !keyboardElement) return;
+function invalidateKeyboardHeightCache() {
+  cachedKeyboardHeight = null;
+}
+
+/**
+ * Get keyboard height with caching to avoid layout thrashing
+ * @returns {number}
+ */
+function getKeyboardHeight() {
+  if (cachedKeyboardHeight !== null) {
+    return cachedKeyboardHeight;
+  }
+
+  if (!keyboardElement) return 0;
 
   const style = window.getComputedStyle(keyboardElement);
   const height =
@@ -782,7 +784,17 @@ function updateScrollExtend() {
     parseFloat(style.paddingBottom);
   const zoom = parseFloat(style.zoom) || 1;
 
-  scrollExtendElement.style.height = `${height * zoom}px`;
+  cachedKeyboardHeight = height * zoom;
+  return cachedKeyboardHeight;
+}
+
+/**
+ * Update the scroll extend element height
+ */
+function updateScrollExtend() {
+  if (!scrollExtendElement || !keyboardElement) return;
+
+  scrollExtendElement.style.height = `${getKeyboardHeight()}px`;
   scrollExtendElement.style.display = 'block';
 }
 
@@ -839,7 +851,6 @@ function renderInputType() {
 
   // Hide email keys and reset URL button by default
   setEmailKeysVisibility(false);
-  runtimeState.set('emailInputMode', false);
   // Only reset URL button if URL bar is not open
   if (!urlBarState.get('open')) {
     setUrlButtonMode(false);
@@ -855,7 +866,6 @@ function renderInputType() {
       // Show email keys (@) and change URL button to .com
       setEmailKeysVisibility(true);
       setUrlButtonMode(true);
-      runtimeState.set('emailInputMode', true);
     }
   }
 }
@@ -896,6 +906,7 @@ function applyZoom() {
   if (!keyboardElement) return;
   const zoom = settingsState.get('keyboardZoom') / 100;
   keyboardElement.style.zoom = zoom;
+  invalidateKeyboardHeightCache();
 }
 
 /**

@@ -6,6 +6,43 @@ import { bindInput, isSupportedInput, bindAllInputs, processAddedNode } from './
 // WeakMap to track observers per shadow root (prevents memory leaks)
 const shadowObservers = new WeakMap();
 
+// Debounce timeout for mutation processing
+const DEBOUNCE_DELAY = 16; // ~1 frame at 60fps
+let pendingMutations = [];
+let debounceTimeout = null;
+
+/**
+ * Process pending mutations (debounced)
+ */
+function processPendingMutations() {
+  const mutations = pendingMutations;
+  pendingMutations = [];
+  debounceTimeout = null;
+
+  for (const mutation of mutations) {
+    for (const node of mutation.addedNodes) {
+      processAddedNode(node);
+      if (node.nodeType === Node.ELEMENT_NODE && node.shadowRoot) {
+        observeShadowRoot(node.shadowRoot);
+      }
+    }
+    for (const node of mutation.removedNodes) {
+      processRemovedNode(node);
+    }
+  }
+}
+
+/**
+ * Queue mutations for debounced processing
+ * @param {MutationRecord[]} mutations
+ */
+function queueMutations(mutations) {
+  pendingMutations.push(...mutations);
+  if (!debounceTimeout) {
+    debounceTimeout = setTimeout(processPendingMutations, DEBOUNCE_DELAY);
+  }
+}
+
 /**
  * Start observing a shadow root for input changes
  * @param {ShadowRoot} shadowRoot
@@ -134,20 +171,7 @@ export function bindAllInputsDeep(root = document) {
  * @returns {MutationObserver}
  */
 function createObserver() {
-  return new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      for (const node of mutation.addedNodes) {
-        processAddedNode(node);
-        // Check for shadow roots
-        if (node.nodeType === Node.ELEMENT_NODE && node.shadowRoot) {
-          observeShadowRoot(node.shadowRoot);
-        }
-      }
-      for (const node of mutation.removedNodes) {
-        processRemovedNode(node);
-      }
-    }
-  });
+  return new MutationObserver(queueMutations);
 }
 
 /**

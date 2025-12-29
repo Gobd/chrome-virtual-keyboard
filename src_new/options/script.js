@@ -33,24 +33,16 @@ function addLayout() {
 
   if (!available || available.length === 0) return;
 
+  // Use Set for O(1) existence check instead of O(n) loop
+  const existingValues = new Set(Array.from(selected, (opt) => opt.value));
+
   for (const opt of available) {
-    if (!opt.selected) continue;
+    if (!opt.selected || existingValues.has(opt.value)) continue;
 
-    // Check if already exists
-    let exists = false;
-    for (const existingOpt of selected) {
-      if (existingOpt.value === opt.value) {
-        exists = true;
-        break;
-      }
-    }
-
-    if (!exists) {
-      const newOpt = document.createElement('option');
-      newOpt.text = opt.text;
-      newOpt.value = opt.value;
-      $('sl').options.add(newOpt);
-    }
+    const newOpt = document.createElement('option');
+    newOpt.text = opt.text;
+    newOpt.value = opt.value;
+    $('sl').options.add(newOpt);
   }
 
   saveLayouts();

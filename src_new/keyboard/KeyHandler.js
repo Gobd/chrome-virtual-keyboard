@@ -2,7 +2,7 @@
 // Handles key press events and synthetic event dispatching
 
 import { SPECIAL_KEYS } from '../core/config.js';
-import { focusState, keyboardState, urlBarState, runtimeState } from '../core/state.js';
+import { focusState, keyboardState, urlBarState } from '../core/state.js';
 import { emit, EVENTS } from '../core/events.js';
 import { applyShiftToCharacter } from './KeyMap.js';
 import { markChanged, clearCloseTimer } from '../input/InputTracker.js';
@@ -70,9 +70,11 @@ export function handleKeyPress(key, options = {}) {
  * Handle URL button press
  */
 function handleUrl() {
-  if (urlBarState.get('open') || runtimeState.get('emailInputMode')) {
+  const element = focusState.get('element');
+  const isEmailInput = element?.getAttribute?.('data-original-type') === 'email';
+
+  if (urlBarState.get('open') || isEmailInput) {
     // URL bar is open OR email input focused, insert ".com"
-    const element = focusState.get('element');
     if (element) {
       insertTextAtPosition(element, '.com');
     }
@@ -86,7 +88,7 @@ function handleUrl() {
  * Handle settings button press
  */
 function handleSettings() {
-  window.open(chrome.runtime.getURL('options.html'));
+  chrome.runtime.openOptionsPage();
 }
 
 /**
@@ -160,7 +162,6 @@ function handleEnter() {
 function handleShift() {
   const current = keyboardState.get('shift');
   keyboardState.set('shift', !current);
-  emit(EVENTS.KEY_SHIFT, !current);
 }
 
 /**
@@ -237,7 +238,6 @@ function insertCharacter(key) {
 function resetShiftIfNeeded() {
   if (keyboardState.get('shift')) {
     keyboardState.set('shift', false);
-    emit(EVENTS.KEY_SHIFT, false);
   }
 }
 

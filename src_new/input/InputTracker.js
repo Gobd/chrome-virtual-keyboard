@@ -71,7 +71,6 @@ export function fireChangeIfNeeded() {
   if (element && changed) {
     focusState.set('changed', false);
     element.dispatchEvent(new Event('change', { bubbles: false }));
-    emit(EVENTS.INPUT_CHANGE, element);
   }
 }
 
