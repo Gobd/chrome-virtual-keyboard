@@ -4,15 +4,19 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build": "node build.js",
+    "watch": "node build.js --watch",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "package": "cd src && zip -r ../chrome-virtual-keyboard.zip . -x \".DS_Store\""
+    "package": "pnpm run build && cd dist && zip -r ../chrome-virtual-keyboard.zip . -x \".DS_Store\"",
+    "package:old": "cd src && zip -r ../chrome-virtual-keyboard.zip . -x \".DS_Store\""
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.23.0",
   "devDependencies": {
+    "esbuild": "^0.24.2",
     "prettier": "^3.7.4"
   }
 }

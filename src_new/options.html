@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Virtual Keyboard Settings</title>
+    <link href="options/styles.css" rel="stylesheet" />
+  </head>
+  <body>
+    <h1>Virtual Keyboard Settings</h1>
+    <div id="page">
+      <div id="navigation">
+        <div id="changeEffect">
+          Settings have been saved. Changes take effect when you reload the page.
+        </div>
+      </div>
+      <div id="options">
+        <h2>Display Options</h2>
+        <p>
+          <label>
+            <input type="checkbox" id="showOpenButton" checked />
+            Show keyboard button in lower right corner
+          </label>
+        </p>
+        <p>
+          <label>
+            Keyboard size (%):
+            <input
+              type="number"
+              id="keyboardZoom"
+              value="100"
+              min="25"
+              max="150"
+              style="width: 80px; margin-left: 10px"
+            />
+          </label>
+        </p>
+
+        <h2>Keyboard Layouts</h2>
+        <p>
+          Select which keyboard layouts to enable. The first layout in your
+          chosen list will be the default.
+        </p>
+        <table cellpadding="0" cellspacing="0">
+          <tr>
+            <th>Available Layouts:</th>
+            <th></th>
+            <th>Chosen Layouts:</th>
+          </tr>
+          <tr>
+            <td>
+              <select id="al" multiple class="layout">
+                <option value="en">English (QWERTY)</option>
+                <option value="fr">French (AZERTY)</option>
+                <option value="de">German (QWERTZ)</option>
+                <option value="it">Italian (QWERTY)</option>
+                <option value="kr">Korean</option>
+                <option value="hu">Magyar (QWERTY)</option>
+                <option value="no">Norwegian (QWERTY)</option>
+                <option value="pl">Polish (QWERTY)</option>
+                <option value="ru">Russian (JCUKEN)</option>
+                <option value="sl">Slovenian (QWERTZ)</option>
+                <option value="es">Spanish (QWERTY)</option>
+                <option value="sw">Swedish (QWERTY)</option>
+                <option value="ta">Tamil 99</option>
+                <option value="cs">Czech (QWERTY)</option>
+                <option value="ua">Ukrainian (QWERTY)</option>
+              </select>
+            </td>
+            <td>
+              <button id="kl_add">&gt;</button>
+              <br />
+              <button id="kl_remove">&lt;</button>
+            </td>
+            <td>
+              <select id="sl" multiple class="layout">
+                <option value="en">English (QWERTY)</option>
+              </select>
+            </td>
+          </tr>
+        </table>
+      </div>
+      <div id="links">
+        <h2 style="margin-top: 40px">Credits</h2>
+        <a target="_blank" href="https://github.com/Gobd/chrome-virtual-keyboard">
+          View on GitHub
+        </a>
+        <p id="footer">
+          Developed by: <span>Shaun Tabone & Brian Kemper</span>
+        </p>
+      </div>
+    </div>
+    <script type="module" src="options/script.js"></script>
+  </body>
+</html>
