@@ -10,7 +10,7 @@ import {
   urlBarState,
 } from "../core/state.js";
 import { emit, on, EVENTS } from "../core/events.js";
-import { renderLayout, getLayoutsList } from "../layouts/LayoutRenderer.js";
+import { renderLayout, getLayoutsList } from "../layouts/layoutRenderer.js";
 import { getKeyWithShift } from "./KeyMap.js";
 import { handleKeyPress } from "./KeyHandler.js";
 import {
