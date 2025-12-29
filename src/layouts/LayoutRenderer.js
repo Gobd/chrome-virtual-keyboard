@@ -49,8 +49,11 @@ export function renderLayout(layoutId, options = {}) {
   if (!showSettingsButton) {
     bottomRow = bottomRow.filter((key) => key !== "Settings");
   }
-  const hiddenButtonCount = (!showLanguageButton ? 1 : 0) + (!showSettingsButton ? 1 : 0);
-  fragment.appendChild(renderRow(bottomRow, labels, { widenSpace: hiddenButtonCount > 0 }));
+  const hiddenButtonCount =
+    (!showLanguageButton ? 1 : 0) + (!showSettingsButton ? 1 : 0);
+  fragment.appendChild(
+    renderRow(bottomRow, labels, { widenSpace: hiddenButtonCount > 0 }),
+  );
 
   return fragment;
 }

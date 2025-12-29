@@ -31,12 +31,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": [
-        "style.css",
-        "options.html",
-        "options/*",
-        "buttons/*"
-      ],
+      "resources": ["style.css", "options.html", "options/*", "buttons/*"],
       "matches": ["<all_urls>"]
     }
   ]

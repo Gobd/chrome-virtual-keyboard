@@ -659,14 +659,15 @@ function toggleOverlay(menuId, buttonElement) {
 
     // Check if overlay would overflow viewport on the right
     // Use zoomed overlay width for screen coordinate comparison
-    const overlayRightEdge = keyboardRect.left + (left * zoom) + (overlayWidth * zoom);
+    const overlayRightEdge =
+      keyboardRect.left + left * zoom + overlayWidth * zoom;
     if (overlayRightEdge > window.innerWidth - padding) {
       // Position from right side instead
-      left = (keyboardRect.width / zoom) - overlayWidth - padding;
+      left = keyboardRect.width / zoom - overlayWidth - padding;
     }
 
     // Check if overlay would overflow viewport on the left
-    const overlayLeftEdge = keyboardRect.left + (left * zoom);
+    const overlayLeftEdge = keyboardRect.left + left * zoom;
     if (overlayLeftEdge < padding) {
       left = (padding - keyboardRect.left) / zoom;
     }
@@ -780,7 +781,10 @@ export async function loadLayout(layoutId) {
   // Render new layout with options
   const showLanguageButton = settingsState.get("showLanguageButton");
   const showSettingsButton = settingsState.get("showSettingsButton");
-  const fragment = renderLayout(layoutId, { showLanguageButton, showSettingsButton });
+  const fragment = renderLayout(layoutId, {
+    showLanguageButton,
+    showSettingsButton,
+  });
   placeholder.appendChild(fragment);
 
   keyboardState.set("loadedLayout", layoutId);
