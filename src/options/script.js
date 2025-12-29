@@ -7,12 +7,14 @@ const $ = (id) => document.getElementById(id);
 
 function saveDisplaySettings() {
   const showOpenButton = $("showOpenButton").checked;
+  const showLanguageButton = $("showLanguageButton").checked;
   const keyboardZoom = parseInt($("keyboardZoom").value, 10) || 100;
   const keyboardDraggable = $("keyboardDraggable").checked;
   const spacebarCursorSwipe = $("spacebarCursorSwipe").checked;
 
   chrome.storage.local.set({
     [STORAGE_KEYS.SHOW_OPEN_BUTTON]: showOpenButton,
+    [STORAGE_KEYS.SHOW_LANGUAGE_BUTTON]: showLanguageButton,
     [STORAGE_KEYS.KEYBOARD_ZOOM]: keyboardZoom,
     [STORAGE_KEYS.KEYBOARD_DRAGGABLE]: keyboardDraggable,
     [STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE]: spacebarCursorSwipe,
@@ -24,12 +26,15 @@ function saveDisplaySettings() {
 async function loadDisplaySettings() {
   const result = await chrome.storage.local.get([
     STORAGE_KEYS.SHOW_OPEN_BUTTON,
+    STORAGE_KEYS.SHOW_LANGUAGE_BUTTON,
     STORAGE_KEYS.KEYBOARD_ZOOM,
     STORAGE_KEYS.KEYBOARD_DRAGGABLE,
     STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE,
   ]);
 
   $("showOpenButton").checked = result[STORAGE_KEYS.SHOW_OPEN_BUTTON] !== false;
+  $("showLanguageButton").checked =
+    result[STORAGE_KEYS.SHOW_LANGUAGE_BUTTON] === true;
   $("keyboardZoom").value = result[STORAGE_KEYS.KEYBOARD_ZOOM] || 100;
   $("keyboardDraggable").checked =
     result[STORAGE_KEYS.KEYBOARD_DRAGGABLE] === true;
@@ -120,6 +125,7 @@ window.addEventListener("load", () => {
   $("kl_remove").addEventListener("click", removeLayout);
 
   $("showOpenButton").addEventListener("change", saveDisplaySettings);
+  $("showLanguageButton").addEventListener("change", saveDisplaySettings);
   $("keyboardZoom").addEventListener("change", saveDisplaySettings);
   $("keyboardDraggable").addEventListener("change", saveDisplaySettings);
   $("spacebarCursorSwipe").addEventListener("change", saveDisplaySettings);

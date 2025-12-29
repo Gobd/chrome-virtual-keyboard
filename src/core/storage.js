@@ -94,6 +94,23 @@ export async function setShowOpenButton(show) {
 }
 
 /**
+ * Get whether to show the language button
+ * @returns {Promise<boolean>}
+ */
+export async function getShowLanguageButton() {
+  const result = await get(STORAGE_KEYS.SHOW_LANGUAGE_BUTTON);
+  return result[STORAGE_KEYS.SHOW_LANGUAGE_BUTTON] === true;
+}
+
+/**
+ * Set whether to show the language button
+ * @param {boolean} show
+ */
+export async function setShowLanguageButton(show) {
+  await set({ [STORAGE_KEYS.SHOW_LANGUAGE_BUTTON]: show });
+}
+
+/**
  * Get the keyboard zoom level
  * @returns {Promise<number>} Zoom percentage (25-150)
  */
@@ -187,6 +204,7 @@ export async function loadAllSettings() {
     STORAGE_KEYS.KEYBOARD_LAYOUT,
     STORAGE_KEYS.KEYBOARD_LAYOUTS_LIST,
     STORAGE_KEYS.SHOW_OPEN_BUTTON,
+    STORAGE_KEYS.SHOW_LANGUAGE_BUTTON,
     STORAGE_KEYS.KEYBOARD_ZOOM,
     STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE,
     STORAGE_KEYS.KEYBOARD_DRAGGABLE,
@@ -198,6 +216,7 @@ export async function loadAllSettings() {
     layout: result[STORAGE_KEYS.KEYBOARD_LAYOUT] || "en",
     layoutsList: parseLayoutsList(result[STORAGE_KEYS.KEYBOARD_LAYOUTS_LIST]),
     showOpenButton: result[STORAGE_KEYS.SHOW_OPEN_BUTTON] !== false,
+    showLanguageButton: result[STORAGE_KEYS.SHOW_LANGUAGE_BUTTON] === true,
     keyboardZoom: result[STORAGE_KEYS.KEYBOARD_ZOOM] || 100,
     spacebarCursorSwipe: result[STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE] === true,
     keyboardDraggable: result[STORAGE_KEYS.KEYBOARD_DRAGGABLE] === true,
@@ -215,6 +234,7 @@ export async function initializeDefaults(defaultLayouts) {
     [STORAGE_KEYS.KEYBOARD_LAYOUTS_LIST]: JSON.stringify(defaultLayouts),
     [STORAGE_KEYS.OPENED_FIRST_TIME]: "true",
     [STORAGE_KEYS.SHOW_OPEN_BUTTON]: true,
+    [STORAGE_KEYS.SHOW_LANGUAGE_BUTTON]: false,
     [STORAGE_KEYS.KEYBOARD_ZOOM]: 100,
     [STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE]: false,
     [STORAGE_KEYS.KEYBOARD_DRAGGABLE]: false,
@@ -247,6 +267,8 @@ export default {
   setLayoutsList,
   getShowOpenButton,
   setShowOpenButton,
+  getShowLanguageButton,
+  setShowLanguageButton,
   getKeyboardZoom,
   setKeyboardZoom,
   getSpacebarCursorSwipe,

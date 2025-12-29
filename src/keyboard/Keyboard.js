@@ -569,7 +569,7 @@ function setupEventDelegation() {
       e.preventDefault();
       e.stopPropagation();
       const menuId = menuBtn.dataset.menu;
-      toggleOverlay(menuId, e.clientX, e.clientY);
+      toggleOverlay(menuId, menuBtn);
       return;
     }
 
@@ -624,7 +624,7 @@ async function handleOverlayClick(btn) {
 /**
  * Toggle an overlay menu
  */
-function toggleOverlay(menuId, clientX, clientY) {
+function toggleOverlay(menuId, buttonElement) {
   const overlay =
     shadowRoot.getElementById(`vk-overlay-${menuId}`) ||
     shadowRoot.getElementById(DOM_IDS.OVERLAY_LANGUAGE);
@@ -634,10 +634,43 @@ function toggleOverlay(menuId, clientX, clientY) {
   closeAllOverlays();
 
   if (!isOpen) {
-    // Show this overlay
+    // Show this overlay temporarily to measure it
     overlay.style.display = "";
-    overlay.style.left = `${clientX - overlay.offsetWidth / 2}px`;
-    overlay.style.bottom = `${window.innerHeight - clientY + 20}px`;
+    overlay.style.visibility = "hidden";
+
+    const overlayWidth = overlay.offsetWidth;
+    const overlayHeight = overlay.offsetHeight;
+
+    // Get button position relative to keyboard
+    const buttonRect = buttonElement.getBoundingClientRect();
+    const keyboardRect = keyboardElement.getBoundingClientRect();
+
+    // Calculate position relative to keyboard element
+    const buttonLeft = buttonRect.left - keyboardRect.left;
+    const buttonTop = buttonRect.top - keyboardRect.top;
+    const padding = 5;
+
+    // Try positioning at left edge of keyboard first
+    let left = padding;
+    const top = buttonTop - overlayHeight - 10;
+
+    // Check if overlay would overflow viewport on the right
+    const overlayRightEdge = keyboardRect.left + left + overlayWidth;
+    if (overlayRightEdge > window.innerWidth - padding) {
+      // Position from right side instead
+      left = keyboardRect.width - overlayWidth - padding;
+    }
+
+    // Check if overlay would overflow viewport on the left
+    const overlayLeftEdge = keyboardRect.left + left;
+    if (overlayLeftEdge < padding) {
+      left = padding - keyboardRect.left;
+    }
+
+    overlay.style.left = `${left}px`;
+    overlay.style.top = `${top}px`;
+    overlay.style.bottom = "";
+    overlay.style.visibility = "";
     overlay.dataset.state = "open";
   }
 }
@@ -740,8 +773,9 @@ export async function loadLayout(layoutId) {
   clearLayoutCache();
   invalidateKeyboardHeightCache();
 
-  // Render new layout
-  const fragment = renderLayout(layoutId);
+  // Render new layout with options
+  const showLanguageButton = settingsState.get("showLanguageButton");
+  const fragment = renderLayout(layoutId, { showLanguageButton });
   placeholder.appendChild(fragment);
 
   keyboardState.set("loadedLayout", layoutId);
@@ -1115,7 +1149,6 @@ function setupSpacebarSwipe() {
 function createDragHandle() {
   dragHandleElement = document.createElement("div");
   dragHandleElement.className = "vk-drag-handle";
-  dragHandleElement.innerHTML = "⋮⋮";
   dragHandleElement.style.display = "none";
 
   dragHandleElement.addEventListener("pointerdown", (e) => {

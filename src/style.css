@@ -53,6 +53,7 @@
   bottom: 0;
   left: 0;
   right: 0;
+  overflow: visible;
   margin-left: auto;
   margin-right: auto;
   transform: translateX(var(--vk-offset-x)) translateY(100%);
@@ -151,6 +152,11 @@
 .vk-key-space {
   flex: 3;
   background: var(--vk-space-key-bg);
+}
+
+/* Wider space key (when language button is hidden) */
+.vk-key-space-wide {
+  flex: 4;
 }
 
 /* Shift key */
@@ -330,7 +336,7 @@
    ============================================================================= */
 
 .vk-overlay {
-  position: fixed;
+  position: absolute;
   z-index: var(--vk-overlay-z-index);
   padding: 5px;
   border-radius: 5px;
@@ -425,32 +431,40 @@
 
 .vk-drag-handle {
   position: absolute;
-  top: -25px;
+  top: -28px;
   left: 50%;
   transform: translateX(-50%);
-  padding: 4px 20px;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 10px 10px 0 0;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 14px;
-  letter-spacing: 2px;
+  padding: 8px 16px;
   cursor: grab;
   user-select: none;
   touch-action: none;
-  transition:
-    background 0.2s,
-    color 0.2s;
 }
 
-.vk-drag-handle:hover {
-  background: rgba(255, 255, 255, 0.25);
-  color: rgba(255, 255, 255, 0.9);
+.vk-drag-handle::before {
+  content: "";
+  display: block;
+  width: 40px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 2px;
+  box-shadow: 0 8px 0 rgba(255, 255, 255, 0.4);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.vk-drag-handle:hover::before {
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 8px 0 rgba(255, 255, 255, 0.7);
 }
 
 .vk-drag-handle:active,
 #virtual-keyboard.vk-dragging .vk-drag-handle {
   cursor: grabbing;
-  background: rgba(255, 255, 255, 0.3);
+}
+
+.vk-drag-handle:active::before,
+#virtual-keyboard.vk-dragging .vk-drag-handle::before {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 0 rgba(255, 255, 255, 0.9);
 }
 
 #virtual-keyboard.vk-dragging {

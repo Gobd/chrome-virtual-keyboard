@@ -12,14 +12,18 @@ import {
 /**
  * Render a complete keyboard layout
  * @param {string} layoutId - Layout identifier (e.g., 'en', 'fr')
+ * @param {Object} options - Render options
+ * @param {boolean} options.showLanguageButton - Whether to show the language button
  * @returns {DocumentFragment} DOM fragment containing the keyboard
  */
-export function renderLayout(layoutId) {
+export function renderLayout(layoutId, options = {}) {
   const layout = layouts[layoutId];
   if (!layout) {
     console.error(`Layout not found: ${layoutId}`);
     return document.createDocumentFragment();
   }
+
+  const { showLanguageButton = true } = options;
 
   const fragment = document.createDocumentFragment();
   const labels = layout.labels || {};
@@ -36,9 +40,12 @@ export function renderLayout(layoutId) {
     fragment.appendChild(renderRow(row, labels));
   }
 
-  // Render bottom row
-  const bottomRow = layout.bottomRow || DEFAULT_BOTTOM_ROW;
-  fragment.appendChild(renderRow(bottomRow, labels));
+  // Render bottom row, optionally filtering out Language button
+  let bottomRow = layout.bottomRow || [...DEFAULT_BOTTOM_ROW];
+  if (!showLanguageButton) {
+    bottomRow = bottomRow.filter((key) => key !== "Language");
+  }
+  fragment.appendChild(renderRow(bottomRow, labels, { widenSpace: !showLanguageButton }));
 
   return fragment;
 }
@@ -47,14 +54,16 @@ export function renderLayout(layoutId) {
  * Render a single keyboard row
  * @param {Array} keys - Array of key definitions
  * @param {Object} labels - Custom label overrides
+ * @param {Object} options - Row options
+ * @param {boolean} options.widenSpace - Whether to make spacebar wider
  * @returns {HTMLElement} Row element
  */
-function renderRow(keys, labels = {}) {
+function renderRow(keys, labels = {}, options = {}) {
   const row = document.createElement("div");
   row.className = "vk-row";
 
   for (const keyDef of keys) {
-    const keyElements = renderKey(keyDef, labels);
+    const keyElements = renderKey(keyDef, labels, options);
     for (const el of keyElements) {
       row.appendChild(el);
     }
@@ -67,9 +76,10 @@ function renderRow(keys, labels = {}) {
  * Render a single key (may return multiple elements for email toggle keys)
  * @param {string|Object} keyDef - Key definition
  * @param {Object} labels - Custom label overrides
+ * @param {Object} options - Key options
  * @returns {HTMLElement[]} Array of key elements
  */
-function renderKey(keyDef, labels = {}) {
+function renderKey(keyDef, labels = {}, options = {}) {
   // Handle email toggle syntax: "?|@"
   if (typeof keyDef === "string" && keyDef.includes("|")) {
     const [normalKey, emailKey] = keyDef.split("|");
@@ -85,7 +95,7 @@ function renderKey(keyDef, labels = {}) {
   // Handle special keys
   const keyName = typeof keyDef === "string" ? keyDef : keyDef.key;
   if (KEY_TYPES[keyName]) {
-    return [createSpecialKey(keyName, labels)];
+    return [createSpecialKey(keyName, labels, options)];
   }
 
   // Regular key
@@ -96,13 +106,19 @@ function renderKey(keyDef, labels = {}) {
  * Create a special key element (Backspace, Enter, Shift, etc.)
  * @param {string} keyName - Special key name
  * @param {Object} labels - Custom label overrides
+ * @param {Object} options - Key options
  * @returns {HTMLElement}
  */
-function createSpecialKey(keyName, labels = {}) {
+function createSpecialKey(keyName, labels = {}, options = {}) {
   const keyType = KEY_TYPES[keyName];
   const key = document.createElement("button");
   key.type = "button";
   key.className = keyType.class;
+
+  // Add wider class to spacebar if language button is hidden
+  if (keyName === "Space" && options.widenSpace) {
+    key.classList.add("vk-key-space-wide");
+  }
 
   // Add click class unless explicitly disabled
   if (!keyType.noClick) {
@@ -132,8 +148,13 @@ function createSpecialKey(keyName, labels = {}) {
     span.className = `vk-icon vk-icon-${keyType.icon}`;
     span.setAttribute("aria-label", keyName);
   } else {
-    // Use custom label or default
-    const label = labels[keyName] || keyType.label || keyName;
+    // Use custom label or default (check for undefined to allow empty labels)
+    const label =
+      labels[keyName] !== undefined
+        ? labels[keyName]
+        : keyType.label !== undefined
+          ? keyType.label
+          : keyName;
     span.textContent = label;
   }
 

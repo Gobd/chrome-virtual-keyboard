@@ -80,6 +80,7 @@ export const STORAGE_KEYS = {
   KEYBOARD_LAYOUT: "keyboardLayout1",
   KEYBOARD_LAYOUTS_LIST: "keyboardLayoutsList",
   SHOW_OPEN_BUTTON: "showOpenButton",
+  SHOW_LANGUAGE_BUTTON: "showLanguageButton",
   KEYBOARD_ZOOM: "keyboardZoom",
   SPACEBAR_CURSOR_SWIPE: "spacebarCursorSwipe",
   KEYBOARD_DRAGGABLE: "keyboardDraggable",
