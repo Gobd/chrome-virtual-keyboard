@@ -4,16 +4,12 @@
     <meta charset="utf-8" />
     <title>Virtual Keyboard Settings</title>
     <link href="options/styles.css" rel="stylesheet" />
-    <script src="options/script.js"></script>
   </head>
   <body>
     <h1>Virtual Keyboard Settings</h1>
     <div id="page">
       <div id="navigation">
-        <div id="changeEffect">
-          Settings have been saved. Changes take effect when you reload the
-          page.
-        </div>
+        <div id="changeEffect">Settings saved.</div>
       </div>
       <div id="options">
         <h2>Display Options</h2>
@@ -34,6 +30,23 @@
               max="150"
               style="width: 80px; margin-left: 10px"
             />
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" id="keyboardDraggable" />
+            Allow keyboard repositioning (drag handle appears at top)
+          </label>
+          <button id="resetPosition" type="button" style="margin-left: 20px">
+            Reset Position
+          </button>
+        </p>
+
+        <h2>Input Options</h2>
+        <p>
+          <label>
+            <input type="checkbox" id="spacebarCursorSwipe" />
+            Swipe on spacebar to move cursor (like Android keyboards)
           </label>
         </p>
 
@@ -83,12 +96,17 @@
       </div>
       <div id="links">
         <h2 style="margin-top: 40px">Credits</h2>
-        <a target="_blank" href="#">Stuart Wright</a>
-        <a id="footer" target="_blank" href="#">
-          Developed by:
-          <span>Shaun Tabone & Brian Kemper</span>
+        <a
+          target="_blank"
+          href="https://github.com/Gobd/chrome-virtual-keyboard"
+        >
+          View on GitHub
         </a>
+        <p id="footer">
+          Developed by: <span>Shaun Tabone & Brian Kemper</span>
+        </p>
       </div>
     </div>
+    <script type="module" src="options/script.js"></script>
   </body>
 </html>

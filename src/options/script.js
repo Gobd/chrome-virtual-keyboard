@@ -1,14 +1,21 @@
 // Virtual Keyboard Options - Layout selector and display settings
 
+import { STORAGE_KEYS } from "../core/config.js";
+import { getLayoutsList } from "../core/storage.js";
+
 const $ = (id) => document.getElementById(id);
 
 function saveDisplaySettings() {
   const showOpenButton = $("showOpenButton").checked;
   const keyboardZoom = parseInt($("keyboardZoom").value, 10) || 100;
+  const keyboardDraggable = $("keyboardDraggable").checked;
+  const spacebarCursorSwipe = $("spacebarCursorSwipe").checked;
 
   chrome.storage.local.set({
-    showOpenButton,
-    keyboardZoom,
+    [STORAGE_KEYS.SHOW_OPEN_BUTTON]: showOpenButton,
+    [STORAGE_KEYS.KEYBOARD_ZOOM]: keyboardZoom,
+    [STORAGE_KEYS.KEYBOARD_DRAGGABLE]: keyboardDraggable,
+    [STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE]: spacebarCursorSwipe,
   });
 
   $("changeEffect").className = "show";
@@ -16,12 +23,18 @@ function saveDisplaySettings() {
 
 async function loadDisplaySettings() {
   const result = await chrome.storage.local.get([
-    "showOpenButton",
-    "keyboardZoom",
+    STORAGE_KEYS.SHOW_OPEN_BUTTON,
+    STORAGE_KEYS.KEYBOARD_ZOOM,
+    STORAGE_KEYS.KEYBOARD_DRAGGABLE,
+    STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE,
   ]);
 
-  $("showOpenButton").checked = result.showOpenButton !== false;
-  $("keyboardZoom").value = result.keyboardZoom || 100;
+  $("showOpenButton").checked = result[STORAGE_KEYS.SHOW_OPEN_BUTTON] !== false;
+  $("keyboardZoom").value = result[STORAGE_KEYS.KEYBOARD_ZOOM] || 100;
+  $("keyboardDraggable").checked =
+    result[STORAGE_KEYS.KEYBOARD_DRAGGABLE] === true;
+  $("spacebarCursorSwipe").checked =
+    result[STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE] === true;
 }
 
 function addLayout() {
@@ -30,24 +43,16 @@ function addLayout() {
 
   if (!available || available.length === 0) return;
 
+  // Use Set for O(1) existence check instead of O(n) loop
+  const existingValues = new Set(Array.from(selected, (opt) => opt.value));
+
   for (const opt of available) {
-    if (!opt.selected) continue;
+    if (!opt.selected || existingValues.has(opt.value)) continue;
 
-    // Check if already exists
-    let exists = false;
-    for (const existingOpt of selected) {
-      if (existingOpt.value === opt.value) {
-        exists = true;
-        break;
-      }
-    }
-
-    if (!exists) {
-      const newOpt = document.createElement("option");
-      newOpt.text = opt.text;
-      newOpt.value = opt.value;
-      $("sl").options.add(newOpt);
-    }
+    const newOpt = document.createElement("option");
+    newOpt.text = opt.text;
+    newOpt.value = opt.value;
+    $("sl").options.add(newOpt);
   }
 
   saveLayouts();
@@ -81,26 +86,15 @@ function saveLayouts() {
   if (layouts.length === 0) return;
 
   chrome.storage.local.set({
-    keyboardLayoutsList: JSON.stringify(layouts),
-    keyboardLayout1: layouts[0].value,
+    [STORAGE_KEYS.KEYBOARD_LAYOUTS_LIST]: JSON.stringify(layouts),
+    [STORAGE_KEYS.KEYBOARD_LAYOUT]: layouts[0].value,
   });
 
   $("changeEffect").className = "show";
 }
 
 async function loadLayouts() {
-  const result = await chrome.storage.local.get("keyboardLayoutsList");
-
-  if (!result.keyboardLayoutsList) return;
-
-  let layouts;
-  try {
-    layouts = JSON.parse(result.keyboardLayoutsList);
-  } catch (error) {
-    console.error("Failed to parse layouts:", error);
-    return;
-  }
-
+  const layouts = await getLayoutsList();
   if (!layouts || layouts.length === 0) return;
 
   // Clear default and populate
@@ -127,4 +121,10 @@ window.addEventListener("load", () => {
 
   $("showOpenButton").addEventListener("change", saveDisplaySettings);
   $("keyboardZoom").addEventListener("change", saveDisplaySettings);
+  $("keyboardDraggable").addEventListener("change", saveDisplaySettings);
+  $("spacebarCursorSwipe").addEventListener("change", saveDisplaySettings);
+  $("resetPosition").addEventListener("click", () => {
+    chrome.storage.local.set({ [STORAGE_KEYS.KEYBOARD_POSITION]: null });
+    $("changeEffect").className = "show";
+  });
 });

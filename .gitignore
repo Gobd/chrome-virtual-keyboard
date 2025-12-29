@@ -1,5 +1,12 @@
 # Build output
 *.zip
+dist/
+
+# Test output
+test-results/
+.playwright-user-data/
+coverage/
+playwright-report/
 
 # Dependencies
 node_modules/

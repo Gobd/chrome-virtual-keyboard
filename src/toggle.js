@@ -1,14 +1,11 @@
-// Virtual Keyboard - Popup
+// Virtual Keyboard - Popup Script
 
-const $ = (id) => document.getElementById(id);
+document.getElementById("openUrl").addEventListener("click", () => {
+  chrome.runtime.sendMessage({ method: "openUrlBar" });
+  window.close();
+});
 
-window.addEventListener("load", () => {
-  $("settings").onclick = () => {
-    window.open(chrome.runtime.getURL("options.html"));
-  };
-
-  $("goToUrl").onclick = () => {
-    chrome.runtime.sendMessage({ method: "openUrlBar" });
-    window.close();
-  };
+document.getElementById("openSettings").addEventListener("click", () => {
+  chrome.runtime.openOptionsPage();
+  window.close();
 });

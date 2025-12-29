@@ -15,7 +15,7 @@ body.loaded #page {
   transform: translate3d(0, 0, 0) perspective(800px);
 }
 
-/* Scrollbar styling - Chrome-specific, no standard equivalent */
+/* Scrollbar styling - Chrome-specific */
 select::-webkit-scrollbar {
   width: 5px;
   height: 5px;
@@ -74,7 +74,7 @@ h2 {
   font-size: 14px;
 }
 
-#links a#footer {
+#links p#footer {
   position: absolute;
   bottom: 0;
   left: 0;
@@ -83,28 +83,13 @@ h2 {
   padding: 20px 30px;
   font-size: 13px;
   color: #222;
-  text-decoration: none;
-  border-bottom: 0;
   margin-bottom: 0;
 }
 
-#links a#footer:hover {
-  background-color: #eee;
-}
-
-#links a#footer span {
-  background-repeat: no-repeat;
-  background-size: 50px;
-  height: 50px;
-  padding-left: 60px;
-  font-size: 23px;
-  margin-top: 12px;
-  padding-top: 8px;
-  text-decoration: none;
+#links p#footer span {
+  font-size: 16px;
   color: #20509f;
-  letter-spacing: -1px;
   margin-left: 10px;
-  display: inline-block;
 }
 
 select,
@@ -129,7 +114,7 @@ select:hover,
 select:focus {
   background: #fff;
   box-shadow: inset 1px 1px 5px rgba(0, 0, 0, 0.1);
-  background-image: none !important;
+  background-image: none;
 }
 
 :enabled:hover:is(
@@ -181,7 +166,7 @@ button {
 select:focus,
 input:focus,
 button:active {
-  border: 1px solid #15c !important;
+  border-color: #15c;
 }
 
 #links {
@@ -193,13 +178,6 @@ button:active {
   padding-right: 220px;
   box-shadow: -3px 3px 3px rgba(0, 0, 0, 0.1);
   padding-left: 25px;
-}
-
-#links iframe {
-  position: absolute;
-  right: 0;
-  top: 50px;
-  border: 0;
 }
 
 #links a {
