@@ -128,6 +128,23 @@ export async function setShowSettingsButton(show) {
 }
 
 /**
+ * Get whether to show the number bar
+ * @returns {Promise<boolean>}
+ */
+export async function getShowNumberBar() {
+  const result = await get(STORAGE_KEYS.SHOW_NUMBER_BAR);
+  return result[STORAGE_KEYS.SHOW_NUMBER_BAR] !== false;
+}
+
+/**
+ * Set whether to show the number bar
+ * @param {boolean} show
+ */
+export async function setShowNumberBar(show) {
+  await set({ [STORAGE_KEYS.SHOW_NUMBER_BAR]: show });
+}
+
+/**
  * Get the keyboard zoom level
  * @returns {Promise<number>} Zoom percentage (25-150)
  */
@@ -196,6 +213,23 @@ export async function setKeyboardPosition(position) {
 }
 
 /**
+ * Get autostart setting
+ * @returns {Promise<boolean>}
+ */
+export async function getAutostart() {
+  const result = await get(STORAGE_KEYS.AUTOSTART);
+  return result[STORAGE_KEYS.AUTOSTART] === true;
+}
+
+/**
+ * Set autostart setting
+ * @param {boolean} enabled
+ */
+export async function setAutostart(enabled) {
+  await set({ [STORAGE_KEYS.AUTOSTART]: enabled });
+}
+
+/**
  * Check if this is the first time the extension has been opened
  * @returns {Promise<boolean>}
  */
@@ -223,10 +257,12 @@ export async function loadAllSettings() {
     STORAGE_KEYS.SHOW_OPEN_BUTTON,
     STORAGE_KEYS.SHOW_LANGUAGE_BUTTON,
     STORAGE_KEYS.SHOW_SETTINGS_BUTTON,
+    STORAGE_KEYS.SHOW_NUMBER_BAR,
     STORAGE_KEYS.KEYBOARD_ZOOM,
     STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE,
     STORAGE_KEYS.KEYBOARD_DRAGGABLE,
     STORAGE_KEYS.KEYBOARD_POSITION,
+    STORAGE_KEYS.AUTOSTART,
   ]);
 
   return {
@@ -236,10 +272,12 @@ export async function loadAllSettings() {
     showOpenButton: result[STORAGE_KEYS.SHOW_OPEN_BUTTON] !== false,
     showLanguageButton: result[STORAGE_KEYS.SHOW_LANGUAGE_BUTTON] === true,
     showSettingsButton: result[STORAGE_KEYS.SHOW_SETTINGS_BUTTON] !== false,
+    showNumberBar: result[STORAGE_KEYS.SHOW_NUMBER_BAR] !== false,
     keyboardZoom: result[STORAGE_KEYS.KEYBOARD_ZOOM] || 100,
     spacebarCursorSwipe: result[STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE] === true,
     keyboardDraggable: result[STORAGE_KEYS.KEYBOARD_DRAGGABLE] === true,
     keyboardPosition: result[STORAGE_KEYS.KEYBOARD_POSITION] || null,
+    autostart: result[STORAGE_KEYS.AUTOSTART] === true,
   };
 }
 
@@ -255,10 +293,12 @@ export async function initializeDefaults(defaultLayouts) {
     [STORAGE_KEYS.SHOW_OPEN_BUTTON]: true,
     [STORAGE_KEYS.SHOW_LANGUAGE_BUTTON]: false,
     [STORAGE_KEYS.SHOW_SETTINGS_BUTTON]: true,
+    [STORAGE_KEYS.SHOW_NUMBER_BAR]: true,
     [STORAGE_KEYS.KEYBOARD_ZOOM]: 100,
     [STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE]: false,
     [STORAGE_KEYS.KEYBOARD_DRAGGABLE]: false,
     [STORAGE_KEYS.KEYBOARD_POSITION]: null,
+    [STORAGE_KEYS.AUTOSTART]: false,
   });
 }
 
@@ -291,6 +331,8 @@ export default {
   setShowLanguageButton,
   getShowSettingsButton,
   setShowSettingsButton,
+  getShowNumberBar,
+  setShowNumberBar,
   getKeyboardZoom,
   setKeyboardZoom,
   getSpacebarCursorSwipe,
@@ -299,6 +341,8 @@ export default {
   setKeyboardDraggable,
   getKeyboardPosition,
   setKeyboardPosition,
+  getAutostart,
+  setAutostart,
   isFirstTime,
   markOpened,
   loadAllSettings,

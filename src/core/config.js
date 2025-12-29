@@ -82,10 +82,12 @@ export const STORAGE_KEYS = {
   SHOW_OPEN_BUTTON: "showOpenButton",
   SHOW_LANGUAGE_BUTTON: "showLanguageButton",
   SHOW_SETTINGS_BUTTON: "showSettingsButton",
+  SHOW_NUMBER_BAR: "showNumberBar",
   KEYBOARD_ZOOM: "keyboardZoom",
   SPACEBAR_CURSOR_SWIPE: "spacebarCursorSwipe",
   KEYBOARD_DRAGGABLE: "keyboardDraggable",
   KEYBOARD_POSITION: "keyboardPosition",
+  AUTOSTART: "autostart",
 };
 
 export const MESSAGE_TYPES = {
@@ -152,6 +154,7 @@ export const KEY_TYPES = {
   },
   _spacer: {
     class: "vk-spacer",
+    label: "",
     noDataKey: true,
     noClick: true,
   },

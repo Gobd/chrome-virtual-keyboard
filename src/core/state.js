@@ -154,6 +154,7 @@ export const settingsState = createStore({
   spacebarCursorSwipe: false,
   keyboardDraggable: false,
   keyboardPosition: null,
+  autostart: false,
 });
 
 // URL bar state
