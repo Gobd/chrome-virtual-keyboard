@@ -126,6 +126,14 @@ function $(id) {
   return document.getElementById(id);
 }
 
+function loadCSS() {
+  const link = document.createElement("link");
+  link.href = chrome.runtime.getURL("style.css");
+  link.type = "text/css";
+  link.rel = "stylesheet";
+  document.head.appendChild(link);
+}
+
 function $$(selector, root = document) {
   return root.querySelectorAll(selector);
 }
@@ -344,8 +352,8 @@ async function openKeyboard(posY, posX, force) {
   }
 
   // Move keyboard to fullscreen element if needed
-  if (document.webkitFullscreenElement) {
-    document.webkitFullscreenElement.appendChild(state.keyboard.element);
+  if (document.fullscreenElement) {
+    document.fullscreenElement.appendChild(state.keyboard.element);
   } else {
     document.body.appendChild(state.keyboard.element);
   }
@@ -529,7 +537,7 @@ function handleEnter() {
   if (state.focused.type === "textarea") {
     const pos = elem.selectionStart;
     const posEnd = elem.selectionEnd;
-    elem.value = elem.value.substr(0, pos) + "\n" + elem.value.substr(posEnd);
+    elem.value = elem.value.slice(0, pos) + "\n" + elem.value.slice(posEnd);
     elem.selectionStart = elem.selectionEnd = pos + 1;
   } else if (isContentEditable()) {
     const selection = window.getSelection();
@@ -579,7 +587,7 @@ function handleBackspace() {
     const posEnd = elem.selectionEnd;
     if (posEnd === pos) pos--;
 
-    elem.value = elem.value.substr(0, pos) + elem.value.substr(posEnd);
+    elem.value = elem.value.slice(0, pos) + elem.value.slice(posEnd);
     elem.selectionStart = elem.selectionEnd = pos;
   }
 
@@ -608,7 +616,7 @@ function insertCharacter(key) {
       elem.dispatchEvent(createKeyboardEvent("keydown", key.charCodeAt(0)));
       const pos = elem.selectionStart;
       const posEnd = elem.selectionEnd;
-      elem.value = elem.value.substr(0, pos) + key + elem.value.substr(posEnd);
+      elem.value = elem.value.slice(0, pos) + key + elem.value.slice(posEnd);
       elem.selectionStart = elem.selectionEnd = pos + 1;
       state.focused.changed = true;
       resetShiftIfNeeded();
@@ -1270,12 +1278,7 @@ chrome.runtime.onMessage.addListener((request) => {
 
 async function loadKeyboardHTML() {
   try {
-    // Load CSS
-    const link = document.createElement("link");
-    link.href = chrome.runtime.getURL("style.css");
-    link.type = "text/css";
-    link.rel = "stylesheet";
-    document.head.appendChild(link);
+    loadCSS();
 
     // Load keyboard HTML
     const response = await fetch(chrome.runtime.getURL("keyboard.html"));
@@ -1299,14 +1302,6 @@ async function loadKeyboardHTML() {
 // =============================================================================
 // ENTRY POINT
 // =============================================================================
-
-function loadCSS() {
-  const link = document.createElement("link");
-  link.href = chrome.runtime.getURL("style.css");
-  link.type = "text/css";
-  link.rel = "stylesheet";
-  document.head.appendChild(link);
-}
 
 const isTopFrame = top === self;
 const isCrossOriginIframe = top !== self && window.frameElement === null;
