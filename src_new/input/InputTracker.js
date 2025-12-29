@@ -1,9 +1,12 @@
 // Input Tracker
 // Manages focused input state, change detection, and scroll management
 
-import { TIMING } from '../core/config.js';
+import { TIMING, MESSAGE_TYPES } from '../core/config.js';
 import { focusState, scrollState, runtimeState, keyboardState } from '../core/state.js';
 import { emit, on, EVENTS } from '../core/events.js';
+
+// Counter for generating unique element IDs in iframes
+let iframeElementCount = 0;
 
 /**
  * Initialize input tracking
@@ -18,6 +21,14 @@ export function init() {
 }
 
 /**
+ * Check if we're in a same-origin iframe
+ * @returns {boolean}
+ */
+function isInSameOriginIframe() {
+  return top !== self && window.frameElement !== null;
+}
+
+/**
  * Handle input focus event
  * @param {Object} data - { element, inputType, isFocus }
  */
@@ -27,6 +38,25 @@ function handleInputFocus({ element, inputType, isFocus }) {
 
   // Fire change event for previous element if needed
   fireChangeIfNeeded();
+
+  // Check if in same-origin iframe - relay to top frame
+  if (isInSameOriginIframe()) {
+    // Ensure element has an ID so top frame can find it
+    if (!element.id) {
+      element.id = `CVK_E_${iframeElementCount++}`;
+    }
+
+    // Send message to top frame via background script
+    chrome.runtime.sendMessage({
+      method: MESSAGE_TYPES.OPEN_FROM_IFRAME,
+      posY: focusState.get('clickY'),
+      posX: focusState.get('clickX'),
+      force: isFocus,
+      frame: window.frameElement.id,
+      elem: element.id,
+    });
+    return;
+  }
 
   // Update focused state
   focusState.set({
@@ -109,7 +139,17 @@ export function saveInputType(element) {
  */
 function startCloseTimer() {
   const timer = setTimeout(() => {
-    emit(EVENTS.KEYBOARD_CLOSE);
+    // In same-origin iframe, send message to top frame to close
+    if (isInSameOriginIframe()) {
+      chrome.runtime.sendMessage({
+        method: MESSAGE_TYPES.CLICK_FROM_IFRAME,
+        key: 'Close',
+        skip: false,
+        frame: window.frameElement.id,
+      });
+    } else {
+      emit(EVENTS.KEYBOARD_CLOSE);
+    }
   }, TIMING.CLOSE_TIMER_DELAY);
 
   runtimeState.set('closeTimer', timer);

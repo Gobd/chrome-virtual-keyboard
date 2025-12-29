@@ -88,7 +88,7 @@ function handleUrl() {
  * Handle settings button press
  */
 function handleSettings() {
-  chrome.runtime.openOptionsPage();
+  window.open(chrome.runtime.getURL('options.html'));
 }
 
 /**
@@ -126,11 +126,11 @@ function handleEnter() {
     dispatchInputEvent(element);
   } else if (type === 'contenteditable') {
     // Insert <br>
-    const selection = window.getSelection();
+    const selection = getSelectionForElement(element);
     if (selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
       range.deleteContents();
-      const br = document.createElement('br');
+      const br = element.ownerDocument.createElement('br');
       range.insertNode(br);
       range.setStartAfter(br);
       range.setEndAfter(br);
@@ -174,7 +174,7 @@ function handleBackspace() {
   const type = focusState.get('type');
 
   if (type === 'contenteditable') {
-    deleteAtCursor();
+    deleteAtCursor(element);
   } else {
     try {
       let pos = element.selectionStart;
@@ -216,7 +216,7 @@ function insertCharacter(key) {
 
   if (type === 'contenteditable') {
     element.dispatchEvent(createKeyboardEvent('keydown', key.charCodeAt(0)));
-    insertTextAtCursor(key);
+    insertTextAtCursor(element, key);
     markChanged();
     resetShiftIfNeeded();
     dispatchKeyEvents(element, key);
@@ -246,15 +246,26 @@ function resetShiftIfNeeded() {
 // =============================================================================
 
 /**
+ * Get the selection object for an element (handles iframe elements)
+ * @param {HTMLElement} element
+ * @returns {Selection|null}
+ */
+function getSelectionForElement(element) {
+  const win = element?.ownerDocument?.defaultView || window;
+  return win.getSelection();
+}
+
+/**
  * Insert text at cursor position for contenteditable
+ * @param {HTMLElement} element - The contenteditable element
  * @param {string} text
  */
-function insertTextAtCursor(text) {
-  const selection = window.getSelection();
+function insertTextAtCursor(element, text) {
+  const selection = getSelectionForElement(element);
   if (selection.rangeCount > 0) {
     const range = selection.getRangeAt(0);
     range.deleteContents();
-    const textNode = document.createTextNode(text);
+    const textNode = element.ownerDocument.createTextNode(text);
     range.insertNode(textNode);
     range.setStartAfter(textNode);
     range.setEndAfter(textNode);
@@ -289,9 +300,10 @@ function insertTextAtPosition(input, text) {
 
 /**
  * Delete character at cursor for contenteditable
+ * @param {HTMLElement} element - The contenteditable element
  */
-function deleteAtCursor() {
-  const selection = window.getSelection();
+function deleteAtCursor(element) {
+  const selection = getSelectionForElement(element);
   if (selection.rangeCount > 0) {
     const range = selection.getRangeAt(0);
     if (range.collapsed) {
