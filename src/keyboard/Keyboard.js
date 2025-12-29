@@ -48,6 +48,9 @@ let dragState = {
 };
 
 const SWIPE_THRESHOLD = 10; // Pixels to move before considering it a swipe
+
+// Track if key min-width has been calculated
+let keyMinWidthCalculated = false;
 const SWIPE_SENSITIVITY = 20; // Pixels of swipe per cursor position change
 
 // Cached DOM element references
@@ -812,6 +815,56 @@ function updateLanguageButtonLabel(layoutId) {
 }
 
 /**
+ * Calculate and apply min-width for keys based on the widest key in numbers keyboard.
+ * This ensures all keys can fit multi-character labels like "ABC".
+ */
+function calculateKeyMinWidth() {
+  if (keyMinWidthCalculated) return;
+
+  const numbersKbd = shadowRoot?.getElementById(DOM_IDS.MAIN_NUMBERS);
+  if (!numbersKbd) return;
+
+  // Temporarily show numbers keyboard to measure
+  const wasHidden = numbersKbd.style.display === "none";
+  if (wasHidden) {
+    numbersKbd.style.display = "";
+    numbersKbd.style.visibility = "hidden";
+    numbersKbd.style.position = "absolute";
+  }
+
+  // Find the widest key content in numbers keyboard
+  const keys = numbersKbd.querySelectorAll(
+    ".vk-key:not(.vk-key-backspace):not(.vk-key-enter)",
+  );
+  let maxWidth = 0;
+
+  for (const key of keys) {
+    const span = key.querySelector("span");
+    if (span) {
+      // Measure text width
+      const width = span.scrollWidth;
+      if (width > maxWidth) {
+        maxWidth = width;
+      }
+    }
+  }
+
+  // Restore visibility
+  if (wasHidden) {
+    numbersKbd.style.display = "none";
+    numbersKbd.style.visibility = "";
+    numbersKbd.style.position = "";
+  }
+
+  // Apply min-width with some padding (add ~20% for breathing room)
+  if (maxWidth > 0) {
+    const minWidth = Math.ceil(maxWidth * 1.2);
+    keyboardElement.style.setProperty("--vk-key-min-width", `${minWidth}px`);
+    keyMinWidthCalculated = true;
+  }
+}
+
+/**
  * Open the keyboard
  */
 export async function open(force = false) {
@@ -825,6 +878,9 @@ export async function open(force = false) {
     // Layout already loaded, but still need to update for current input type
     renderInputType();
   }
+
+  // Calculate key min-width from numbers keyboard (once)
+  calculateKeyMinWidth();
 
   // Move to fullscreen element if present
   if (document.fullscreenElement) {
