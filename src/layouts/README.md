@@ -154,7 +154,7 @@ pt: {
 
 1. **Row alignment**: Use `_spacer` to align rows visually
 2. **Accents**: Use overlays for characters with multiple accent variants
-3. **Email keys**: Include `?|@` and `,|.com` for email-friendly input
+3. **Email keys**: Include `?|@` for email-friendly input (the `Url` key automatically shows `.com` for email inputs)
 4. **Testing**: Test with various input types (text, email, password)
 5. **Shift behavior**: Latin characters auto-shift; use explicit shift for non-Latin scripts
 

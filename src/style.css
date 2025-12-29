@@ -28,9 +28,8 @@
   --vk-url-bar-bg: rgba(255, 255, 255, 0.8);
 
   /* Sizing */
-  --vk-height: 450px;
-  --vk-padding: 15px;
-  --vk-key-padding: 30px;
+  --vk-padding: 12px;
+  --vk-key-padding: 0.28em;
   --vk-key-radius: 6px;
   --vk-key-font-size: 32px;
   --vk-action-font-size: 22px;
@@ -52,11 +51,16 @@
   --vk-offset-x: 0px;
   position: fixed;
   bottom: 0;
-  left: 50%;
-  transform: translateX(calc(-50% + var(--vk-offset-x)))
-    translate3d(0, var(--vk-height), 0);
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  transform: translateX(var(--vk-offset-x)) translateY(100%);
   opacity: 0;
   padding: var(--vk-padding);
+  max-width: fit-content;
+  width: 100%;
+  box-sizing: border-box;
   background: var(--vk-bg);
   box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2);
   z-index: var(--vk-z-index);
@@ -68,13 +72,12 @@
 }
 
 #virtual-keyboard.keyboard-open {
-  transform: translateX(calc(-50% + var(--vk-offset-x))) translate3d(0, 0, 0);
+  transform: translateX(var(--vk-offset-x)) translateY(0);
   opacity: 1;
 }
 
 #virtual-keyboard.keyboard-closed {
-  transform: translateX(calc(-50% + var(--vk-offset-x)))
-    translate3d(0, var(--vk-height), 0);
+  transform: translateX(var(--vk-offset-x)) translateY(100%);
   opacity: 0;
 }
 
@@ -87,6 +90,8 @@
   justify-content: center;
   gap: 6px;
   margin: 5px 0;
+  width: 100%;
+  max-width: 100%;
 }
 
 /* =============================================================================
@@ -95,13 +100,17 @@
 
 .vk-key {
   position: relative;
-  padding: var(--vk-key-padding) 20px;
+  padding: var(--vk-key-padding) 0.5em;
   margin: 0;
   border: none;
   border-radius: var(--vk-key-radius);
   background: var(--vk-key-bg);
   color: var(--vk-key-color);
   font-family: inherit;
+  flex: 0 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: var(--vk-key-font-size);
   text-align: center;
   cursor: pointer;
@@ -184,7 +193,7 @@
 /* Language button (menu button, not a clickable key) */
 .vk-lang-btn {
   position: relative;
-  padding: var(--vk-key-padding) 20px;
+  padding: var(--vk-key-padding) 0.5em;
   margin: 0;
   border: none;
   border-radius: var(--vk-key-radius);
@@ -289,7 +298,7 @@
 }
 
 #vk-number-bar .vk-key {
-  padding: 30px 20px;
+  padding: var(--vk-key-padding) 0.5em;
 }
 
 /* Hide number bar on small screens */
@@ -313,7 +322,7 @@
    ============================================================================= */
 
 #vk-main-numbers .vk-key {
-  padding: 30px;
+  padding: var(--vk-key-padding);
 }
 
 /* =============================================================================

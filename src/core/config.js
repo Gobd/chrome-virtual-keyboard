@@ -44,7 +44,7 @@ export const TIMING = {
 };
 
 export const KEYBOARD = {
-  HEIGHT: 450,
+  HEIGHT: 370,
   Z_INDEX: 10000000,
   OVERLAY_Z_INDEX: 10000001,
   DEFAULT_ZOOM: 100,
@@ -118,6 +118,7 @@ export const KEY_TYPES = {
   },
   Space: {
     class: "vk-key vk-key-space",
+    label: "",
     dataKey: " ",
   },
   Close: {
