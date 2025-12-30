@@ -2,8 +2,8 @@
 // Detects and binds event handlers to input elements
 
 import { INPUT_TYPES } from "../core/config.js";
-import { emit, EVENTS } from "../core/events.js";
-import { focusState, runtimeState } from "../core/state.js";
+import { EVENTS, emit } from "../core/events.js";
+import { focusState } from "../core/state.js";
 
 const BOUND_ATTR = "data-vk-enabled";
 
@@ -92,12 +92,12 @@ export function bindInput(element) {
 
   // Focus handler - always opens keyboard
   element.addEventListener("focus", () =>
-    handleFocus(element, inputType, true),
+    handleFocus(element, inputType, true)
   );
 
   // Click handler - opens keyboard if not already open
   element.addEventListener("click", () =>
-    handleFocus(element, inputType, false),
+    handleFocus(element, inputType, false)
   );
 
   markBound(element);

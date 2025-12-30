@@ -1,10 +1,10 @@
-import { test, expect } from "./fixtures.js";
+import { expect, test } from "./fixtures.js";
 import {
+  clickKey,
+  isKeyboardOpen,
+  typeWithKeyboard,
   waitForExtension,
   waitForKeyboardOpen,
-  isKeyboardOpen,
-  clickKey,
-  typeWithKeyboard,
 } from "./helpers.js";
 
 test.describe("Virtual Keyboard - Contenteditable", () => {

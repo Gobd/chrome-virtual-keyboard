@@ -2,10 +2,10 @@
 // Handles key press events and synthetic event dispatching
 
 import { SPECIAL_KEYS } from "../core/config.js";
+import { EVENTS, emit } from "../core/events.js";
 import { focusState, keyboardState, urlBarState } from "../core/state.js";
-import { emit, EVENTS } from "../core/events.js";
+import { clearCloseTimer, markChanged } from "../input/InputTracker.js";
 import { applyShiftToCharacter } from "./KeyMap.js";
-import { markChanged, clearCloseTimer } from "../input/InputTracker.js";
 
 /**
  * Handle a key press
@@ -122,8 +122,7 @@ function handleEnter() {
     // Insert newline
     const pos = element.selectionStart;
     const posEnd = element.selectionEnd;
-    element.value =
-      element.value.slice(0, pos) + "\n" + element.value.slice(posEnd);
+    element.value = `${element.value.slice(0, pos)}\n${element.value.slice(posEnd)}`;
     element.selectionStart = element.selectionEnd = pos + 1;
     dispatchInputEvent(element);
   } else if (type === "contenteditable") {
@@ -192,7 +191,7 @@ function handleBackspace() {
         // Fallback for inputs that don't support selection (email, number)
         element.value = element.value.slice(0, -1);
       }
-    } catch (e) {
+    } catch (_e) {
       // Some input types (email, number) throw on selection access
       element.value = element.value.slice(0, -1);
     }
@@ -295,7 +294,7 @@ function insertTextAtPosition(input, text) {
       // Fallback for inputs that don't support selection (email, number)
       input.value += text;
     }
-  } catch (e) {
+  } catch (_e) {
     // Some input types (email, number) throw on selection access
     input.value += text;
   }
@@ -335,7 +334,7 @@ function deleteAtCursor(element) {
  */
 function clickSubmitButton(form) {
   const submitButtons = form.querySelectorAll(
-    'input[type="submit"], button[type="submit"]',
+    'input[type="submit"], button[type="submit"]'
   );
   for (const btn of submitButtons) {
     btn.click();
@@ -372,7 +371,7 @@ function createKeyboardEvent(type, keyCode = 0, charCode = 0) {
 function dispatchInputEvent(element) {
   element.dispatchEvent(new Event("input", { bubbles: true }));
   element.dispatchEvent(
-    new InputEvent("input", { bubbles: true, inputType: "insertText" }),
+    new InputEvent("input", { bubbles: true, inputType: "insertText" })
   );
 }
 

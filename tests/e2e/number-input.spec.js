@@ -1,10 +1,9 @@
-import { test, expect } from "./fixtures.js";
+import { expect, test } from "./fixtures.js";
 import {
+  clickKey,
+  isNumberKeyboardVisible,
   waitForExtension,
   waitForKeyboardOpen,
-  isKeyboardOpen,
-  isNumberKeyboardVisible,
-  clickKey,
 } from "./helpers.js";
 
 test.describe("Virtual Keyboard - Number/Tel Inputs", () => {

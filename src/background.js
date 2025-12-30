@@ -58,7 +58,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
  * @param {Object} request
  * @param {chrome.runtime.MessageSender} sender
  */
-async function handleMessage(request, sender) {
+async function handleMessage(request, _sender) {
   switch (request.method) {
     case MESSAGE_TYPES.OPEN_FROM_IFRAME:
     case MESSAGE_TYPES.CLICK_FROM_IFRAME:

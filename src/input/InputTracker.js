@@ -1,14 +1,9 @@
 // Input Tracker
 // Manages focused input state, change detection, and scroll management
 
-import { TIMING, MESSAGE_TYPES } from "../core/config.js";
-import {
-  focusState,
-  scrollState,
-  runtimeState,
-  keyboardState,
-} from "../core/state.js";
-import { emit, on, EVENTS } from "../core/events.js";
+import { MESSAGE_TYPES, TIMING } from "../core/config.js";
+import { EVENTS, emit, on } from "../core/events.js";
+import { focusState, runtimeState, scrollState } from "../core/state.js";
 
 // Counter for generating unique element IDs in iframes
 let iframeElementCount = 0;
@@ -224,7 +219,7 @@ export function restoreScrollPosition() {
  */
 export function addBodyPadding(keyboardHeight) {
   if (!document.body.style.marginBottom || scrollState.get("pagePadding")) {
-    document.body.style.marginBottom = keyboardHeight + "px";
+    document.body.style.marginBottom = `${keyboardHeight}px`;
     scrollState.set("pagePadding", true);
   }
 }

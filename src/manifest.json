@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Virtual Keyboard",
   "version": "3.0.0",
-  "description": "Fullscreen on-screen virtual keyboard for touch screen devices",
+  "description": "On-screen virtual keyboard for touch screen devices",
   "homepage_url": "https://github.com/Gobd/chrome-virtual-keyboard",
   "icons": {
     "48": "buttons/keyboard_1.png",

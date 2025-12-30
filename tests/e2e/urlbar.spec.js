@@ -1,14 +1,14 @@
-import { test, expect } from "./fixtures.js";
+import { expect, test } from "./fixtures.js";
 import {
-  waitForExtension,
-  waitForKeyboardOpen,
-  waitForKeyboardClose,
-  isKeyboardOpen,
-  isUrlBarOpen,
+  clickCloseButton,
   clickUrlButton,
   getUrlBarValue,
+  isKeyboardOpen,
+  isUrlBarOpen,
   typeWithKeyboard,
-  clickCloseButton,
+  waitForExtension,
+  waitForKeyboardClose,
+  waitForKeyboardOpen,
 } from "./helpers.js";
 
 test.describe("Virtual Keyboard - URL Bar", () => {

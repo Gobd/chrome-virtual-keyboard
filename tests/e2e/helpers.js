@@ -81,7 +81,7 @@ export async function waitForKeyboardOpen(page, timeout = 5000) {
       const keyboard = host.shadowRoot.querySelector("#virtual-keyboard");
       return keyboard?.dataset.state === "open";
     },
-    { timeout },
+    { timeout }
   );
 }
 
@@ -98,7 +98,7 @@ export async function waitForKeyboardClose(page, timeout = 5000) {
       const keyboard = host.shadowRoot.querySelector("#virtual-keyboard");
       return keyboard?.dataset.state === "closed";
     },
-    { timeout },
+    { timeout }
   );
 }
 
@@ -344,4 +344,309 @@ export async function waitForExtension(page) {
   });
   // Give extension time to set up shadow DOM and event listeners
   await page.waitForTimeout(500);
+}
+
+/**
+ * Check if shift is currently active
+ * @param {import('@playwright/test').Page} page
+ * @returns {Promise<boolean>}
+ */
+export async function isShiftActive(page) {
+  return await page.evaluate(() => {
+    const host = document.querySelector("#virtual-keyboard-host");
+    if (!host || !host.shadowRoot) return false;
+    // shift-active class is on #vk-main-kbd, not #virtual-keyboard
+    const mainKbd = host.shadowRoot.querySelector("#vk-main-kbd");
+    return mainKbd?.classList.contains("shift-active") || false;
+  });
+}
+
+/**
+ * Check if numbers/symbols mode is active
+ * @param {import('@playwright/test').Page} page
+ * @returns {Promise<boolean>}
+ */
+export async function isNumbersModeActive(page) {
+  return await page.evaluate(() => {
+    const host = document.querySelector("#virtual-keyboard-host");
+    if (!host || !host.shadowRoot) return false;
+    const numbersKbd = host.shadowRoot.querySelector("#vk-main-numbers");
+    if (!numbersKbd) return false;
+    const style = window.getComputedStyle(numbersKbd);
+    return style.display !== "none";
+  });
+}
+
+/**
+ * Click the &123 numbers toggle button
+ * @param {import('@playwright/test').Page} page
+ */
+export async function clickNumbersToggle(page) {
+  await page.evaluate(() => {
+    const host = document.querySelector("#virtual-keyboard-host");
+    if (!host || !host.shadowRoot) throw new Error("Keyboard not found");
+    const btn = host.shadowRoot.querySelector('[data-key="&123"]');
+    if (!btn) throw new Error("&123 button not found");
+    btn.click();
+  });
+}
+
+/**
+ * Get all visible key values from the main keyboard
+ * @param {import('@playwright/test').Page} page
+ * @returns {Promise<string[]>}
+ */
+export async function getVisibleKeys(page) {
+  return await page.evaluate(() => {
+    const host = document.querySelector("#virtual-keyboard-host");
+    if (!host || !host.shadowRoot) return [];
+    const keys = host.shadowRoot.querySelectorAll("#vk-main-kbd .vk-key");
+    const visibleKeys = [];
+    keys.forEach((key) => {
+      const style = window.getComputedStyle(key);
+      if (style.display !== "none" && style.visibility !== "hidden") {
+        const dataKey = key.getAttribute("data-key");
+        if (dataKey) visibleKeys.push(dataKey);
+      }
+    });
+    return visibleKeys;
+  });
+}
+
+/**
+ * Get the displayed text on a specific key
+ * @param {import('@playwright/test').Page} page
+ * @param {string} keyValue - The data-key value
+ * @returns {Promise<string>}
+ */
+export async function getKeyDisplayText(page, keyValue) {
+  return await page.evaluate((key) => {
+    const host = document.querySelector("#virtual-keyboard-host");
+    if (!host || !host.shadowRoot) return "";
+    const keyEl = host.shadowRoot.querySelector(`[data-key="${key}"]`);
+    if (!keyEl) return "";
+    // Get text content, excluding icons
+    const textEl = keyEl.querySelector(".vk-key-case") || keyEl;
+    return textEl.textContent?.trim() || "";
+  }, keyValue);
+}
+
+/**
+ * Check if the floating open button is visible
+ * Note: Open button is NOT in shadow DOM - it's directly on document.body
+ * @param {import('@playwright/test').Page} page
+ * @returns {Promise<boolean>}
+ */
+export async function isOpenButtonVisible(page) {
+  return await page.evaluate(() => {
+    const btn = document.querySelector("#vk-open-btn");
+    if (!btn) return false;
+    const style = window.getComputedStyle(btn);
+    return (
+      style.display !== "none" &&
+      style.visibility !== "hidden" &&
+      style.opacity !== "0" &&
+      btn.dataset.hidden !== "true"
+    );
+  });
+}
+
+/**
+ * Click the floating open button
+ * Note: Open button is NOT in shadow DOM - it's directly on document.body
+ * @param {import('@playwright/test').Page} page
+ */
+export async function clickOpenButton(page) {
+  await page.evaluate(() => {
+    const btn = document.querySelector("#vk-open-btn");
+    if (!btn) throw new Error("Open button not found");
+    btn.click();
+  });
+}
+
+/**
+ * Get the number of rows in the main keyboard
+ * @param {import('@playwright/test').Page} page
+ * @returns {Promise<number>}
+ */
+export async function getKeyboardRowCount(page) {
+  return await page.evaluate(() => {
+    const host = document.querySelector("#virtual-keyboard-host");
+    if (!host || !host.shadowRoot) return 0;
+    const rows = host.shadowRoot.querySelectorAll("#vk-main-kbd-ph .vk-row");
+    return rows.length;
+  });
+}
+
+/**
+ * Check if a specific button is visible in the keyboard
+ * @param {import('@playwright/test').Page} page
+ * @param {string} selector - CSS selector for the button
+ * @returns {Promise<boolean>}
+ */
+export async function isButtonVisible(page, selector) {
+  return await page.evaluate((sel) => {
+    const host = document.querySelector("#virtual-keyboard-host");
+    if (!host || !host.shadowRoot) return false;
+    const btn = host.shadowRoot.querySelector(sel);
+    if (!btn) return false;
+    const style = window.getComputedStyle(btn);
+    return style.display !== "none" && style.visibility !== "hidden";
+  }, selector);
+}
+
+/**
+ * Get keyboard zoom scale
+ * @param {import('@playwright/test').Page} page
+ * @returns {Promise<number>}
+ */
+export async function getKeyboardZoom(page) {
+  return await page.evaluate(() => {
+    const host = document.querySelector("#virtual-keyboard-host");
+    if (!host || !host.shadowRoot) return 1;
+    const keyboard = host.shadowRoot.querySelector("#virtual-keyboard");
+    if (!keyboard) return 1;
+    const transform = window.getComputedStyle(keyboard).transform;
+    if (!transform || transform === "none") return 1;
+    // Parse scale from matrix
+    const match = transform.match(/matrix\(([^,]+)/);
+    return match ? parseFloat(match[1]) : 1;
+  });
+}
+
+/**
+ * Check if the number bar (top row 1-0) is visible
+ * @param {import('@playwright/test').Page} page
+ * @returns {Promise<boolean>}
+ */
+export async function isNumberBarVisible(page) {
+  return await page.evaluate(() => {
+    const host = document.querySelector("#virtual-keyboard-host");
+    if (!host || !host.shadowRoot) return false;
+    const bar = host.shadowRoot.querySelector("#vk-number-bar");
+    if (!bar) return false;
+    const style = window.getComputedStyle(bar);
+    return style.display !== "none";
+  });
+}
+
+/**
+ * Check if settings button is visible
+ * @param {import('@playwright/test').Page} page
+ * @returns {Promise<boolean>}
+ */
+export async function isSettingsButtonVisible(page) {
+  return await page.evaluate(() => {
+    const host = document.querySelector("#virtual-keyboard-host");
+    if (!host || !host.shadowRoot) return false;
+    const btn = host.shadowRoot.querySelector("#vk-settings-btn");
+    if (!btn) return false;
+    const style = window.getComputedStyle(btn);
+    return style.display !== "none" && style.visibility !== "hidden";
+  });
+}
+
+/**
+ * Check if language button is visible
+ * @param {import('@playwright/test').Page} page
+ * @returns {Promise<boolean>}
+ */
+export async function isLanguageButtonVisible(page) {
+  return await page.evaluate(() => {
+    const host = document.querySelector("#virtual-keyboard-host");
+    if (!host || !host.shadowRoot) return false;
+    const btn = host.shadowRoot.querySelector("#vk-lang-btn");
+    if (!btn) return false;
+    const style = window.getComputedStyle(btn);
+    return style.display !== "none" && style.visibility !== "hidden";
+  });
+}
+
+/**
+ * Set a Chrome storage setting (for settings tests)
+ * @param {import('@playwright/test').Page} page
+ * @param {string} key
+ * @param {any} value
+ */
+export async function setStorageSetting(page, key, value) {
+  await page.evaluate(
+    ({ k, v }) => {
+      return new Promise((resolve) => {
+        chrome.storage.local.set({ [k]: v }, resolve);
+      });
+    },
+    { k: key, v: value }
+  );
+}
+
+/**
+ * Get the keys in the symbols/numbers keyboard
+ * @param {import('@playwright/test').Page} page
+ * @returns {Promise<string[]>}
+ */
+export async function getNumbersKeyboardKeys(page) {
+  return await page.evaluate(() => {
+    const host = document.querySelector("#virtual-keyboard-host");
+    if (!host || !host.shadowRoot) return [];
+    const keys = host.shadowRoot.querySelectorAll("#vk-main-numbers .vk-key");
+    const keyValues = [];
+    keys.forEach((key) => {
+      const dataKey = key.getAttribute("data-key");
+      if (dataKey) keyValues.push(dataKey);
+    });
+    return keyValues;
+  });
+}
+
+/**
+ * Record input events on an element
+ * @param {import('@playwright/test').Page} page
+ * @param {string} selector
+ */
+export async function startRecordingInputEvents(page, selector) {
+  await page.evaluate((sel) => {
+    const el = document.querySelector(sel);
+    if (!el) return;
+    window.__recordedEvents = [];
+    ["keydown", "keyup", "keypress", "input", "beforeinput"].forEach(
+      (eventType) => {
+        el.addEventListener(eventType, (e) => {
+          window.__recordedEvents.push({
+            type: e.type,
+            key: e.key,
+            keyCode: e.keyCode,
+            charCode: e.charCode,
+            which: e.which,
+            data: e.data,
+            inputType: e.inputType,
+          });
+        });
+      }
+    );
+  }, selector);
+}
+
+/**
+ * Get recorded input events
+ * @param {import('@playwright/test').Page} page
+ * @returns {Promise<Array<{type: string, key?: string, data?: string}>>}
+ */
+export async function getRecordedEvents(page) {
+  return await page.evaluate(() => window.__recordedEvents || []);
+}
+
+/**
+ * Get keyboard position (for draggable tests)
+ * @param {import('@playwright/test').Page} page
+ * @returns {Promise<{x: number, y: number}>}
+ */
+export async function getKeyboardPosition(page) {
+  return await page.evaluate(() => {
+    const host = document.querySelector("#virtual-keyboard-host");
+    if (!host || !host.shadowRoot) return { x: 0, y: 0 };
+    const keyboard = host.shadowRoot.querySelector("#virtual-keyboard");
+    if (!keyboard) return { x: 0, y: 0 };
+    const rect = keyboard.getBoundingClientRect();
+    return { x: rect.left, y: rect.top };
+  });
 }

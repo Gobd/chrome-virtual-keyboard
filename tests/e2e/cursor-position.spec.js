@@ -1,9 +1,9 @@
-import { test, expect } from "./fixtures.js";
+import { expect, test } from "./fixtures.js";
 import {
-  waitForExtension,
-  waitForKeyboardOpen,
   clickKey,
   typeWithKeyboard,
+  waitForExtension,
+  waitForKeyboardOpen,
 } from "./helpers.js";
 
 test.describe("Virtual Keyboard - Cursor Position", () => {

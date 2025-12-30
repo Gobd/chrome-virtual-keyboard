@@ -2,26 +2,18 @@
 // Initializes all modules and sets up the keyboard
 
 import { DOM_IDS, MESSAGE_TYPES, TIMING } from "./core/config.js";
-import {
-  settingsState,
-  runtimeState,
-  focusState,
-  keyboardState,
-} from "./core/state.js";
-import { emit, on, EVENTS } from "./core/events.js";
+import { EVENTS, emit, on } from "./core/events.js";
+import { focusState, runtimeState, settingsState } from "./core/state.js";
 import storage from "./core/storage.js";
-import { getLayoutsList } from "./layouts/layouts.js";
-import Keyboard from "./keyboard/Keyboard.js";
-import { handleKeyPress } from "./keyboard/KeyHandler.js";
-import {
-  init as initInputTracker,
-  clearCloseTimer,
-} from "./input/InputTracker.js";
+import { getInputType } from "./input/InputBinder.js";
+import { init as initInputTracker } from "./input/InputTracker.js";
 import {
   bindAllInputsDeep,
   startDocumentObserver,
 } from "./input/ShadowDOMWatcher.js";
-import { getInputType } from "./input/InputBinder.js";
+import Keyboard from "./keyboard/Keyboard.js";
+import { handleKeyPress } from "./keyboard/KeyHandler.js";
+import { getLayoutsList } from "./layouts/layouts.js";
 
 // =============================================================================
 // OPEN BUTTON (FLOATING KEYBOARD TRIGGER)
@@ -179,19 +171,19 @@ async function loadSettings() {
     if (changes.spacebarCursorSwipe !== undefined) {
       settingsState.set(
         "spacebarCursorSwipe",
-        changes.spacebarCursorSwipe.newValue === true,
+        changes.spacebarCursorSwipe.newValue === true
       );
     }
     if (changes.keyboardDraggable !== undefined) {
       settingsState.set(
         "keyboardDraggable",
-        changes.keyboardDraggable.newValue === true,
+        changes.keyboardDraggable.newValue === true
       );
     }
     if (changes.showOpenButton !== undefined) {
       settingsState.set(
         "showOpenButton",
-        changes.showOpenButton.newValue !== false,
+        changes.showOpenButton.newValue !== false
       );
       if (changes.showOpenButton.newValue === false) {
         hideOpenButton();
@@ -205,7 +197,7 @@ async function loadSettings() {
     if (changes.showLanguageButton !== undefined) {
       settingsState.set(
         "showLanguageButton",
-        changes.showLanguageButton.newValue === true,
+        changes.showLanguageButton.newValue === true
       );
       // Reload layout to show/hide language button
       const currentLayout = settingsState.get("layout");
@@ -218,7 +210,7 @@ async function loadSettings() {
     if (changes.showSettingsButton !== undefined) {
       settingsState.set(
         "showSettingsButton",
-        changes.showSettingsButton.newValue !== false,
+        changes.showSettingsButton.newValue !== false
       );
       // Reload layout to show/hide settings button
       const currentLayout = settingsState.get("layout");
@@ -231,7 +223,7 @@ async function loadSettings() {
     if (changes.showNumberBar !== undefined) {
       settingsState.set(
         "showNumberBar",
-        changes.showNumberBar.newValue !== false,
+        changes.showNumberBar.newValue !== false
       );
       import("./keyboard/Keyboard.js").then((Keyboard) => {
         Keyboard.updateNumberBarVisibility();

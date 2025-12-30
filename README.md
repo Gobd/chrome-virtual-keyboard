@@ -39,24 +39,48 @@ The content script is configured to run on all pages (`<all_urls>`) to detect wh
 pnpm install          # Install dependencies
 pnpm build            # Build extension to dist/
 pnpm watch            # Build and watch for changes
-pnpm format           # Format code with Prettier
-pnpm format:check     # Check formatting without writing
+pnpm format           # Format code with Biome
+pnpm lint             # Lint code with Biome
+pnpm lint:fix         # Fix lint issues automatically
 pnpm package          # Create zip for Chrome Web Store submission
 ```
 
+Extension source files are in the `src/` directory.
+
 ### Testing
 
+The project has both unit tests (Vitest) and E2E tests (Playwright).
+
 ```bash
-pnpm test:install     # Install Playwright browser (first time setup)
-pnpm test             # Run Playwright tests
-pnpm test:headed      # Run tests with visible browser
-pnpm test:ui          # Run tests with Playwright UI
-pnpm test:debug       # Run tests in debug mode
-pnpm test:report      # View test report
-pnpm coverage         # Run tests with coverage
+# Setup
+pnpm test:install     # Install Playwright browser (first time)
+
+# Run tests
+pnpm test             # Run all tests (unit + E2E)
+pnpm test:unit        # Run unit tests only
+pnpm test:e2e         # Run E2E tests only
+pnpm test:headed      # Run E2E tests with visible browser
+pnpm test:ui          # Run E2E tests with Playwright UI
+pnpm test:debug       # Run E2E tests in debug mode
+pnpm test:report      # View Playwright test report
 ```
 
-Extension source files are in the `src/` directory.
+### Coverage
+
+Coverage can be generated for unit tests, E2E tests, or combined.
+
+```bash
+pnpm coverage         # Run all tests with combined coverage report
+pnpm coverage:unit    # Run unit tests with coverage
+pnpm coverage:e2e     # Run E2E tests with coverage
+pnpm coverage:all     # Generate combined coverage (unit + E2E)
+pnpm coverage:summary # Display coverage summary for all test types
+```
+
+Coverage reports are generated in:
+- `coverage/` - Combined coverage report (HTML)
+- `coverage-unit/` - Unit test coverage
+- `coverage-e2e/` - E2E test coverage
 
 ## Known Limitations
 

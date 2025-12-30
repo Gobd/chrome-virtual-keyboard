@@ -1,7 +1,6 @@
 // Key Map
 // Handles key value resolution and shift character mapping
 
-import { SPECIAL_KEYS } from "../core/config.js";
 import { keyboardState } from "../core/state.js";
 
 /**

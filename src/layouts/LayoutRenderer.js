@@ -1,13 +1,8 @@
 // Layout Renderer
 // Renders keyboard layouts as DOM elements (not HTML strings)
 
-import { layouts, getLayoutsList } from "./layouts.js";
-import {
-  CSS_CLASSES,
-  KEY_TYPES,
-  DEFAULT_BOTTOM_ROW,
-  DOM_IDS,
-} from "../core/config.js";
+import { CSS_CLASSES, DEFAULT_BOTTOM_ROW, KEY_TYPES } from "../core/config.js";
+import { getLayoutsList, layouts } from "./layouts.js";
 
 /**
  * Render a complete keyboard layout
@@ -62,7 +57,7 @@ export function renderLayout(layoutId, options = {}) {
     (!showSettingsButton ? 1 : 0) +
     (!showCloseButton ? 1 : 0);
   fragment.appendChild(
-    renderRow(bottomRow, labels, { widenSpace: hiddenButtonCount > 0 }),
+    renderRow(bottomRow, labels, { widenSpace: hiddenButtonCount > 0 })
   );
 
   return fragment;

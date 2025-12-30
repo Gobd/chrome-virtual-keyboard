@@ -1,14 +1,16 @@
 // Build script for Chrome Virtual Keyboard extension
 // Uses esbuild to bundle ES modules for content script
 
-const esbuild = require("esbuild");
-const fs = require("fs");
-const path = require("path");
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import * as esbuild from "esbuild";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isTest = process.argv.includes("--test");
 
-const SRC_DIR = "src";
-const DIST_DIR = "dist";
+const SRC_DIR = path.join(__dirname, "src");
+const DIST_DIR = path.join(__dirname, "dist");
 
 // Files to copy without bundling
 const STATIC_FILES = [
@@ -82,7 +84,8 @@ const buildOptions = {
   format: "iife",
   target: ["chrome120"],
   minify: false, // Keep readable for debugging
-  sourcemap: false,
+  // Enable inline source maps for test builds so E2E coverage can map to source files
+  sourcemap: isTest ? "inline" : false,
   logLevel: "info",
   // For test builds, use open shadow DOM so tests can access elements
   define: isTest ? { __SHADOW_MODE__: '"open"' } : {},
@@ -128,7 +131,7 @@ async function watch() {
   await ctx.watch();
 
   // Also watch static files
-  const staticWatcher = (eventType, filename) => {
+  const staticWatcher = (_eventType, filename) => {
     if (filename && !filename.startsWith(".")) {
       console.log(`\nStatic file changed: ${filename}`);
       copyStatic();
