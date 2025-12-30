@@ -62,6 +62,8 @@
 
 #virtual-keyboard {
   --vk-offset-x: 0px;
+  --vk-zoom-width: 1;
+  --vk-zoom-height: 1;
   position: fixed;
   bottom: 0;
   left: 0;
@@ -69,7 +71,7 @@
   overflow: visible;
   margin-left: auto;
   margin-right: auto;
-  transform: translateX(var(--vk-offset-x)) translateY(100%);
+  transform: translateX(var(--vk-offset-x)) translateY(100%) scale(var(--vk-zoom-width), var(--vk-zoom-height));
   opacity: 0;
   padding: var(--vk-padding);
   max-width: fit-content;
@@ -86,12 +88,12 @@
 }
 
 #virtual-keyboard.keyboard-open {
-  transform: translateX(var(--vk-offset-x)) translateY(0);
+  transform: translateX(var(--vk-offset-x)) translateY(0) scale(var(--vk-zoom-width), var(--vk-zoom-height));
   opacity: 1;
 }
 
 #virtual-keyboard.keyboard-closed {
-  transform: translateX(var(--vk-offset-x)) translateY(100%);
+  transform: translateX(var(--vk-offset-x)) translateY(100%) scale(var(--vk-zoom-width), var(--vk-zoom-height));
   opacity: 0;
 }
 

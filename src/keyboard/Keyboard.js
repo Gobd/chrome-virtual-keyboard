@@ -43,8 +43,8 @@ let dragState = {
   active: false,
   startX: 0,
   startY: 0,
-  startPosX: 0,
-  startPosY: 0,
+  startLeft: 0,
+  startBottom: 0,
 };
 
 const SWIPE_THRESHOLD = 10; // Pixels to move before considering it a swipe
@@ -257,8 +257,8 @@ export async function init() {
   // Apply drag handle visibility and position
   updateDragHandleVisibility();
   const savedPosition = settingsState.get("keyboardPosition");
-  if (savedPosition && settingsState.get("keyboardDraggable")) {
-    applyKeyboardPosition(savedPosition.x, savedPosition.y);
+  if (savedPosition && settingsState.get("keyboardDraggable") && savedPosition.left !== undefined) {
+    applyKeyboardPositionCSS(savedPosition.left, savedPosition.bottom);
   }
 
   // Apply number bar visibility
@@ -633,9 +633,17 @@ function setupEventDelegation() {
   });
 
   // Close overlays when clicking outside keyboard
+  // Also close keyboard if opened via open button (no focused input)
   document.addEventListener("click", (e) => {
     if (!keyboardElement.contains(e.target)) {
       closeAllOverlays();
+
+      // If keyboard is open but no input is focused (opened via open button),
+      // close the keyboard when clicking outside
+      const focusedElement = focusState.get("element");
+      if (keyboardState.get("open") && !focusedElement) {
+        emit(EVENTS.KEYBOARD_CLOSE);
+      }
     }
   });
 }
@@ -783,7 +791,10 @@ function setupStateSubscriptions() {
   // Apply saved keyboard position
   settingsState.subscribe("keyboardPosition", (position) => {
     if (position && settingsState.get("keyboardDraggable")) {
-      applyKeyboardPosition(position.x, position.y);
+      // Support both old format (x, y) and new format (left, bottom)
+      if (position.left !== undefined) {
+        applyKeyboardPositionCSS(position.left, position.bottom);
+      }
     } else if (!position) {
       resetKeyboardPosition();
     }
@@ -1149,8 +1160,9 @@ function applyZoom() {
   const zoomWidth = settingsState.get("keyboardZoomWidth") / 100;
   const zoomHeight = settingsState.get("keyboardZoomHeight") / 100;
 
-  // Use transform for independent scaling
-  keyboardElement.style.transform = `scale(${zoomWidth}, ${zoomHeight})`;
+  // Use CSS variables for zoom so they combine with translateX from drag positioning
+  keyboardElement.style.setProperty("--vk-zoom-width", zoomWidth);
+  keyboardElement.style.setProperty("--vk-zoom-height", zoomHeight);
   keyboardElement.style.transformOrigin = "bottom center";
 
   invalidateKeyboardHeightCache();
@@ -1275,13 +1287,21 @@ function createDragHandle() {
     e.preventDefault();
     e.stopPropagation();
 
+    // Get current CSS left/bottom values (or calculate from current position)
+    const computedStyle = window.getComputedStyle(keyboardElement);
+    const currentLeft = parseFloat(computedStyle.left) || 0;
+    const currentBottom = parseFloat(computedStyle.bottom) || 0;
+
+    // If keyboard hasn't been positioned yet (left is auto), calculate from rect
     const rect = keyboardElement.getBoundingClientRect();
+    const isAutoPositioned = computedStyle.left === "auto" || !keyboardElement.style.left;
+
     dragState = {
       active: true,
       startX: e.clientX,
       startY: e.clientY,
-      startPosX: rect.left + rect.width / 2,
-      startPosY: rect.bottom,
+      startLeft: isAutoPositioned ? (window.innerWidth - rect.width) / 2 : currentLeft,
+      startBottom: isAutoPositioned ? 0 : currentBottom,
     };
 
     dragHandleElement.setPointerCapture(e.pointerId);
@@ -1294,11 +1314,13 @@ function createDragHandle() {
     const deltaX = e.clientX - dragState.startX;
     const deltaY = e.clientY - dragState.startY;
 
-    const newX = dragState.startPosX + deltaX;
-    const newY = dragState.startPosY + deltaY;
+    // Apply deltas directly to CSS values
+    // Moving cursor right (+deltaX) should move keyboard right (+left)
+    // Moving cursor down (+deltaY) should move keyboard down (-bottom)
+    const newLeft = dragState.startLeft + deltaX;
+    const newBottom = dragState.startBottom - deltaY;
 
-    // Apply position (centered horizontally)
-    applyKeyboardPosition(newX, newY);
+    applyKeyboardPositionCSS(newLeft, newBottom);
   });
 
   dragHandleElement.addEventListener("pointerup", (e) => {
@@ -1308,11 +1330,10 @@ function createDragHandle() {
     dragHandleElement.releasePointerCapture(e.pointerId);
     keyboardElement.classList.remove("vk-dragging");
 
-    // Save position
-    const rect = keyboardElement.getBoundingClientRect();
+    // Save position as CSS values
     const position = {
-      x: rect.left + rect.width / 2,
-      y: rect.bottom,
+      left: parseFloat(keyboardElement.style.left) || 0,
+      bottom: parseFloat(keyboardElement.style.bottom) || 0,
     };
     settingsState.set("keyboardPosition", position);
     storage.setKeyboardPosition(position);
@@ -1327,34 +1348,51 @@ function createDragHandle() {
 }
 
 /**
- * Apply keyboard position
- * @param {number} x - Center X position (in screen coordinates)
- * @param {number} y - Bottom Y position (in screen coordinates)
+ * Apply keyboard position using CSS left/bottom values directly
+ * @param {number} left - CSS left value in pixels
+ * @param {number} bottom - CSS bottom value in pixels
  */
-function applyKeyboardPosition(x, y) {
+function applyKeyboardPositionCSS(left, bottom) {
   if (!keyboardElement) return;
 
+  // Get visual dimensions for constraining
   const rect = keyboardElement.getBoundingClientRect();
-  const width = rect.width;
-  const height = rect.height;
-  const zoomWidth = settingsState.get("keyboardZoomWidth") / 100 || 1;
-  const zoomHeight = settingsState.get("keyboardZoomHeight") / 100 || 1;
+  const scaledWidth = rect.width;
+  const scaledHeight = rect.height;
 
-  // Constrain to viewport
-  const minX = width / 2;
-  const maxX = window.innerWidth - width / 2;
-  const minY = height;
-  const maxY = window.innerHeight;
+  // Constrain: keep at least 20% of keyboard visible
+  const margin = Math.min(scaledWidth, scaledHeight) * 0.2;
 
-  x = Math.max(minX, Math.min(maxX, x));
-  y = Math.max(minY, Math.min(maxY, y));
+  // Calculate visual position from CSS values
+  // With transform-origin: bottom center, visual left = left + (unscaledWidth - scaledWidth) / 2
+  // But for constraining, we just need to ensure the visual rect stays partially on screen
+  const visualLeft = rect.left;
+  const visualRight = rect.right;
+  const visualTop = rect.top;
+  const visualBottom = rect.bottom;
 
-  // Calculate offset in screen coordinates, then adjust for zoom
-  // since the CSS transform is also affected by scale
-  const offsetX = (x - window.innerWidth / 2) / zoomWidth;
-  const bottom = (window.innerHeight - y) / zoomHeight;
+  // Check if we need to constrain
+  if (visualRight < margin) {
+    // Too far left, push right
+    left += margin - visualRight;
+  } else if (visualLeft > window.innerWidth - margin) {
+    // Too far right, push left
+    left -= visualLeft - (window.innerWidth - margin);
+  }
 
-  keyboardElement.style.setProperty("--vk-offset-x", `${offsetX}px`);
+  if (visualBottom < margin) {
+    // Too far up, push down
+    bottom -= margin - visualBottom;
+  } else if (visualTop > window.innerHeight - margin) {
+    // Too far down, push up
+    bottom += visualTop - (window.innerHeight - margin);
+  }
+
+  // Ensure bottom doesn't go negative (keyboard below screen)
+  bottom = Math.max(-scaledHeight + margin, bottom);
+
+  keyboardElement.style.left = `${left}px`;
+  keyboardElement.style.right = "auto";
   keyboardElement.style.bottom = `${bottom}px`;
 }
 
@@ -1366,6 +1404,8 @@ function resetKeyboardPosition(saveToStorage = false) {
   if (!keyboardElement) return;
 
   keyboardElement.style.setProperty("--vk-offset-x", "0px");
+  keyboardElement.style.left = "";
+  keyboardElement.style.right = "";
   keyboardElement.style.bottom = "";
 
   if (saveToStorage) {

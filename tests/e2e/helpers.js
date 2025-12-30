@@ -574,15 +574,24 @@ export async function setStorageSettings(context, extensionId, settings) {
   const optionsPage = await context.newPage();
   await optionsPage.goto(`chrome-extension://${extensionId}/options.html`);
 
+  // Wait for page to fully load
+  await optionsPage.waitForLoadState("networkidle");
+
+  // Always set openedFirstTime to prevent extension from reinitializing with defaults
+  const settingsWithInit = {
+    openedFirstTime: "true",
+    ...settings,
+  };
+
   // Set all the storage values
-  await optionsPage.evaluate((storageSettings) => {
-    return new Promise((resolve) => {
+  await optionsPage.evaluate(async (storageSettings) => {
+    await new Promise((resolve) => {
       chrome.storage.local.set(storageSettings, resolve);
     });
-  }, settings);
+  }, settingsWithInit);
 
-  // Wait for storage to persist
-  await optionsPage.waitForTimeout(100);
+  // Wait for storage to persist and sync
+  await optionsPage.waitForTimeout(200);
   await optionsPage.close();
 }
 
