@@ -12,6 +12,19 @@ const EXTENSION_PATH = path.resolve("./dist");
 const COVERAGE_DATA_DIR = path.resolve("./.coverage-data");
 
 /**
+ * Get the extension ID from service worker
+ * @param {import('@playwright/test').BrowserContext} context
+ * @returns {Promise<string>}
+ */
+async function getExtensionId(context) {
+  let serviceWorker = context.serviceWorkers()[0];
+  if (!serviceWorker) {
+    serviceWorker = await context.waitForEvent("serviceworker");
+  }
+  return serviceWorker.url().split("/")[2];
+}
+
+/**
  * Extended test fixture that uses persistent context for extension support
  * and collects V8 coverage when COVERAGE env is set
  */
@@ -50,6 +63,12 @@ export const test = base.extend({
     } catch (_e) {
       // Ignore cleanup errors
     }
+  },
+
+  // Provide extension ID fixture
+  extensionId: async ({ context }, use) => {
+    const extensionId = await getExtensionId(context);
+    await use(extensionId);
   },
 
   // Override page to use the persistent context and collect coverage

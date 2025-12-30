@@ -563,20 +563,36 @@ export async function isLanguageButtonVisible(page) {
 }
 
 /**
- * Set a Chrome storage setting (for settings tests)
- * @param {import('@playwright/test').Page} page
- * @param {string} key
- * @param {any} value
+ * Set Chrome storage settings via the extension's options page.
+ * This navigates to the options page (which has chrome.storage access),
+ * sets the values, then returns.
+ * @param {import('@playwright/test').BrowserContext} context
+ * @param {string} extensionId - The extension ID
+ * @param {Object} settings - Key-value pairs to set in storage
  */
-export async function setStorageSetting(page, key, value) {
-  await page.evaluate(
-    ({ k, v }) => {
-      return new Promise((resolve) => {
-        chrome.storage.local.set({ [k]: v }, resolve);
-      });
-    },
-    { k: key, v: value }
-  );
+export async function setStorageSettings(context, extensionId, settings) {
+  const optionsPage = await context.newPage();
+  await optionsPage.goto(`chrome-extension://${extensionId}/options.html`);
+
+  // Wait for page to fully load
+  await optionsPage.waitForLoadState("networkidle");
+
+  // Always set openedFirstTime to prevent extension from reinitializing with defaults
+  const settingsWithInit = {
+    openedFirstTime: "true",
+    ...settings,
+  };
+
+  // Set all the storage values
+  await optionsPage.evaluate(async (storageSettings) => {
+    await new Promise((resolve) => {
+      chrome.storage.local.set(storageSettings, resolve);
+    });
+  }, settingsWithInit);
+
+  // Wait for storage to persist and sync
+  await optionsPage.waitForTimeout(200);
+  await optionsPage.close();
 }
 
 /**

@@ -143,11 +143,14 @@ describe("config.js", () => {
       expect(STORAGE_KEYS.SHOW_LANGUAGE_BUTTON).toBe("showLanguageButton");
       expect(STORAGE_KEYS.SHOW_SETTINGS_BUTTON).toBe("showSettingsButton");
       expect(STORAGE_KEYS.SHOW_NUMBER_BAR).toBe("showNumberBar");
-      expect(STORAGE_KEYS.KEYBOARD_ZOOM).toBe("keyboardZoom");
+      expect(STORAGE_KEYS.KEYBOARD_ZOOM_WIDTH).toBe("keyboardZoomWidth");
+      expect(STORAGE_KEYS.KEYBOARD_ZOOM_HEIGHT).toBe("keyboardZoomHeight");
+      expect(STORAGE_KEYS.KEYBOARD_ZOOM_LOCKED).toBe("keyboardZoomLocked");
       expect(STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE).toBe("spacebarCursorSwipe");
       expect(STORAGE_KEYS.KEYBOARD_DRAGGABLE).toBe("keyboardDraggable");
       expect(STORAGE_KEYS.KEYBOARD_POSITION).toBe("keyboardPosition");
       expect(STORAGE_KEYS.AUTOSTART).toBe("autostart");
+      expect(STORAGE_KEYS.STICKY_SHIFT).toBe("stickyShift");
     });
   });
 

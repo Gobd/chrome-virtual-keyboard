@@ -33,25 +33,25 @@ jobs:
       - name: Run unit tests with coverage
         run: pnpm run coverage:unit
 
-      - name: Read unit coverage
-        id: unit-coverage
-        if: ${{ !cancelled() }}
-        run: |
-          if [ -f coverage-unit/coverage-summary.json ]; then
-            LINES=$(jq -r '.total.lines.pct // 0' coverage-unit/coverage-summary.json 2>/dev/null || echo "0")
-            FUNCTIONS=$(jq -r '.total.functions.pct // 0' coverage-unit/coverage-summary.json 2>/dev/null || echo "0")
-            BRANCHES=$(jq -r '.total.branches.pct // 0' coverage-unit/coverage-summary.json 2>/dev/null || echo "0")
-            echo "lines=$LINES" >> $GITHUB_OUTPUT
-            echo "functions=$FUNCTIONS" >> $GITHUB_OUTPUT
-            echo "branches=$BRANCHES" >> $GITHUB_OUTPUT
-          fi
-
       - name: Run E2E tests with coverage
         run: COVERAGE=1 COVERAGE_SKIP_REPORT=1 pnpm run test:e2e
 
       - name: Generate all coverage reports
         if: ${{ !cancelled() }}
         run: node scripts/merge-coverage.js || true
+
+      - name: Read unit coverage
+        id: unit-coverage
+        if: ${{ !cancelled() }}
+        run: |
+          if [ -f coverage-unit/coverage-summary.json ]; then
+            LINES=$(jq -r '.lines // 0' coverage-unit/coverage-summary.json 2>/dev/null || echo "0")
+            FUNCTIONS=$(jq -r '.functions // 0' coverage-unit/coverage-summary.json 2>/dev/null || echo "0")
+            BRANCHES=$(jq -r '.branches // 0' coverage-unit/coverage-summary.json 2>/dev/null || echo "0")
+            echo "lines=$LINES" >> $GITHUB_OUTPUT
+            echo "functions=$FUNCTIONS" >> $GITHUB_OUTPUT
+            echo "branches=$BRANCHES" >> $GITHUB_OUTPUT
+          fi
 
       - name: Read E2E coverage
         id: e2e-coverage

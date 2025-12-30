@@ -71,12 +71,9 @@
   margin-right: auto;
   transform: translateX(var(--vk-offset-x)) translateY(100%);
   opacity: 0;
-  padding: var(--vk-padding);
   max-width: fit-content;
   width: 100%;
   box-sizing: border-box;
-  background: var(--vk-bg);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2);
   z-index: var(--vk-z-index);
   user-select: none;
   transition:
@@ -93,6 +90,17 @@
 #virtual-keyboard.keyboard-closed {
   transform: translateX(var(--vk-offset-x)) translateY(100%);
   opacity: 0;
+}
+
+/* Inner wrapper for zoom scaling - separates scale from positioning */
+.vk-scale-wrapper {
+  --vk-zoom-width: 1;
+  --vk-zoom-height: 1;
+  transform: scale(var(--vk-zoom-width), var(--vk-zoom-height));
+  transform-origin: bottom center;
+  padding: var(--vk-padding);
+  background: var(--vk-bg);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2);
 }
 
 /* =============================================================================
@@ -174,6 +182,8 @@
 .vk-key-space {
   flex: 3;
   background: var(--vk-space-key-bg);
+  /* Ensure spacebar has proper height even when it's the only key in the row */
+  min-height: calc(1.2em + var(--vk-key-padding) * 2);
 }
 
 /* Wider space key (when language button is hidden) */
@@ -512,82 +522,83 @@
 
 /* =============================================================================
    Responsive Zoom (based on viewport height)
+   Applied to inner wrapper so it doesn't affect drag positioning on outer element
    ============================================================================= */
 
 @media (max-height: 950px) {
-  #virtual-keyboard {
+  .vk-scale-wrapper {
     zoom: 0.95;
   }
 }
 
 @media (max-height: 900px) {
-  #virtual-keyboard {
+  .vk-scale-wrapper {
     zoom: 0.9;
   }
 }
 
 @media (max-height: 850px) {
-  #virtual-keyboard {
+  .vk-scale-wrapper {
     zoom: 0.85;
   }
 }
 
 @media (max-height: 800px) {
-  #virtual-keyboard {
+  .vk-scale-wrapper {
     zoom: 0.8;
   }
 }
 
 @media (max-height: 750px) {
-  #virtual-keyboard {
+  .vk-scale-wrapper {
     zoom: 0.75;
   }
 }
 
 @media (max-height: 700px) {
-  #virtual-keyboard {
+  .vk-scale-wrapper {
     zoom: 0.7;
   }
 }
 
 @media (max-height: 650px) {
-  #virtual-keyboard {
+  .vk-scale-wrapper {
     zoom: 0.65;
   }
 }
 
 @media (max-height: 550px) {
-  #virtual-keyboard {
+  .vk-scale-wrapper {
     zoom: 0.6;
   }
 }
 
 @media (max-height: 500px) {
-  #virtual-keyboard {
+  .vk-scale-wrapper {
     zoom: 0.55;
   }
 }
 
 @media (max-height: 450px) {
-  #virtual-keyboard {
+  .vk-scale-wrapper {
     zoom: 0.5;
   }
 }
 
 @media (max-height: 400px) {
-  #virtual-keyboard {
+  .vk-scale-wrapper {
     zoom: 0.45;
   }
 }
 
 @media (max-height: 350px) {
-  #virtual-keyboard {
+  .vk-scale-wrapper {
     zoom: 0.4;
   }
 }
 
 @media (max-height: 300px) {
-  #virtual-keyboard {
+  .vk-scale-wrapper {
     zoom: 0.35;
   }
 }

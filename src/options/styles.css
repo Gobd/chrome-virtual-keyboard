@@ -1,18 +1,8 @@
-body.loaded {
-  opacity: 1;
-}
-
 #page {
-  transition: all 0.55s ease-out;
-  transform: scale(0.9) translate3d(-230px, 0, 0);
   min-width: 1000px;
   padding: 30px;
   padding-top: 80px;
   padding-left: 60px;
-}
-
-body.loaded #page {
-  transform: translate3d(0, 0, 0) perspective(800px);
 }
 
 /* Scrollbar styling - Chrome-specific */
@@ -38,8 +28,6 @@ body {
   font-family: "Segoe UI", Tahoma, sans-serif;
   color: #333;
   background-color: #fefefe;
-  opacity: 0;
-  transition: all 1.5s;
 }
 
 h1 {

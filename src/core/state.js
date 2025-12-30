@@ -150,11 +150,17 @@ export const settingsState = createStore({
   showOpenButton: true,
   showLanguageButton: false,
   showSettingsButton: true,
-  keyboardZoom: 100,
+  showUrlButton: true,
+  showCloseButton: true,
+  showNumbersButton: true,
+  keyboardZoomWidth: 100,
+  keyboardZoomHeight: 100,
+  keyboardZoomLocked: true,
   spacebarCursorSwipe: false,
   keyboardDraggable: false,
   keyboardPosition: null,
   autostart: false,
+  stickyShift: false,
 });
 
 // URL bar state

@@ -25,6 +25,7 @@ import { handleKeyPress } from "./KeyHandler.js";
 import { getKeyWithShift } from "./KeyMap.js";
 
 let keyboardElement = null;
+let scaleWrapperElement = null;
 let shadowRoot = null;
 let scrollExtendElement = null;
 let overlayCloseTimeout = null;
@@ -41,10 +42,9 @@ let spacebarSwipeState = {
 // Keyboard drag state
 let dragState = {
   active: false,
-  startX: 0,
-  startY: 0,
-  startPosX: 0,
-  startPosY: 0,
+  // Offset from cursor to keyboard center/bottom at drag start
+  offsetX: 0,
+  offsetY: 0,
 };
 
 const SWIPE_THRESHOLD = 10; // Pixels to move before considering it a swipe
@@ -77,7 +77,6 @@ function getCachedElements() {
   // Cache static elements (created in buildKeyboardStructure)
   if (!cachedElements.mainKbd && shadowRoot) {
     cachedElements.mainKbd = shadowRoot.getElementById(DOM_IDS.MAIN_KBD);
-    cachedElements.numbersKbd = shadowRoot.getElementById(DOM_IDS.MAIN_NUMBERS);
     cachedElements.numberInput = shadowRoot.getElementById(
       DOM_IDS.NUMBER_BAR_INPUT
     );
@@ -88,6 +87,10 @@ function getCachedElements() {
     cachedElements.placeholder = shadowRoot.getElementById(
       DOM_IDS.MAIN_KBD_PLACEHOLDER
     );
+  }
+  // Cache numbersKbd separately (can be recreated by reloadKeyboard)
+  if (!cachedElements.numbersKbd && shadowRoot) {
+    cachedElements.numbersKbd = shadowRoot.getElementById(DOM_IDS.MAIN_NUMBERS);
   }
   // Cache layout-dependent elements separately (created in loadLayout)
   if (!cachedElements.urlButton && shadowRoot) {
@@ -266,26 +269,31 @@ export async function init() {
  * Build the internal keyboard structure
  */
 async function buildKeyboardStructure() {
-  // Create drag handle for repositioning
+  // Create scale wrapper - all content goes inside this for zoom scaling
+  scaleWrapperElement = document.createElement("div");
+  scaleWrapperElement.className = "vk-scale-wrapper";
+  keyboardElement.appendChild(scaleWrapperElement);
+
+  // Create drag handle inside wrapper so it moves with scaled content
   const dragHandle = createDragHandle();
-  keyboardElement.appendChild(dragHandle);
+  scaleWrapperElement.appendChild(dragHandle);
 
   // Create URL bar
   const urlBar = createUrlBar();
-  keyboardElement.appendChild(urlBar);
+  scaleWrapperElement.appendChild(urlBar);
 
   // Create language overlay (for switching keyboard layouts)
   const languageOverlay = await createLanguageOverlay();
-  keyboardElement.appendChild(languageOverlay);
+  scaleWrapperElement.appendChild(languageOverlay);
 
   // Create number input keyboard
   const numberInput = createNumberInputKeyboard();
-  keyboardElement.appendChild(numberInput);
+  scaleWrapperElement.appendChild(numberInput);
 
   // Create main keyboard container
   const mainKbd = document.createElement("div");
   mainKbd.id = DOM_IDS.MAIN_KBD;
-  keyboardElement.appendChild(mainKbd);
+  scaleWrapperElement.appendChild(mainKbd);
 
   // Create number bar (top row of numbers)
   const numberBar = createNumberBar();
@@ -298,7 +306,7 @@ async function buildKeyboardStructure() {
 
   // Create numbers/symbols keyboard
   const numbersKbd = createNumbersKeyboard();
-  keyboardElement.appendChild(numbersKbd);
+  scaleWrapperElement.appendChild(numbersKbd);
 }
 
 /**
@@ -537,12 +545,44 @@ function createNumberBar() {
  * Create the numbers/symbols keyboard
  */
 function createNumbersKeyboard() {
-  return createKeyboardFromRows(DOM_IDS.MAIN_NUMBERS, [
+  const showCloseButton = settingsState.get("showCloseButton");
+  const showNumbersButton = settingsState.get("showNumbersButton");
+
+  // Build rows, filtering out hidden buttons
+  const rows = [
     ["_", "\\", ":", ";", ")", "(", "/", "^", "1", "2", "3", "Backspace"],
     ["€", "$", "£", "&", "@", '"', "*", "~", "4", "5", "6", "Enter"],
-    ["?", "!", "'", "=", "<", ">", "-", "`", "7", "8", "9", "&123"],
-    ["[", "]", "{", "}", "#", ",", "+", "%", "0", "0", ".", "Close"],
-  ]);
+    [
+      "?",
+      "!",
+      "'",
+      "=",
+      "<",
+      ">",
+      "-",
+      "`",
+      "7",
+      "8",
+      "9",
+      showNumbersButton ? "&123" : null,
+    ],
+    [
+      "[",
+      "]",
+      "{",
+      "}",
+      "#",
+      ",",
+      "+",
+      "%",
+      "0",
+      "0",
+      ".",
+      showCloseButton ? "Close" : null,
+    ],
+  ].map((row) => row.filter((key) => key !== null));
+
+  return createKeyboardFromRows(DOM_IDS.MAIN_NUMBERS, rows);
 }
 
 /**
@@ -598,9 +638,17 @@ function setupEventDelegation() {
   });
 
   // Close overlays when clicking outside keyboard
+  // Also close keyboard if opened via open button (no focused input)
   document.addEventListener("click", (e) => {
     if (!keyboardElement.contains(e.target)) {
       closeAllOverlays();
+
+      // If keyboard is open but no input is focused (opened via open button),
+      // close the keyboard when clicking outside
+      const focusedElement = focusState.get("element");
+      if (keyboardState.get("open") && !focusedElement) {
+        emit(EVENTS.KEYBOARD_CLOSE);
+      }
     }
   });
 }
@@ -644,19 +692,20 @@ function toggleOverlay(menuId, buttonElement) {
     overlay.style.display = "";
     overlay.style.visibility = "hidden";
 
-    const zoom = settingsState.get("keyboardZoom") / 100 || 1;
+    const zoomWidth = settingsState.get("keyboardZoomWidth") / 100 || 1;
+    const zoomHeight = settingsState.get("keyboardZoomHeight") / 100 || 1;
     const overlayWidth = overlay.offsetWidth;
     const overlayHeight = overlay.offsetHeight;
 
-    // Get button position relative to keyboard (in screen coords, already zoomed)
+    // Get button position relative to keyboard (in screen coords, already scaled)
     const buttonRect = buttonElement.getBoundingClientRect();
     const keyboardRect = keyboardElement.getBoundingClientRect();
 
     // Calculate position relative to keyboard element
-    // Divide by zoom since getBoundingClientRect returns zoomed values
-    // but CSS left/top will be zoomed again
-    const _buttonLeft = (buttonRect.left - keyboardRect.left) / zoom;
-    const buttonTop = (buttonRect.top - keyboardRect.top) / zoom;
+    // Divide by scale since getBoundingClientRect returns scaled values
+    // but CSS left/top will be scaled again
+    const _buttonLeft = (buttonRect.left - keyboardRect.left) / zoomWidth;
+    const buttonTop = (buttonRect.top - keyboardRect.top) / zoomHeight;
     const padding = 5;
 
     // Try positioning at left edge of keyboard first
@@ -664,18 +713,18 @@ function toggleOverlay(menuId, buttonElement) {
     const top = buttonTop - overlayHeight - 10;
 
     // Check if overlay would overflow viewport on the right
-    // Use zoomed overlay width for screen coordinate comparison
+    // Use scaled overlay width for screen coordinate comparison
     const overlayRightEdge =
-      keyboardRect.left + left * zoom + overlayWidth * zoom;
+      keyboardRect.left + left * zoomWidth + overlayWidth * zoomWidth;
     if (overlayRightEdge > window.innerWidth - padding) {
       // Position from right side instead
-      left = keyboardRect.width / zoom - overlayWidth - padding;
+      left = keyboardRect.width / zoomWidth - overlayWidth - padding;
     }
 
     // Check if overlay would overflow viewport on the left
-    const overlayLeftEdge = keyboardRect.left + left * zoom;
+    const overlayLeftEdge = keyboardRect.left + left * zoomWidth;
     if (overlayLeftEdge < padding) {
-      left = (padding - keyboardRect.left) / zoom;
+      left = (padding - keyboardRect.left) / zoomWidth;
     }
 
     overlay.style.left = `${left}px`;
@@ -732,8 +781,9 @@ function setupStateSubscriptions() {
     updateShiftKeys();
   });
 
-  // Zoom setting change
-  settingsState.subscribe("keyboardZoom", applyZoom);
+  // Zoom setting changes
+  settingsState.subscribe("keyboardZoomWidth", applyZoom);
+  settingsState.subscribe("keyboardZoomHeight", applyZoom);
 
   // Keyboard draggable setting change
   settingsState.subscribe("keyboardDraggable", (draggable) => {
@@ -787,11 +837,15 @@ export async function loadLayout(layoutId) {
   // Render new layout with options
   const showLanguageButton = settingsState.get("showLanguageButton");
   const showSettingsButton = settingsState.get("showSettingsButton");
-  const autostart = settingsState.get("autostart");
+  const showUrlButton = settingsState.get("showUrlButton");
+  const showCloseButton = settingsState.get("showCloseButton");
+  const showNumbersButton = settingsState.get("showNumbersButton");
   const fragment = renderLayout(layoutId, {
     showLanguageButton,
-    showSettingsButton: showSettingsButton && !autostart, // Hide in autostart mode
-    showCloseButton: !autostart, // Hide close button in autostart mode
+    showSettingsButton,
+    showUrlButton,
+    showCloseButton,
+    showNumbersButton,
   });
   placeholder.appendChild(fragment);
 
@@ -981,9 +1035,10 @@ function getKeyboardHeight() {
     parseFloat(style.height) +
     parseFloat(style.paddingTop) +
     parseFloat(style.paddingBottom);
-  const zoom = parseFloat(style.zoom) || 1;
+  // Use height zoom from settings (transform scale doesn't affect computed style)
+  const zoomHeight = settingsState.get("keyboardZoomHeight") / 100;
 
-  cachedKeyboardHeight = height * zoom;
+  cachedKeyboardHeight = height * zoomHeight;
   return cachedKeyboardHeight;
 }
 
@@ -1100,12 +1155,17 @@ function setUrlButtonMode(isDotCom) {
 }
 
 /**
- * Apply zoom setting
+ * Apply zoom setting (independent width/height via CSS scale transform on wrapper)
  */
 function applyZoom() {
-  if (!keyboardElement) return;
-  const zoom = settingsState.get("keyboardZoom") / 100;
-  keyboardElement.style.zoom = zoom;
+  if (!scaleWrapperElement) return;
+  const zoomWidth = settingsState.get("keyboardZoomWidth") / 100;
+  const zoomHeight = settingsState.get("keyboardZoomHeight") / 100;
+
+  // Apply scale to wrapper, not outer element (keeps drag positioning simple)
+  scaleWrapperElement.style.setProperty("--vk-zoom-width", zoomWidth);
+  scaleWrapperElement.style.setProperty("--vk-zoom-height", zoomHeight);
+
   invalidateKeyboardHeightCache();
 }
 
@@ -1228,13 +1288,16 @@ function createDragHandle() {
     e.preventDefault();
     e.stopPropagation();
 
-    const rect = keyboardElement.getBoundingClientRect();
+    // Calculate offset from cursor to keyboard center/bottom
+    // Use scaleWrapperElement rect for visual bounds
+    const rect = scaleWrapperElement.getBoundingClientRect();
+    const kbdCenterX = rect.left + rect.width / 2;
+    const kbdBottomY = rect.bottom;
+
     dragState = {
       active: true,
-      startX: e.clientX,
-      startY: e.clientY,
-      startPosX: rect.left + rect.width / 2,
-      startPosY: rect.bottom,
+      offsetX: kbdCenterX - e.clientX,
+      offsetY: kbdBottomY - e.clientY,
     };
 
     dragHandleElement.setPointerCapture(e.pointerId);
@@ -1244,13 +1307,10 @@ function createDragHandle() {
   dragHandleElement.addEventListener("pointermove", (e) => {
     if (!dragState.active) return;
 
-    const deltaX = e.clientX - dragState.startX;
-    const deltaY = e.clientY - dragState.startY;
+    // New keyboard position = cursor + offset (maintains cursor-to-keyboard relationship)
+    const newX = e.clientX + dragState.offsetX;
+    const newY = e.clientY + dragState.offsetY;
 
-    const newX = dragState.startPosX + deltaX;
-    const newY = dragState.startPosY + deltaY;
-
-    // Apply position (centered horizontally)
     applyKeyboardPosition(newX, newY);
   });
 
@@ -1261,8 +1321,8 @@ function createDragHandle() {
     dragHandleElement.releasePointerCapture(e.pointerId);
     keyboardElement.classList.remove("vk-dragging");
 
-    // Save position
-    const rect = keyboardElement.getBoundingClientRect();
+    // Save position - use scaleWrapperElement for visual bounds
+    const rect = scaleWrapperElement.getBoundingClientRect();
     const position = {
       x: rect.left + rect.width / 2,
       y: rect.bottom,
@@ -1285,14 +1345,14 @@ function createDragHandle() {
  * @param {number} y - Bottom Y position (in screen coordinates)
  */
 function applyKeyboardPosition(x, y) {
-  if (!keyboardElement) return;
+  if (!keyboardElement || !scaleWrapperElement) return;
 
-  const rect = keyboardElement.getBoundingClientRect();
+  // Get visual dimensions from the scaled wrapper
+  const rect = scaleWrapperElement.getBoundingClientRect();
   const width = rect.width;
   const height = rect.height;
-  const zoom = settingsState.get("keyboardZoom") / 100 || 1;
 
-  // Constrain to viewport
+  // Constrain to viewport (keep keyboard fully on screen)
   const minX = width / 2;
   const maxX = window.innerWidth - width / 2;
   const minY = height;
@@ -1301,10 +1361,9 @@ function applyKeyboardPosition(x, y) {
   x = Math.max(minX, Math.min(maxX, x));
   y = Math.max(minY, Math.min(maxY, y));
 
-  // Calculate offset in screen coordinates, then adjust for zoom
-  // since the CSS transform is also affected by zoom
-  const offsetX = (x - window.innerWidth / 2) / zoom;
-  const bottom = (window.innerHeight - y) / zoom;
+  // Position the outer element (no scale, so 1:1 pixel mapping)
+  const offsetX = x - window.innerWidth / 2;
+  const bottom = window.innerHeight - y;
 
   keyboardElement.style.setProperty("--vk-offset-x", `${offsetX}px`);
   keyboardElement.style.bottom = `${bottom}px`;
@@ -1359,10 +1418,36 @@ export function updateNumberBarVisibility() {
   numberBar.style.display = show ? "" : "none";
 }
 
+/**
+ * Reload the keyboard to apply settings changes that affect structure
+ * (e.g., showCloseButton, showNumbersButton)
+ */
+export function reloadKeyboard() {
+  if (!keyboardElement || !shadowRoot) return;
+
+  // Reload current layout (handles main keyboard close button, numbers button)
+  const currentLayout = keyboardState.get("loadedLayout");
+  if (currentLayout) {
+    loadLayout(currentLayout);
+  }
+
+  // Recreate numbers keyboard (handles close button, ABC button on symbols)
+  const oldNumbersKbd = shadowRoot.getElementById(DOM_IDS.MAIN_NUMBERS);
+  if (oldNumbersKbd) {
+    oldNumbersKbd.remove();
+  }
+  const newNumbersKbd = createNumbersKeyboard();
+  keyboardElement.appendChild(newNumbersKbd);
+
+  // Clear cached elements since we recreated numbersKbd
+  cachedElements.numbersKbd = null;
+}
+
 export default {
   init,
   open,
   close,
   loadLayout,
   updateNumberBarVisibility,
+  reloadKeyboard,
 };

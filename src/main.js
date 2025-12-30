@@ -27,7 +27,6 @@ let openButtonElement = null;
 function createOpenButton() {
   if (openButtonElement) return;
   if (!settingsState.get("showOpenButton")) return;
-  if (settingsState.get("autostart")) return; // Don't show open button in autostart mode
 
   const button = document.createElement("button");
   button.id = DOM_IDS.OPEN_BUTTON;
@@ -139,12 +138,18 @@ async function loadSettings() {
       showOpenButton: true,
       showLanguageButton: false,
       showSettingsButton: true,
+      showUrlButton: true,
+      showCloseButton: true,
+      showNumbersButton: true,
       showNumberBar: true,
-      keyboardZoom: 100,
+      keyboardZoomWidth: 100,
+      keyboardZoomHeight: 100,
+      keyboardZoomLocked: true,
       spacebarCursorSwipe: false,
       keyboardDraggable: false,
       keyboardPosition: null,
       autostart: false,
+      stickyShift: false,
     });
   } else {
     settingsState.set({
@@ -152,12 +157,18 @@ async function loadSettings() {
       showOpenButton: settings.showOpenButton,
       showLanguageButton: settings.showLanguageButton,
       showSettingsButton: settings.showSettingsButton,
+      showUrlButton: settings.showUrlButton,
+      showCloseButton: settings.showCloseButton,
+      showNumbersButton: settings.showNumbersButton,
       showNumberBar: settings.showNumberBar,
-      keyboardZoom: settings.keyboardZoom,
+      keyboardZoomWidth: settings.keyboardZoomWidth,
+      keyboardZoomHeight: settings.keyboardZoomHeight,
+      keyboardZoomLocked: settings.keyboardZoomLocked,
       spacebarCursorSwipe: settings.spacebarCursorSwipe,
       keyboardDraggable: settings.keyboardDraggable,
       keyboardPosition: settings.keyboardPosition,
       autostart: settings.autostart,
+      stickyShift: settings.stickyShift,
     });
   }
 
@@ -165,8 +176,26 @@ async function loadSettings() {
   chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName !== "local") return;
 
-    if (changes.keyboardZoom) {
-      settingsState.set("keyboardZoom", changes.keyboardZoom.newValue || 100);
+    if (changes.keyboardZoomWidth) {
+      settingsState.set(
+        "keyboardZoomWidth",
+        changes.keyboardZoomWidth.newValue || 100
+      );
+    }
+    if (changes.keyboardZoomHeight) {
+      settingsState.set(
+        "keyboardZoomHeight",
+        changes.keyboardZoomHeight.newValue || 100
+      );
+    }
+    if (changes.keyboardZoomLocked !== undefined) {
+      settingsState.set(
+        "keyboardZoomLocked",
+        changes.keyboardZoomLocked.newValue !== false
+      );
+    }
+    if (changes.stickyShift !== undefined) {
+      settingsState.set("stickyShift", changes.stickyShift.newValue === true);
     }
     if (changes.spacebarCursorSwipe !== undefined) {
       settingsState.set(
@@ -220,6 +249,39 @@ async function loadSettings() {
         });
       }
     }
+    if (changes.showUrlButton !== undefined) {
+      settingsState.set(
+        "showUrlButton",
+        changes.showUrlButton.newValue !== false
+      );
+      // Reload layout to show/hide URL button
+      const currentLayout = settingsState.get("layout");
+      if (currentLayout) {
+        import("./keyboard/Keyboard.js").then((Keyboard) => {
+          Keyboard.loadLayout(currentLayout);
+        });
+      }
+    }
+    if (changes.showCloseButton !== undefined) {
+      settingsState.set(
+        "showCloseButton",
+        changes.showCloseButton.newValue !== false
+      );
+      // Reload keyboard to show/hide close button
+      import("./keyboard/Keyboard.js").then((Keyboard) => {
+        Keyboard.reloadKeyboard();
+      });
+    }
+    if (changes.showNumbersButton !== undefined) {
+      settingsState.set(
+        "showNumbersButton",
+        changes.showNumbersButton.newValue !== false
+      );
+      // Reload keyboard to show/hide numbers button
+      import("./keyboard/Keyboard.js").then((Keyboard) => {
+        Keyboard.reloadKeyboard();
+      });
+    }
     if (changes.showNumberBar !== undefined) {
       settingsState.set(
         "showNumberBar",
@@ -233,25 +295,10 @@ async function loadSettings() {
       const autostartEnabled = changes.autostart.newValue === true;
       settingsState.set("autostart", autostartEnabled);
       if (autostartEnabled) {
-        // Hide open button and open keyboard
-        hideOpenButton();
+        // Open keyboard automatically
         import("./keyboard/Keyboard.js").then((Keyboard) => {
-          Keyboard.loadLayout(settingsState.get("layout"));
           Keyboard.open(true);
         });
-      } else {
-        // Show open button if setting allows
-        if (settingsState.get("showOpenButton")) {
-          createOpenButton();
-          showOpenButton();
-        }
-        // Reload layout to show close button again
-        const currentLayout = settingsState.get("layout");
-        if (currentLayout) {
-          import("./keyboard/Keyboard.js").then((Keyboard) => {
-            Keyboard.loadLayout(currentLayout);
-          });
-        }
       }
     }
   });

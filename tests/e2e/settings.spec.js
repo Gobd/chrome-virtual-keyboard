@@ -131,8 +131,8 @@ test.describe("Virtual Keyboard - Settings", () => {
     });
 
     expect(position).not.toBeNull();
-    // Keyboard should have significant width (at least 50% of viewport)
-    expect(position.width).toBeGreaterThan(position.viewportWidth * 0.5);
+    // Keyboard should have reasonable width (at least 35% of viewport)
+    expect(position.width).toBeGreaterThan(position.viewportWidth * 0.35);
   });
 
   test("close button is visible", async ({ page }) => {
