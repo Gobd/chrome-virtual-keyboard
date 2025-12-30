@@ -75,10 +75,13 @@ test.describe("Virtual Keyboard - Drag Handle", () => {
   test("keyboard is visible in viewport when open", async ({ page }) => {
     await page.click("#text-input");
     await waitForKeyboardOpen(page);
+    // Extra wait for animation/rendering to complete in CI
+    await page.waitForTimeout(300);
 
     const isVisible = await page.evaluate(() => {
       const host = document.querySelector("#virtual-keyboard-host");
       const keyboard = host.shadowRoot.querySelector("#virtual-keyboard");
+      if (!keyboard) return false;
       const rect = keyboard.getBoundingClientRect();
       // Keyboard should be at least partially visible
       return (

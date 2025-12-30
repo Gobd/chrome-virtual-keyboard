@@ -17,6 +17,7 @@ const COVERAGE_DATA_DIR = path.resolve("./.coverage-data");
  */
 export const test = base.extend({
   // Override the context fixture to use persistent context
+  // biome-ignore lint/correctness/noEmptyPattern: Playwright fixture pattern requires empty destructuring
   context: async ({}, use, testInfo) => {
     // Create a temporary user data directory with unique ID per test
     const uniqueId = `${testInfo.workerIndex}-${testInfo.testId}-${Date.now()}`;
