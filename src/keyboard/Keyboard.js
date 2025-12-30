@@ -25,6 +25,7 @@ import { handleKeyPress } from "./KeyHandler.js";
 import { getKeyWithShift } from "./KeyMap.js";
 
 let keyboardElement = null;
+let scaleWrapperElement = null;
 let shadowRoot = null;
 let scrollExtendElement = null;
 let overlayCloseTimeout = null;
@@ -41,10 +42,9 @@ let spacebarSwipeState = {
 // Keyboard drag state
 let dragState = {
   active: false,
-  startX: 0,
-  startY: 0,
-  startLeft: 0,
-  startBottom: 0,
+  // Offset from cursor to keyboard center/bottom at drag start
+  offsetX: 0,
+  offsetY: 0,
 };
 
 const SWIPE_THRESHOLD = 10; // Pixels to move before considering it a swipe
@@ -257,8 +257,8 @@ export async function init() {
   // Apply drag handle visibility and position
   updateDragHandleVisibility();
   const savedPosition = settingsState.get("keyboardPosition");
-  if (savedPosition && settingsState.get("keyboardDraggable") && savedPosition.left !== undefined) {
-    applyKeyboardPositionCSS(savedPosition.left, savedPosition.bottom);
+  if (savedPosition && settingsState.get("keyboardDraggable")) {
+    applyKeyboardPosition(savedPosition.x, savedPosition.y);
   }
 
   // Apply number bar visibility
@@ -269,26 +269,31 @@ export async function init() {
  * Build the internal keyboard structure
  */
 async function buildKeyboardStructure() {
-  // Create drag handle for repositioning
+  // Create scale wrapper - all content goes inside this for zoom scaling
+  scaleWrapperElement = document.createElement("div");
+  scaleWrapperElement.className = "vk-scale-wrapper";
+  keyboardElement.appendChild(scaleWrapperElement);
+
+  // Create drag handle inside wrapper so it moves with scaled content
   const dragHandle = createDragHandle();
-  keyboardElement.appendChild(dragHandle);
+  scaleWrapperElement.appendChild(dragHandle);
 
   // Create URL bar
   const urlBar = createUrlBar();
-  keyboardElement.appendChild(urlBar);
+  scaleWrapperElement.appendChild(urlBar);
 
   // Create language overlay (for switching keyboard layouts)
   const languageOverlay = await createLanguageOverlay();
-  keyboardElement.appendChild(languageOverlay);
+  scaleWrapperElement.appendChild(languageOverlay);
 
   // Create number input keyboard
   const numberInput = createNumberInputKeyboard();
-  keyboardElement.appendChild(numberInput);
+  scaleWrapperElement.appendChild(numberInput);
 
   // Create main keyboard container
   const mainKbd = document.createElement("div");
   mainKbd.id = DOM_IDS.MAIN_KBD;
-  keyboardElement.appendChild(mainKbd);
+  scaleWrapperElement.appendChild(mainKbd);
 
   // Create number bar (top row of numbers)
   const numberBar = createNumberBar();
@@ -301,7 +306,7 @@ async function buildKeyboardStructure() {
 
   // Create numbers/symbols keyboard
   const numbersKbd = createNumbersKeyboard();
-  keyboardElement.appendChild(numbersKbd);
+  scaleWrapperElement.appendChild(numbersKbd);
 }
 
 /**
@@ -791,10 +796,7 @@ function setupStateSubscriptions() {
   // Apply saved keyboard position
   settingsState.subscribe("keyboardPosition", (position) => {
     if (position && settingsState.get("keyboardDraggable")) {
-      // Support both old format (x, y) and new format (left, bottom)
-      if (position.left !== undefined) {
-        applyKeyboardPositionCSS(position.left, position.bottom);
-      }
+      applyKeyboardPosition(position.x, position.y);
     } else if (!position) {
       resetKeyboardPosition();
     }
@@ -1153,17 +1155,16 @@ function setUrlButtonMode(isDotCom) {
 }
 
 /**
- * Apply zoom setting (independent width/height)
+ * Apply zoom setting (independent width/height via CSS scale transform on wrapper)
  */
 function applyZoom() {
-  if (!keyboardElement) return;
+  if (!scaleWrapperElement) return;
   const zoomWidth = settingsState.get("keyboardZoomWidth") / 100;
   const zoomHeight = settingsState.get("keyboardZoomHeight") / 100;
 
-  // Use CSS variables for zoom so they combine with translateX from drag positioning
-  keyboardElement.style.setProperty("--vk-zoom-width", zoomWidth);
-  keyboardElement.style.setProperty("--vk-zoom-height", zoomHeight);
-  keyboardElement.style.transformOrigin = "bottom center";
+  // Apply scale to wrapper, not outer element (keeps drag positioning simple)
+  scaleWrapperElement.style.setProperty("--vk-zoom-width", zoomWidth);
+  scaleWrapperElement.style.setProperty("--vk-zoom-height", zoomHeight);
 
   invalidateKeyboardHeightCache();
 }
@@ -1287,21 +1288,16 @@ function createDragHandle() {
     e.preventDefault();
     e.stopPropagation();
 
-    // Get current CSS left/bottom values (or calculate from current position)
-    const computedStyle = window.getComputedStyle(keyboardElement);
-    const currentLeft = parseFloat(computedStyle.left) || 0;
-    const currentBottom = parseFloat(computedStyle.bottom) || 0;
-
-    // If keyboard hasn't been positioned yet (left is auto), calculate from rect
-    const rect = keyboardElement.getBoundingClientRect();
-    const isAutoPositioned = computedStyle.left === "auto" || !keyboardElement.style.left;
+    // Calculate offset from cursor to keyboard center/bottom
+    // Use scaleWrapperElement rect for visual bounds
+    const rect = scaleWrapperElement.getBoundingClientRect();
+    const kbdCenterX = rect.left + rect.width / 2;
+    const kbdBottomY = rect.bottom;
 
     dragState = {
       active: true,
-      startX: e.clientX,
-      startY: e.clientY,
-      startLeft: isAutoPositioned ? (window.innerWidth - rect.width) / 2 : currentLeft,
-      startBottom: isAutoPositioned ? 0 : currentBottom,
+      offsetX: kbdCenterX - e.clientX,
+      offsetY: kbdBottomY - e.clientY,
     };
 
     dragHandleElement.setPointerCapture(e.pointerId);
@@ -1311,16 +1307,11 @@ function createDragHandle() {
   dragHandleElement.addEventListener("pointermove", (e) => {
     if (!dragState.active) return;
 
-    const deltaX = e.clientX - dragState.startX;
-    const deltaY = e.clientY - dragState.startY;
+    // New keyboard position = cursor + offset (maintains cursor-to-keyboard relationship)
+    const newX = e.clientX + dragState.offsetX;
+    const newY = e.clientY + dragState.offsetY;
 
-    // Apply deltas directly to CSS values
-    // Moving cursor right (+deltaX) should move keyboard right (+left)
-    // Moving cursor down (+deltaY) should move keyboard down (-bottom)
-    const newLeft = dragState.startLeft + deltaX;
-    const newBottom = dragState.startBottom - deltaY;
-
-    applyKeyboardPositionCSS(newLeft, newBottom);
+    applyKeyboardPosition(newX, newY);
   });
 
   dragHandleElement.addEventListener("pointerup", (e) => {
@@ -1330,10 +1321,11 @@ function createDragHandle() {
     dragHandleElement.releasePointerCapture(e.pointerId);
     keyboardElement.classList.remove("vk-dragging");
 
-    // Save position as CSS values
+    // Save position - use scaleWrapperElement for visual bounds
+    const rect = scaleWrapperElement.getBoundingClientRect();
     const position = {
-      left: parseFloat(keyboardElement.style.left) || 0,
-      bottom: parseFloat(keyboardElement.style.bottom) || 0,
+      x: rect.left + rect.width / 2,
+      y: rect.bottom,
     };
     settingsState.set("keyboardPosition", position);
     storage.setKeyboardPosition(position);
@@ -1348,51 +1340,32 @@ function createDragHandle() {
 }
 
 /**
- * Apply keyboard position using CSS left/bottom values directly
- * @param {number} left - CSS left value in pixels
- * @param {number} bottom - CSS bottom value in pixels
+ * Apply keyboard position
+ * @param {number} x - Center X position (in screen coordinates)
+ * @param {number} y - Bottom Y position (in screen coordinates)
  */
-function applyKeyboardPositionCSS(left, bottom) {
-  if (!keyboardElement) return;
+function applyKeyboardPosition(x, y) {
+  if (!keyboardElement || !scaleWrapperElement) return;
 
-  // Get visual dimensions for constraining
-  const rect = keyboardElement.getBoundingClientRect();
-  const scaledWidth = rect.width;
-  const scaledHeight = rect.height;
+  // Get visual dimensions from the scaled wrapper
+  const rect = scaleWrapperElement.getBoundingClientRect();
+  const width = rect.width;
+  const height = rect.height;
 
-  // Constrain: keep at least 20% of keyboard visible
-  const margin = Math.min(scaledWidth, scaledHeight) * 0.2;
+  // Constrain to viewport (keep keyboard fully on screen)
+  const minX = width / 2;
+  const maxX = window.innerWidth - width / 2;
+  const minY = height;
+  const maxY = window.innerHeight;
 
-  // Calculate visual position from CSS values
-  // With transform-origin: bottom center, visual left = left + (unscaledWidth - scaledWidth) / 2
-  // But for constraining, we just need to ensure the visual rect stays partially on screen
-  const visualLeft = rect.left;
-  const visualRight = rect.right;
-  const visualTop = rect.top;
-  const visualBottom = rect.bottom;
+  x = Math.max(minX, Math.min(maxX, x));
+  y = Math.max(minY, Math.min(maxY, y));
 
-  // Check if we need to constrain
-  if (visualRight < margin) {
-    // Too far left, push right
-    left += margin - visualRight;
-  } else if (visualLeft > window.innerWidth - margin) {
-    // Too far right, push left
-    left -= visualLeft - (window.innerWidth - margin);
-  }
+  // Position the outer element (no scale, so 1:1 pixel mapping)
+  const offsetX = x - window.innerWidth / 2;
+  const bottom = window.innerHeight - y;
 
-  if (visualBottom < margin) {
-    // Too far up, push down
-    bottom -= margin - visualBottom;
-  } else if (visualTop > window.innerHeight - margin) {
-    // Too far down, push up
-    bottom += visualTop - (window.innerHeight - margin);
-  }
-
-  // Ensure bottom doesn't go negative (keyboard below screen)
-  bottom = Math.max(-scaledHeight + margin, bottom);
-
-  keyboardElement.style.left = `${left}px`;
-  keyboardElement.style.right = "auto";
+  keyboardElement.style.setProperty("--vk-offset-x", `${offsetX}px`);
   keyboardElement.style.bottom = `${bottom}px`;
 }
 
@@ -1404,8 +1377,6 @@ function resetKeyboardPosition(saveToStorage = false) {
   if (!keyboardElement) return;
 
   keyboardElement.style.setProperty("--vk-offset-x", "0px");
-  keyboardElement.style.left = "";
-  keyboardElement.style.right = "";
   keyboardElement.style.bottom = "";
 
   if (saveToStorage) {

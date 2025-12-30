@@ -517,7 +517,7 @@ test.describe("Virtual Keyboard - Zoom", () => {
       const kbd = host.shadowRoot.querySelector("#virtual-keyboard");
       const transform = kbd?.style.transform;
       // Should have scale transform applied (default is scale(1, 1))
-      return transform !== undefined && transform.includes("scale");
+      return transform?.includes("scale");
     });
 
     expect(hasTransform).toBe(true);

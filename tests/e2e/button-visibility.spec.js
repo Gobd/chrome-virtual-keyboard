@@ -1,5 +1,9 @@
 import { expect, test } from "./fixtures.js";
-import { setStorageSettings, waitForExtension, waitForKeyboardOpen } from "./helpers.js";
+import {
+  setStorageSettings,
+  waitForExtension,
+  waitForKeyboardOpen,
+} from "./helpers.js";
 
 test.describe("Virtual Keyboard - Button Visibility Settings", () => {
   test.describe("URL Button", () => {
@@ -19,7 +23,11 @@ test.describe("Virtual Keyboard - Button Visibility Settings", () => {
       expect(hasUrlButton).toBe(true);
     });
 
-    test("URL button can be hidden via storage setting", async ({ context, extensionId, page }) => {
+    test("URL button can be hidden via storage setting", async ({
+      context,
+      extensionId,
+      page,
+    }) => {
       // Set storage to hide URL button via options page
       await setStorageSettings(context, extensionId, { showUrlButton: false });
 
@@ -57,8 +65,14 @@ test.describe("Virtual Keyboard - Button Visibility Settings", () => {
       expect(hasCloseButton).toBe(true);
     });
 
-    test("close button can be hidden via storage setting", async ({ context, extensionId, page }) => {
-      await setStorageSettings(context, extensionId, { showCloseButton: false });
+    test("close button can be hidden via storage setting", async ({
+      context,
+      extensionId,
+      page,
+    }) => {
+      await setStorageSettings(context, extensionId, {
+        showCloseButton: false,
+      });
 
       await page.goto("http://localhost:3333/index.html");
       await waitForExtension(page);
@@ -81,7 +95,9 @@ test.describe("Virtual Keyboard - Button Visibility Settings", () => {
       extensionId,
       page,
     }) => {
-      await setStorageSettings(context, extensionId, { showCloseButton: false });
+      await setStorageSettings(context, extensionId, {
+        showCloseButton: false,
+      });
 
       await page.goto("http://localhost:3333/index.html");
       await waitForExtension(page);
@@ -129,8 +145,14 @@ test.describe("Virtual Keyboard - Button Visibility Settings", () => {
       expect(hasNumbersButton).toBe(true);
     });
 
-    test("&123 button can be hidden via storage setting", async ({ context, extensionId, page }) => {
-      await setStorageSettings(context, extensionId, { showNumbersButton: false });
+    test("&123 button can be hidden via storage setting", async ({
+      context,
+      extensionId,
+      page,
+    }) => {
+      await setStorageSettings(context, extensionId, {
+        showNumbersButton: false,
+      });
 
       await page.goto("http://localhost:3333/index.html");
       await waitForExtension(page);
@@ -171,7 +193,9 @@ test.describe("Virtual Keyboard - Button Visibility Settings", () => {
       extensionId,
       page,
     }) => {
-      await setStorageSettings(context, extensionId, { showSettingsButton: false });
+      await setStorageSettings(context, extensionId, {
+        showSettingsButton: false,
+      });
 
       await page.goto("http://localhost:3333/index.html");
       await waitForExtension(page);
@@ -285,13 +309,16 @@ test.describe("Virtual Keyboard - Button Visibility Settings", () => {
 
         return {
           hasUrl: host.shadowRoot.querySelector("#vk-url-btn") !== null,
-          hasSettings: host.shadowRoot.querySelector("#vk-settings-btn") !== null,
-          hasNumbers: host.shadowRoot.querySelector('[data-key="&123"]') !== null,
+          hasSettings:
+            host.shadowRoot.querySelector("#vk-settings-btn") !== null,
+          hasNumbers:
+            host.shadowRoot.querySelector('[data-key="&123"]') !== null,
           hasLanguage: host.shadowRoot.querySelector("#vk-lang-btn") !== null,
           hasNumberBar:
             host.shadowRoot.querySelector("#vk-number-bar")?.style.display !==
             "none",
-          hasClose: host.shadowRoot.querySelector('[data-key="Close"]') !== null,
+          hasClose:
+            host.shadowRoot.querySelector('[data-key="Close"]') !== null,
           hasShift: host.shadowRoot.querySelector(".vk-key-shift") !== null,
           hasBackspace:
             host.shadowRoot.querySelector(".vk-key-backspace") !== null,

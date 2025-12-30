@@ -348,7 +348,7 @@ test.describe("Virtual Keyboard - Zoom Setting", () => {
       const host = document.querySelector("#virtual-keyboard-host");
       const kbd = host?.shadowRoot?.querySelector("#virtual-keyboard");
       const transform = kbd?.style.transform;
-      return transform !== undefined && transform.includes("scale");
+      return transform?.includes("scale");
     });
 
     expect(hasTransform).toBe(true);

@@ -325,7 +325,9 @@ describe("storage.js", () => {
       });
 
       it("should return stored value", async () => {
-        chromeMocks.storage._set({ [STORAGE_KEYS.KEYBOARD_ZOOM_LOCKED]: false });
+        chromeMocks.storage._set({
+          [STORAGE_KEYS.KEYBOARD_ZOOM_LOCKED]: false,
+        });
         expect(await getKeyboardZoomLocked()).toBe(false);
       });
 
