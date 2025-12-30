@@ -5,31 +5,21 @@ import { getLayoutsList } from "../core/storage.js";
 
 const $ = (id) => document.getElementById(id);
 
-function updateSettingsButtonState() {
-  const autostart = $("autostart").checked;
-  const checkbox = $("showSettingsButton");
-  const help = $("showSettingsButtonHelp");
-
-  checkbox.disabled = autostart;
-  if (autostart) {
-    checkbox.checked = false;
-    help.textContent = "Disabled when 'Always show keyboard' is enabled";
-    help.style.color = "#c00";
-  } else {
-    help.textContent =
-      "If disabled, access settings via the extension icon in your browser toolbar";
-    help.style.color = "#888";
-  }
-}
+let zoomLocked = true;
 
 function saveDisplaySettings() {
   const showOpenButton = $("showOpenButton").checked;
   const showNumberBar = $("showNumberBar").checked;
   const showLanguageButton = $("showLanguageButton").checked;
   const showSettingsButton = $("showSettingsButton").checked;
-  const keyboardZoom = parseInt($("keyboardZoom").value, 10) || 100;
+  const showUrlButton = $("showUrlButton").checked;
+  const showCloseButton = $("showCloseButton").checked;
+  const showNumbersButton = $("showNumbersButton").checked;
+  const keyboardZoomWidth = parseInt($("keyboardZoomWidth").value, 10) || 100;
+  const keyboardZoomHeight = parseInt($("keyboardZoomHeight").value, 10) || 100;
   const keyboardDraggable = $("keyboardDraggable").checked;
   const spacebarCursorSwipe = $("spacebarCursorSwipe").checked;
+  const stickyShift = $("stickyShift").checked;
   const autostart = $("autostart").checked;
 
   chrome.storage.local.set({
@@ -37,9 +27,15 @@ function saveDisplaySettings() {
     [STORAGE_KEYS.SHOW_NUMBER_BAR]: showNumberBar,
     [STORAGE_KEYS.SHOW_LANGUAGE_BUTTON]: showLanguageButton,
     [STORAGE_KEYS.SHOW_SETTINGS_BUTTON]: showSettingsButton,
-    [STORAGE_KEYS.KEYBOARD_ZOOM]: keyboardZoom,
+    [STORAGE_KEYS.SHOW_URL_BUTTON]: showUrlButton,
+    [STORAGE_KEYS.SHOW_CLOSE_BUTTON]: showCloseButton,
+    [STORAGE_KEYS.SHOW_NUMBERS_BUTTON]: showNumbersButton,
+    [STORAGE_KEYS.KEYBOARD_ZOOM_WIDTH]: keyboardZoomWidth,
+    [STORAGE_KEYS.KEYBOARD_ZOOM_HEIGHT]: keyboardZoomHeight,
+    [STORAGE_KEYS.KEYBOARD_ZOOM_LOCKED]: zoomLocked,
     [STORAGE_KEYS.KEYBOARD_DRAGGABLE]: keyboardDraggable,
     [STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE]: spacebarCursorSwipe,
+    [STORAGE_KEYS.STICKY_SHIFT]: stickyShift,
     [STORAGE_KEYS.AUTOSTART]: autostart,
   });
 
@@ -52,9 +48,15 @@ async function loadDisplaySettings() {
     STORAGE_KEYS.SHOW_NUMBER_BAR,
     STORAGE_KEYS.SHOW_LANGUAGE_BUTTON,
     STORAGE_KEYS.SHOW_SETTINGS_BUTTON,
-    STORAGE_KEYS.KEYBOARD_ZOOM,
+    STORAGE_KEYS.SHOW_URL_BUTTON,
+    STORAGE_KEYS.SHOW_CLOSE_BUTTON,
+    STORAGE_KEYS.SHOW_NUMBERS_BUTTON,
+    STORAGE_KEYS.KEYBOARD_ZOOM_WIDTH,
+    STORAGE_KEYS.KEYBOARD_ZOOM_HEIGHT,
+    STORAGE_KEYS.KEYBOARD_ZOOM_LOCKED,
     STORAGE_KEYS.KEYBOARD_DRAGGABLE,
     STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE,
+    STORAGE_KEYS.STICKY_SHIFT,
     STORAGE_KEYS.AUTOSTART,
   ]);
 
@@ -64,12 +66,50 @@ async function loadDisplaySettings() {
     result[STORAGE_KEYS.SHOW_LANGUAGE_BUTTON] === true;
   $("showSettingsButton").checked =
     result[STORAGE_KEYS.SHOW_SETTINGS_BUTTON] !== false;
-  $("keyboardZoom").value = result[STORAGE_KEYS.KEYBOARD_ZOOM] || 100;
+  $("showUrlButton").checked = result[STORAGE_KEYS.SHOW_URL_BUTTON] !== false;
+  $("showCloseButton").checked =
+    result[STORAGE_KEYS.SHOW_CLOSE_BUTTON] !== false;
+  $("showNumbersButton").checked =
+    result[STORAGE_KEYS.SHOW_NUMBERS_BUTTON] !== false;
+  $("keyboardZoomWidth").value =
+    result[STORAGE_KEYS.KEYBOARD_ZOOM_WIDTH] || 100;
+  $("keyboardZoomHeight").value =
+    result[STORAGE_KEYS.KEYBOARD_ZOOM_HEIGHT] || 100;
+  zoomLocked = result[STORAGE_KEYS.KEYBOARD_ZOOM_LOCKED] !== false;
+  updateZoomLockCheckbox();
   $("keyboardDraggable").checked =
     result[STORAGE_KEYS.KEYBOARD_DRAGGABLE] === true;
   $("spacebarCursorSwipe").checked =
     result[STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE] === true;
+  $("stickyShift").checked = result[STORAGE_KEYS.STICKY_SHIFT] === true;
   $("autostart").checked = result[STORAGE_KEYS.AUTOSTART] === true;
+}
+
+function updateZoomLockCheckbox() {
+  $("zoomLock").checked = zoomLocked;
+}
+
+function handleZoomWidthChange() {
+  if (zoomLocked) {
+    $("keyboardZoomHeight").value = $("keyboardZoomWidth").value;
+  }
+  saveDisplaySettings();
+}
+
+function handleZoomHeightChange() {
+  if (zoomLocked) {
+    $("keyboardZoomWidth").value = $("keyboardZoomHeight").value;
+  }
+  saveDisplaySettings();
+}
+
+function handleZoomLockChange() {
+  zoomLocked = $("zoomLock").checked;
+  if (zoomLocked) {
+    // When locking, sync height to width
+    $("keyboardZoomHeight").value = $("keyboardZoomWidth").value;
+  }
+  saveDisplaySettings();
 }
 
 function addLayout() {
@@ -146,11 +186,8 @@ async function loadLayouts() {
 }
 
 window.addEventListener("load", async () => {
-  document.body.className = "loaded";
-
   loadLayouts();
   await loadDisplaySettings();
-  updateSettingsButtonState();
 
   $("kl_add").addEventListener("click", addLayout);
   $("kl_remove").addEventListener("click", removeLayout);
@@ -159,13 +196,16 @@ window.addEventListener("load", async () => {
   $("showNumberBar").addEventListener("change", saveDisplaySettings);
   $("showLanguageButton").addEventListener("change", saveDisplaySettings);
   $("showSettingsButton").addEventListener("change", saveDisplaySettings);
-  $("keyboardZoom").addEventListener("change", saveDisplaySettings);
+  $("showUrlButton").addEventListener("change", saveDisplaySettings);
+  $("showCloseButton").addEventListener("change", saveDisplaySettings);
+  $("showNumbersButton").addEventListener("change", saveDisplaySettings);
+  $("keyboardZoomWidth").addEventListener("change", handleZoomWidthChange);
+  $("keyboardZoomHeight").addEventListener("change", handleZoomHeightChange);
+  $("zoomLock").addEventListener("change", handleZoomLockChange);
   $("keyboardDraggable").addEventListener("change", saveDisplaySettings);
   $("spacebarCursorSwipe").addEventListener("change", saveDisplaySettings);
-  $("autostart").addEventListener("change", () => {
-    updateSettingsButtonState();
-    saveDisplaySettings();
-  });
+  $("stickyShift").addEventListener("change", saveDisplaySettings);
+  $("autostart").addEventListener("change", saveDisplaySettings);
   $("resetPosition").addEventListener("click", () => {
     chrome.storage.local.set({ [STORAGE_KEYS.KEYBOARD_POSITION]: null });
     $("changeEffect").className = "show";

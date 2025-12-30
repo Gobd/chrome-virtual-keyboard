@@ -340,18 +340,18 @@ test.describe("Virtual Keyboard - Zoom Setting", () => {
     await waitForExtension(page);
   });
 
-  test("keyboard has zoom style", async ({ page }) => {
+  test("keyboard has transform scale style", async ({ page }) => {
     await page.click("#text-input");
     await waitForKeyboardOpen(page);
 
-    const hasZoom = await page.evaluate(() => {
+    const hasTransform = await page.evaluate(() => {
       const host = document.querySelector("#virtual-keyboard-host");
       const kbd = host?.shadowRoot?.querySelector("#virtual-keyboard");
-      const zoom = kbd?.style.zoom;
-      return zoom !== undefined && zoom !== "";
+      const transform = kbd?.style.transform;
+      return transform !== undefined && transform.includes("scale");
     });
 
-    expect(hasZoom).toBe(true);
+    expect(hasTransform).toBe(true);
   });
 });
 

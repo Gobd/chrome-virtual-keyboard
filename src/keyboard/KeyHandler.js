@@ -3,7 +3,12 @@
 
 import { SPECIAL_KEYS } from "../core/config.js";
 import { EVENTS, emit } from "../core/events.js";
-import { focusState, keyboardState, urlBarState } from "../core/state.js";
+import {
+  focusState,
+  keyboardState,
+  settingsState,
+  urlBarState,
+} from "../core/state.js";
 import { clearCloseTimer, markChanged } from "../input/InputTracker.js";
 import { applyShiftToCharacter } from "./KeyMap.js";
 
@@ -235,10 +240,10 @@ function insertCharacter(key) {
 }
 
 /**
- * Reset shift mode after typing a character
+ * Reset shift mode after typing a character (unless sticky shift is enabled)
  */
 function resetShiftIfNeeded() {
-  if (keyboardState.get("shift")) {
+  if (keyboardState.get("shift") && !settingsState.get("stickyShift")) {
     keyboardState.set("shift", false);
   }
 }

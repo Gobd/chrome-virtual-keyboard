@@ -10,7 +10,9 @@ import { getLayoutsList, layouts } from "./layouts.js";
  * @param {Object} options - Render options
  * @param {boolean} options.showLanguageButton - Whether to show the language button
  * @param {boolean} options.showSettingsButton - Whether to show the settings button
+ * @param {boolean} options.showUrlButton - Whether to show the URL button
  * @param {boolean} options.showCloseButton - Whether to show the close button
+ * @param {boolean} options.showNumbersButton - Whether to show the &123 numbers toggle button
  * @returns {DocumentFragment} DOM fragment containing the keyboard
  */
 export function renderLayout(layoutId, options = {}) {
@@ -23,7 +25,9 @@ export function renderLayout(layoutId, options = {}) {
   const {
     showLanguageButton = true,
     showSettingsButton = true,
+    showUrlButton = true,
     showCloseButton = true,
+    showNumbersButton = true,
   } = options;
 
   const fragment = document.createDocumentFragment();
@@ -41,7 +45,7 @@ export function renderLayout(layoutId, options = {}) {
     fragment.appendChild(renderRow(row, labels));
   }
 
-  // Render bottom row, optionally filtering out Language/Settings/Close buttons
+  // Render bottom row, optionally filtering out buttons
   let bottomRow = layout.bottomRow || [...DEFAULT_BOTTOM_ROW];
   if (!showLanguageButton) {
     bottomRow = bottomRow.filter((key) => key !== "Language");
@@ -49,13 +53,21 @@ export function renderLayout(layoutId, options = {}) {
   if (!showSettingsButton) {
     bottomRow = bottomRow.filter((key) => key !== "Settings");
   }
+  if (!showUrlButton) {
+    bottomRow = bottomRow.filter((key) => key !== "Url");
+  }
   if (!showCloseButton) {
     bottomRow = bottomRow.filter((key) => key !== "Close");
+  }
+  if (!showNumbersButton) {
+    bottomRow = bottomRow.filter((key) => key !== "&123");
   }
   const hiddenButtonCount =
     (!showLanguageButton ? 1 : 0) +
     (!showSettingsButton ? 1 : 0) +
-    (!showCloseButton ? 1 : 0);
+    (!showUrlButton ? 1 : 0) +
+    (!showCloseButton ? 1 : 0) +
+    (!showNumbersButton ? 1 : 0);
   fragment.appendChild(
     renderRow(bottomRow, labels, { widenSpace: hiddenButtonCount > 0 })
   );

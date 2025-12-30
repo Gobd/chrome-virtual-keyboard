@@ -128,6 +128,57 @@ export async function setShowSettingsButton(show) {
 }
 
 /**
+ * Get whether to show the URL button
+ * @returns {Promise<boolean>}
+ */
+export async function getShowUrlButton() {
+  const result = await get(STORAGE_KEYS.SHOW_URL_BUTTON);
+  return result[STORAGE_KEYS.SHOW_URL_BUTTON] !== false;
+}
+
+/**
+ * Set whether to show the URL button
+ * @param {boolean} show
+ */
+export async function setShowUrlButton(show) {
+  await set({ [STORAGE_KEYS.SHOW_URL_BUTTON]: show });
+}
+
+/**
+ * Get whether to show the close button
+ * @returns {Promise<boolean>}
+ */
+export async function getShowCloseButton() {
+  const result = await get(STORAGE_KEYS.SHOW_CLOSE_BUTTON);
+  return result[STORAGE_KEYS.SHOW_CLOSE_BUTTON] !== false;
+}
+
+/**
+ * Set whether to show the close button
+ * @param {boolean} show
+ */
+export async function setShowCloseButton(show) {
+  await set({ [STORAGE_KEYS.SHOW_CLOSE_BUTTON]: show });
+}
+
+/**
+ * Get whether to show the numbers/symbols toggle button
+ * @returns {Promise<boolean>}
+ */
+export async function getShowNumbersButton() {
+  const result = await get(STORAGE_KEYS.SHOW_NUMBERS_BUTTON);
+  return result[STORAGE_KEYS.SHOW_NUMBERS_BUTTON] !== false;
+}
+
+/**
+ * Set whether to show the numbers/symbols toggle button
+ * @param {boolean} show
+ */
+export async function setShowNumbersButton(show) {
+  await set({ [STORAGE_KEYS.SHOW_NUMBERS_BUTTON]: show });
+}
+
+/**
  * Get whether to show the number bar
  * @returns {Promise<boolean>}
  */
@@ -145,20 +196,54 @@ export async function setShowNumberBar(show) {
 }
 
 /**
- * Get the keyboard zoom level
+ * Get the keyboard zoom width
  * @returns {Promise<number>} Zoom percentage (25-150)
  */
-export async function getKeyboardZoom() {
-  const result = await get(STORAGE_KEYS.KEYBOARD_ZOOM);
-  return result[STORAGE_KEYS.KEYBOARD_ZOOM] || 100;
+export async function getKeyboardZoomWidth() {
+  const result = await get(STORAGE_KEYS.KEYBOARD_ZOOM_WIDTH);
+  return result[STORAGE_KEYS.KEYBOARD_ZOOM_WIDTH] || 100;
 }
 
 /**
- * Set the keyboard zoom level
+ * Set the keyboard zoom width
  * @param {number} zoom - Zoom percentage (25-150)
  */
-export async function setKeyboardZoom(zoom) {
-  await set({ [STORAGE_KEYS.KEYBOARD_ZOOM]: zoom });
+export async function setKeyboardZoomWidth(zoom) {
+  await set({ [STORAGE_KEYS.KEYBOARD_ZOOM_WIDTH]: zoom });
+}
+
+/**
+ * Get the keyboard zoom height
+ * @returns {Promise<number>} Zoom percentage (25-150)
+ */
+export async function getKeyboardZoomHeight() {
+  const result = await get(STORAGE_KEYS.KEYBOARD_ZOOM_HEIGHT);
+  return result[STORAGE_KEYS.KEYBOARD_ZOOM_HEIGHT] || 100;
+}
+
+/**
+ * Set the keyboard zoom height
+ * @param {number} zoom - Zoom percentage (25-150)
+ */
+export async function setKeyboardZoomHeight(zoom) {
+  await set({ [STORAGE_KEYS.KEYBOARD_ZOOM_HEIGHT]: zoom });
+}
+
+/**
+ * Get whether zoom width/height are locked together
+ * @returns {Promise<boolean>}
+ */
+export async function getKeyboardZoomLocked() {
+  const result = await get(STORAGE_KEYS.KEYBOARD_ZOOM_LOCKED);
+  return result[STORAGE_KEYS.KEYBOARD_ZOOM_LOCKED] !== false;
+}
+
+/**
+ * Set whether zoom width/height are locked together
+ * @param {boolean} locked
+ */
+export async function setKeyboardZoomLocked(locked) {
+  await set({ [STORAGE_KEYS.KEYBOARD_ZOOM_LOCKED]: locked });
 }
 
 /**
@@ -230,6 +315,23 @@ export async function setAutostart(enabled) {
 }
 
 /**
+ * Get sticky shift setting
+ * @returns {Promise<boolean>}
+ */
+export async function getStickyShift() {
+  const result = await get(STORAGE_KEYS.STICKY_SHIFT);
+  return result[STORAGE_KEYS.STICKY_SHIFT] === true;
+}
+
+/**
+ * Set sticky shift setting
+ * @param {boolean} enabled
+ */
+export async function setStickyShift(enabled) {
+  await set({ [STORAGE_KEYS.STICKY_SHIFT]: enabled });
+}
+
+/**
  * Check if this is the first time the extension has been opened
  * @returns {Promise<boolean>}
  */
@@ -257,12 +359,18 @@ export async function loadAllSettings() {
     STORAGE_KEYS.SHOW_OPEN_BUTTON,
     STORAGE_KEYS.SHOW_LANGUAGE_BUTTON,
     STORAGE_KEYS.SHOW_SETTINGS_BUTTON,
+    STORAGE_KEYS.SHOW_URL_BUTTON,
+    STORAGE_KEYS.SHOW_CLOSE_BUTTON,
+    STORAGE_KEYS.SHOW_NUMBERS_BUTTON,
     STORAGE_KEYS.SHOW_NUMBER_BAR,
-    STORAGE_KEYS.KEYBOARD_ZOOM,
+    STORAGE_KEYS.KEYBOARD_ZOOM_WIDTH,
+    STORAGE_KEYS.KEYBOARD_ZOOM_HEIGHT,
+    STORAGE_KEYS.KEYBOARD_ZOOM_LOCKED,
     STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE,
     STORAGE_KEYS.KEYBOARD_DRAGGABLE,
     STORAGE_KEYS.KEYBOARD_POSITION,
     STORAGE_KEYS.AUTOSTART,
+    STORAGE_KEYS.STICKY_SHIFT,
   ]);
 
   return {
@@ -272,12 +380,18 @@ export async function loadAllSettings() {
     showOpenButton: result[STORAGE_KEYS.SHOW_OPEN_BUTTON] !== false,
     showLanguageButton: result[STORAGE_KEYS.SHOW_LANGUAGE_BUTTON] === true,
     showSettingsButton: result[STORAGE_KEYS.SHOW_SETTINGS_BUTTON] !== false,
+    showUrlButton: result[STORAGE_KEYS.SHOW_URL_BUTTON] !== false,
+    showCloseButton: result[STORAGE_KEYS.SHOW_CLOSE_BUTTON] !== false,
+    showNumbersButton: result[STORAGE_KEYS.SHOW_NUMBERS_BUTTON] !== false,
     showNumberBar: result[STORAGE_KEYS.SHOW_NUMBER_BAR] !== false,
-    keyboardZoom: result[STORAGE_KEYS.KEYBOARD_ZOOM] || 100,
+    keyboardZoomWidth: result[STORAGE_KEYS.KEYBOARD_ZOOM_WIDTH] || 100,
+    keyboardZoomHeight: result[STORAGE_KEYS.KEYBOARD_ZOOM_HEIGHT] || 100,
+    keyboardZoomLocked: result[STORAGE_KEYS.KEYBOARD_ZOOM_LOCKED] !== false,
     spacebarCursorSwipe: result[STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE] === true,
     keyboardDraggable: result[STORAGE_KEYS.KEYBOARD_DRAGGABLE] === true,
     keyboardPosition: result[STORAGE_KEYS.KEYBOARD_POSITION] || null,
     autostart: result[STORAGE_KEYS.AUTOSTART] === true,
+    stickyShift: result[STORAGE_KEYS.STICKY_SHIFT] === true,
   };
 }
 
@@ -293,12 +407,18 @@ export async function initializeDefaults(defaultLayouts) {
     [STORAGE_KEYS.SHOW_OPEN_BUTTON]: true,
     [STORAGE_KEYS.SHOW_LANGUAGE_BUTTON]: false,
     [STORAGE_KEYS.SHOW_SETTINGS_BUTTON]: true,
+    [STORAGE_KEYS.SHOW_URL_BUTTON]: true,
+    [STORAGE_KEYS.SHOW_CLOSE_BUTTON]: true,
+    [STORAGE_KEYS.SHOW_NUMBERS_BUTTON]: true,
     [STORAGE_KEYS.SHOW_NUMBER_BAR]: true,
-    [STORAGE_KEYS.KEYBOARD_ZOOM]: 100,
+    [STORAGE_KEYS.KEYBOARD_ZOOM_WIDTH]: 100,
+    [STORAGE_KEYS.KEYBOARD_ZOOM_HEIGHT]: 100,
+    [STORAGE_KEYS.KEYBOARD_ZOOM_LOCKED]: true,
     [STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE]: false,
     [STORAGE_KEYS.KEYBOARD_DRAGGABLE]: false,
     [STORAGE_KEYS.KEYBOARD_POSITION]: null,
     [STORAGE_KEYS.AUTOSTART]: false,
+    [STORAGE_KEYS.STICKY_SHIFT]: false,
   });
 }
 
@@ -331,10 +451,20 @@ export default {
   setShowLanguageButton,
   getShowSettingsButton,
   setShowSettingsButton,
+  getShowUrlButton,
+  setShowUrlButton,
+  getShowCloseButton,
+  setShowCloseButton,
+  getShowNumbersButton,
+  setShowNumbersButton,
   getShowNumberBar,
   setShowNumberBar,
-  getKeyboardZoom,
-  setKeyboardZoom,
+  getKeyboardZoomWidth,
+  setKeyboardZoomWidth,
+  getKeyboardZoomHeight,
+  setKeyboardZoomHeight,
+  getKeyboardZoomLocked,
+  setKeyboardZoomLocked,
   getSpacebarCursorSwipe,
   setSpacebarCursorSwipe,
   getKeyboardDraggable,
@@ -343,6 +473,8 @@ export default {
   setKeyboardPosition,
   getAutostart,
   setAutostart,
+  getStickyShift,
+  setStickyShift,
   isFirstTime,
   markOpened,
   loadAllSettings,

@@ -7,7 +7,9 @@ import {
   getAutostart,
   getKeyboardDraggable,
   getKeyboardPosition,
-  getKeyboardZoom,
+  getKeyboardZoomHeight,
+  getKeyboardZoomLocked,
+  getKeyboardZoomWidth,
   getLayout,
   getLayoutsList,
   getShowLanguageButton,
@@ -15,6 +17,7 @@ import {
   getShowOpenButton,
   getShowSettingsButton,
   getSpacebarCursorSwipe,
+  getStickyShift,
   initializeDefaults,
   isFirstTime,
   loadAllSettings,
@@ -24,7 +27,9 @@ import {
   setAutostart,
   setKeyboardDraggable,
   setKeyboardPosition,
-  setKeyboardZoom,
+  setKeyboardZoomHeight,
+  setKeyboardZoomLocked,
+  setKeyboardZoomWidth,
   setLayout,
   setLayoutsList,
   setShowLanguageButton,
@@ -32,6 +37,7 @@ import {
   setShowOpenButton,
   setShowSettingsButton,
   setSpacebarCursorSwipe,
+  setStickyShift,
 } from "../../src/core/storage.js";
 import { chromeMocks } from "./setup.js";
 
@@ -280,20 +286,70 @@ describe("storage.js", () => {
     });
   });
 
-  describe("Numeric settings", () => {
-    describe("keyboardZoom", () => {
+  describe("Zoom settings", () => {
+    describe("keyboardZoomWidth", () => {
       it("should return 100 by default", async () => {
-        expect(await getKeyboardZoom()).toBe(100);
+        expect(await getKeyboardZoomWidth()).toBe(100);
       });
 
       it("should return stored value", async () => {
-        chromeMocks.storage._set({ [STORAGE_KEYS.KEYBOARD_ZOOM]: 150 });
-        expect(await getKeyboardZoom()).toBe(150);
+        chromeMocks.storage._set({ [STORAGE_KEYS.KEYBOARD_ZOOM_WIDTH]: 150 });
+        expect(await getKeyboardZoomWidth()).toBe(150);
       });
 
       it("should store value", async () => {
-        await setKeyboardZoom(75);
-        expect(await getKeyboardZoom()).toBe(75);
+        await setKeyboardZoomWidth(75);
+        expect(await getKeyboardZoomWidth()).toBe(75);
+      });
+    });
+
+    describe("keyboardZoomHeight", () => {
+      it("should return 100 by default", async () => {
+        expect(await getKeyboardZoomHeight()).toBe(100);
+      });
+
+      it("should return stored value", async () => {
+        chromeMocks.storage._set({ [STORAGE_KEYS.KEYBOARD_ZOOM_HEIGHT]: 125 });
+        expect(await getKeyboardZoomHeight()).toBe(125);
+      });
+
+      it("should store value", async () => {
+        await setKeyboardZoomHeight(80);
+        expect(await getKeyboardZoomHeight()).toBe(80);
+      });
+    });
+
+    describe("keyboardZoomLocked", () => {
+      it("should return true by default", async () => {
+        expect(await getKeyboardZoomLocked()).toBe(true);
+      });
+
+      it("should return stored value", async () => {
+        chromeMocks.storage._set({ [STORAGE_KEYS.KEYBOARD_ZOOM_LOCKED]: false });
+        expect(await getKeyboardZoomLocked()).toBe(false);
+      });
+
+      it("should store value", async () => {
+        await setKeyboardZoomLocked(false);
+        expect(await getKeyboardZoomLocked()).toBe(false);
+      });
+    });
+  });
+
+  describe("Sticky shift setting", () => {
+    describe("stickyShift", () => {
+      it("should return false by default", async () => {
+        expect(await getStickyShift()).toBe(false);
+      });
+
+      it("should return stored value", async () => {
+        chromeMocks.storage._set({ [STORAGE_KEYS.STICKY_SHIFT]: true });
+        expect(await getStickyShift()).toBe(true);
+      });
+
+      it("should store value", async () => {
+        await setStickyShift(true);
+        expect(await getStickyShift()).toBe(true);
       });
     });
   });
@@ -358,12 +414,18 @@ describe("storage.js", () => {
         showOpenButton: true,
         showLanguageButton: false,
         showSettingsButton: true,
+        showUrlButton: true,
+        showCloseButton: true,
+        showNumbersButton: true,
         showNumberBar: true,
-        keyboardZoom: 100,
+        keyboardZoomWidth: 100,
+        keyboardZoomHeight: 100,
+        keyboardZoomLocked: true,
         spacebarCursorSwipe: false,
         keyboardDraggable: false,
         keyboardPosition: null,
         autostart: false,
+        stickyShift: false,
       });
     });
 
@@ -377,12 +439,18 @@ describe("storage.js", () => {
         [STORAGE_KEYS.SHOW_OPEN_BUTTON]: false,
         [STORAGE_KEYS.SHOW_LANGUAGE_BUTTON]: true,
         [STORAGE_KEYS.SHOW_SETTINGS_BUTTON]: false,
+        [STORAGE_KEYS.SHOW_URL_BUTTON]: false,
+        [STORAGE_KEYS.SHOW_CLOSE_BUTTON]: false,
+        [STORAGE_KEYS.SHOW_NUMBERS_BUTTON]: false,
         [STORAGE_KEYS.SHOW_NUMBER_BAR]: false,
-        [STORAGE_KEYS.KEYBOARD_ZOOM]: 125,
+        [STORAGE_KEYS.KEYBOARD_ZOOM_WIDTH]: 125,
+        [STORAGE_KEYS.KEYBOARD_ZOOM_HEIGHT]: 80,
+        [STORAGE_KEYS.KEYBOARD_ZOOM_LOCKED]: false,
         [STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE]: true,
         [STORAGE_KEYS.KEYBOARD_DRAGGABLE]: true,
         [STORAGE_KEYS.KEYBOARD_POSITION]: { x: 100, y: 200 },
         [STORAGE_KEYS.AUTOSTART]: true,
+        [STORAGE_KEYS.STICKY_SHIFT]: true,
       });
 
       const settings = await loadAllSettings();
@@ -394,12 +462,18 @@ describe("storage.js", () => {
         showOpenButton: false,
         showLanguageButton: true,
         showSettingsButton: false,
+        showUrlButton: false,
+        showCloseButton: false,
+        showNumbersButton: false,
         showNumberBar: false,
-        keyboardZoom: 125,
+        keyboardZoomWidth: 125,
+        keyboardZoomHeight: 80,
+        keyboardZoomLocked: false,
         spacebarCursorSwipe: true,
         keyboardDraggable: true,
         keyboardPosition: { x: 100, y: 200 },
         autostart: true,
+        stickyShift: true,
       });
     });
   });
@@ -422,11 +496,14 @@ describe("storage.js", () => {
       expect(settings.showLanguageButton).toBe(false);
       expect(settings.showSettingsButton).toBe(true);
       expect(settings.showNumberBar).toBe(true);
-      expect(settings.keyboardZoom).toBe(100);
+      expect(settings.keyboardZoomWidth).toBe(100);
+      expect(settings.keyboardZoomHeight).toBe(100);
+      expect(settings.keyboardZoomLocked).toBe(true);
       expect(settings.spacebarCursorSwipe).toBe(false);
       expect(settings.keyboardDraggable).toBe(false);
       expect(settings.keyboardPosition).toBeNull();
       expect(settings.autostart).toBe(false);
+      expect(settings.stickyShift).toBe(false);
     });
   });
 });

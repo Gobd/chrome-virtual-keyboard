@@ -19,17 +19,30 @@
             Show keyboard button in lower right corner
           </label>
         </p>
+        <p style="display: flex; align-items: center; gap: 5px">
+          <span>Width (%):</span>
+          <input
+            type="number"
+            id="keyboardZoomWidth"
+            value="100"
+            min="25"
+            max="150"
+            style="width: 60px"
+          />
+          <span style="margin-left: 15px">Height (%):</span>
+          <input
+            type="number"
+            id="keyboardZoomHeight"
+            value="100"
+            min="25"
+            max="150"
+            style="width: 60px"
+          />
+        </p>
         <p>
           <label>
-            Keyboard size (%):
-            <input
-              type="number"
-              id="keyboardZoom"
-              value="100"
-              min="25"
-              max="150"
-              style="width: 80px; margin-left: 10px"
-            />
+            <input type="checkbox" id="zoomLock" checked />
+            Link width and height
           </label>
         </p>
         <p>
@@ -69,13 +82,30 @@
         </p>
         <p>
           <label>
+            <input type="checkbox" id="showUrlButton" checked />
+            Show URL button on keyboard
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" id="showCloseButton" checked />
+            Show close button on keyboard
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" id="showNumbersButton" checked />
+            Show numbers/symbols toggle (&amp;123) button
+          </label>
+        </p>
+        <p>
+          <label>
             <input type="checkbox" id="autostart" />
             Always show keyboard (autostart)
           </label>
           <br />
           <small style="color: #888; margin-left: 22px">
-            Keyboard opens automatically and cannot be closed. Hides the open
-            and close buttons.
+            Keyboard opens automatically when the page loads.
           </small>
         </p>
 
@@ -84,6 +114,12 @@
           <label>
             <input type="checkbox" id="spacebarCursorSwipe" />
             Swipe on spacebar to move cursor
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" id="stickyShift" />
+            Sticky shift (stays on until pressed again)
           </label>
         </p>
 

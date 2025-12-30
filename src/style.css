@@ -174,6 +174,8 @@
 .vk-key-space {
   flex: 3;
   background: var(--vk-space-key-bg);
+  /* Ensure spacebar has proper height even when it's the only key in the row */
+  min-height: calc(1.2em + var(--vk-key-padding) * 2);
 }
 
 /* Wider space key (when language button is hidden) */

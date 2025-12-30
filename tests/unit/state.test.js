@@ -249,11 +249,14 @@ describe("Application State Stores", () => {
       expect(settingsState.get("showOpenButton")).toBe(true);
       expect(settingsState.get("showLanguageButton")).toBe(false);
       expect(settingsState.get("showSettingsButton")).toBe(true);
-      expect(settingsState.get("keyboardZoom")).toBe(100);
+      expect(settingsState.get("keyboardZoomWidth")).toBe(100);
+      expect(settingsState.get("keyboardZoomHeight")).toBe(100);
+      expect(settingsState.get("keyboardZoomLocked")).toBe(true);
       expect(settingsState.get("spacebarCursorSwipe")).toBe(false);
       expect(settingsState.get("keyboardDraggable")).toBe(false);
       expect(settingsState.get("keyboardPosition")).toBeNull();
       expect(settingsState.get("autostart")).toBe(false);
+      expect(settingsState.get("stickyShift")).toBe(false);
     });
   });
 

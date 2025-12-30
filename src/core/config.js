@@ -82,12 +82,18 @@ export const STORAGE_KEYS = {
   SHOW_OPEN_BUTTON: "showOpenButton",
   SHOW_LANGUAGE_BUTTON: "showLanguageButton",
   SHOW_SETTINGS_BUTTON: "showSettingsButton",
+  SHOW_URL_BUTTON: "showUrlButton",
+  SHOW_CLOSE_BUTTON: "showCloseButton",
+  SHOW_NUMBERS_BUTTON: "showNumbersButton",
   SHOW_NUMBER_BAR: "showNumberBar",
-  KEYBOARD_ZOOM: "keyboardZoom",
+  KEYBOARD_ZOOM_WIDTH: "keyboardZoomWidth",
+  KEYBOARD_ZOOM_HEIGHT: "keyboardZoomHeight",
+  KEYBOARD_ZOOM_LOCKED: "keyboardZoomLocked",
   SPACEBAR_CURSOR_SWIPE: "spacebarCursorSwipe",
   KEYBOARD_DRAGGABLE: "keyboardDraggable",
   KEYBOARD_POSITION: "keyboardPosition",
   AUTOSTART: "autostart",
+  STICKY_SHIFT: "stickyShift",
 };
 
 export const MESSAGE_TYPES = {

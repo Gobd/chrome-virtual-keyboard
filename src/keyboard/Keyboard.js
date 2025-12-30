@@ -77,7 +77,6 @@ function getCachedElements() {
   // Cache static elements (created in buildKeyboardStructure)
   if (!cachedElements.mainKbd && shadowRoot) {
     cachedElements.mainKbd = shadowRoot.getElementById(DOM_IDS.MAIN_KBD);
-    cachedElements.numbersKbd = shadowRoot.getElementById(DOM_IDS.MAIN_NUMBERS);
     cachedElements.numberInput = shadowRoot.getElementById(
       DOM_IDS.NUMBER_BAR_INPUT
     );
@@ -88,6 +87,10 @@ function getCachedElements() {
     cachedElements.placeholder = shadowRoot.getElementById(
       DOM_IDS.MAIN_KBD_PLACEHOLDER
     );
+  }
+  // Cache numbersKbd separately (can be recreated by reloadKeyboard)
+  if (!cachedElements.numbersKbd && shadowRoot) {
+    cachedElements.numbersKbd = shadowRoot.getElementById(DOM_IDS.MAIN_NUMBERS);
   }
   // Cache layout-dependent elements separately (created in loadLayout)
   if (!cachedElements.urlButton && shadowRoot) {
@@ -537,12 +540,44 @@ function createNumberBar() {
  * Create the numbers/symbols keyboard
  */
 function createNumbersKeyboard() {
-  return createKeyboardFromRows(DOM_IDS.MAIN_NUMBERS, [
+  const showCloseButton = settingsState.get("showCloseButton");
+  const showNumbersButton = settingsState.get("showNumbersButton");
+
+  // Build rows, filtering out hidden buttons
+  const rows = [
     ["_", "\\", ":", ";", ")", "(", "/", "^", "1", "2", "3", "Backspace"],
     ["€", "$", "£", "&", "@", '"', "*", "~", "4", "5", "6", "Enter"],
-    ["?", "!", "'", "=", "<", ">", "-", "`", "7", "8", "9", "&123"],
-    ["[", "]", "{", "}", "#", ",", "+", "%", "0", "0", ".", "Close"],
-  ]);
+    [
+      "?",
+      "!",
+      "'",
+      "=",
+      "<",
+      ">",
+      "-",
+      "`",
+      "7",
+      "8",
+      "9",
+      showNumbersButton ? "&123" : null,
+    ],
+    [
+      "[",
+      "]",
+      "{",
+      "}",
+      "#",
+      ",",
+      "+",
+      "%",
+      "0",
+      "0",
+      ".",
+      showCloseButton ? "Close" : null,
+    ],
+  ].map((row) => row.filter((key) => key !== null));
+
+  return createKeyboardFromRows(DOM_IDS.MAIN_NUMBERS, rows);
 }
 
 /**
@@ -644,19 +679,20 @@ function toggleOverlay(menuId, buttonElement) {
     overlay.style.display = "";
     overlay.style.visibility = "hidden";
 
-    const zoom = settingsState.get("keyboardZoom") / 100 || 1;
+    const zoomWidth = settingsState.get("keyboardZoomWidth") / 100 || 1;
+    const zoomHeight = settingsState.get("keyboardZoomHeight") / 100 || 1;
     const overlayWidth = overlay.offsetWidth;
     const overlayHeight = overlay.offsetHeight;
 
-    // Get button position relative to keyboard (in screen coords, already zoomed)
+    // Get button position relative to keyboard (in screen coords, already scaled)
     const buttonRect = buttonElement.getBoundingClientRect();
     const keyboardRect = keyboardElement.getBoundingClientRect();
 
     // Calculate position relative to keyboard element
-    // Divide by zoom since getBoundingClientRect returns zoomed values
-    // but CSS left/top will be zoomed again
-    const _buttonLeft = (buttonRect.left - keyboardRect.left) / zoom;
-    const buttonTop = (buttonRect.top - keyboardRect.top) / zoom;
+    // Divide by scale since getBoundingClientRect returns scaled values
+    // but CSS left/top will be scaled again
+    const _buttonLeft = (buttonRect.left - keyboardRect.left) / zoomWidth;
+    const buttonTop = (buttonRect.top - keyboardRect.top) / zoomHeight;
     const padding = 5;
 
     // Try positioning at left edge of keyboard first
@@ -664,18 +700,18 @@ function toggleOverlay(menuId, buttonElement) {
     const top = buttonTop - overlayHeight - 10;
 
     // Check if overlay would overflow viewport on the right
-    // Use zoomed overlay width for screen coordinate comparison
+    // Use scaled overlay width for screen coordinate comparison
     const overlayRightEdge =
-      keyboardRect.left + left * zoom + overlayWidth * zoom;
+      keyboardRect.left + left * zoomWidth + overlayWidth * zoomWidth;
     if (overlayRightEdge > window.innerWidth - padding) {
       // Position from right side instead
-      left = keyboardRect.width / zoom - overlayWidth - padding;
+      left = keyboardRect.width / zoomWidth - overlayWidth - padding;
     }
 
     // Check if overlay would overflow viewport on the left
-    const overlayLeftEdge = keyboardRect.left + left * zoom;
+    const overlayLeftEdge = keyboardRect.left + left * zoomWidth;
     if (overlayLeftEdge < padding) {
-      left = (padding - keyboardRect.left) / zoom;
+      left = (padding - keyboardRect.left) / zoomWidth;
     }
 
     overlay.style.left = `${left}px`;
@@ -732,8 +768,9 @@ function setupStateSubscriptions() {
     updateShiftKeys();
   });
 
-  // Zoom setting change
-  settingsState.subscribe("keyboardZoom", applyZoom);
+  // Zoom setting changes
+  settingsState.subscribe("keyboardZoomWidth", applyZoom);
+  settingsState.subscribe("keyboardZoomHeight", applyZoom);
 
   // Keyboard draggable setting change
   settingsState.subscribe("keyboardDraggable", (draggable) => {
@@ -787,11 +824,15 @@ export async function loadLayout(layoutId) {
   // Render new layout with options
   const showLanguageButton = settingsState.get("showLanguageButton");
   const showSettingsButton = settingsState.get("showSettingsButton");
-  const autostart = settingsState.get("autostart");
+  const showUrlButton = settingsState.get("showUrlButton");
+  const showCloseButton = settingsState.get("showCloseButton");
+  const showNumbersButton = settingsState.get("showNumbersButton");
   const fragment = renderLayout(layoutId, {
     showLanguageButton,
-    showSettingsButton: showSettingsButton && !autostart, // Hide in autostart mode
-    showCloseButton: !autostart, // Hide close button in autostart mode
+    showSettingsButton,
+    showUrlButton,
+    showCloseButton,
+    showNumbersButton,
   });
   placeholder.appendChild(fragment);
 
@@ -981,9 +1022,10 @@ function getKeyboardHeight() {
     parseFloat(style.height) +
     parseFloat(style.paddingTop) +
     parseFloat(style.paddingBottom);
-  const zoom = parseFloat(style.zoom) || 1;
+  // Use height zoom from settings (transform scale doesn't affect computed style)
+  const zoomHeight = settingsState.get("keyboardZoomHeight") / 100;
 
-  cachedKeyboardHeight = height * zoom;
+  cachedKeyboardHeight = height * zoomHeight;
   return cachedKeyboardHeight;
 }
 
@@ -1100,12 +1142,17 @@ function setUrlButtonMode(isDotCom) {
 }
 
 /**
- * Apply zoom setting
+ * Apply zoom setting (independent width/height)
  */
 function applyZoom() {
   if (!keyboardElement) return;
-  const zoom = settingsState.get("keyboardZoom") / 100;
-  keyboardElement.style.zoom = zoom;
+  const zoomWidth = settingsState.get("keyboardZoomWidth") / 100;
+  const zoomHeight = settingsState.get("keyboardZoomHeight") / 100;
+
+  // Use transform for independent scaling
+  keyboardElement.style.transform = `scale(${zoomWidth}, ${zoomHeight})`;
+  keyboardElement.style.transformOrigin = "bottom center";
+
   invalidateKeyboardHeightCache();
 }
 
@@ -1290,7 +1337,8 @@ function applyKeyboardPosition(x, y) {
   const rect = keyboardElement.getBoundingClientRect();
   const width = rect.width;
   const height = rect.height;
-  const zoom = settingsState.get("keyboardZoom") / 100 || 1;
+  const zoomWidth = settingsState.get("keyboardZoomWidth") / 100 || 1;
+  const zoomHeight = settingsState.get("keyboardZoomHeight") / 100 || 1;
 
   // Constrain to viewport
   const minX = width / 2;
@@ -1302,9 +1350,9 @@ function applyKeyboardPosition(x, y) {
   y = Math.max(minY, Math.min(maxY, y));
 
   // Calculate offset in screen coordinates, then adjust for zoom
-  // since the CSS transform is also affected by zoom
-  const offsetX = (x - window.innerWidth / 2) / zoom;
-  const bottom = (window.innerHeight - y) / zoom;
+  // since the CSS transform is also affected by scale
+  const offsetX = (x - window.innerWidth / 2) / zoomWidth;
+  const bottom = (window.innerHeight - y) / zoomHeight;
 
   keyboardElement.style.setProperty("--vk-offset-x", `${offsetX}px`);
   keyboardElement.style.bottom = `${bottom}px`;
@@ -1359,10 +1407,36 @@ export function updateNumberBarVisibility() {
   numberBar.style.display = show ? "" : "none";
 }
 
+/**
+ * Reload the keyboard to apply settings changes that affect structure
+ * (e.g., showCloseButton, showNumbersButton)
+ */
+export function reloadKeyboard() {
+  if (!keyboardElement || !shadowRoot) return;
+
+  // Reload current layout (handles main keyboard close button, numbers button)
+  const currentLayout = keyboardState.get("loadedLayout");
+  if (currentLayout) {
+    loadLayout(currentLayout);
+  }
+
+  // Recreate numbers keyboard (handles close button, ABC button on symbols)
+  const oldNumbersKbd = shadowRoot.getElementById(DOM_IDS.MAIN_NUMBERS);
+  if (oldNumbersKbd) {
+    oldNumbersKbd.remove();
+  }
+  const newNumbersKbd = createNumbersKeyboard();
+  keyboardElement.appendChild(newNumbersKbd);
+
+  // Clear cached elements since we recreated numbersKbd
+  cachedElements.numbersKbd = null;
+}
+
 export default {
   init,
   open,
   close,
   loadLayout,
   updateNumberBarVisibility,
+  reloadKeyboard,
 };
