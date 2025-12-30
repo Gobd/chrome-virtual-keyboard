@@ -14,9 +14,6 @@ importers:
       '@playwright/test':
         specifier: ^1.57.0
         version: 1.57.0
-      '@vitest/coverage-v8':
-        specifier: ^4.0.16
-        version: 4.0.16(vitest@4.0.16(@types/node@20.19.27)(happy-dom@20.0.11))
       esbuild:
         specifier: ^0.24.2
         version: 0.24.2

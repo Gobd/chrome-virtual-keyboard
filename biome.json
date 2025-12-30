@@ -7,10 +7,8 @@
   },
   "files": {
     "includes": [
-      "**/src/**/*.js",
-      "**/tests/**/*.js",
-      "**/scripts/**/*.js",
       "**/*.js",
+      "*.config.js",
       "!**/dist",
       "!**/coverage",
       "!**/coverage-*",

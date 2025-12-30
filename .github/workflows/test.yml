@@ -49,6 +49,10 @@ jobs:
       - name: Run E2E tests with coverage
         run: COVERAGE=1 pnpm run test:e2e
 
+      - name: Generate all coverage reports
+        if: ${{ !cancelled() }}
+        run: node scripts/merge-coverage.js || true
+
       - name: Read E2E coverage
         id: e2e-coverage
         if: ${{ !cancelled() }}
@@ -63,18 +67,6 @@ jobs:
             echo "functions=$FUNCTIONS" >> $GITHUB_OUTPUT
             echo "branches=$BRANCHES" >> $GITHUB_OUTPUT
           fi
-
-      - name: Generate combined coverage report
-        if: ${{ !cancelled() }}
-        run: |
-          # Copy E2E coverage data for merging
-          if [ -d coverage-e2e ]; then
-            mkdir -p .coverage-data
-            # E2E already generated its report, we need the raw V8 data
-            # Re-run to get combined report with unit LCOV
-            COVERAGE=1 COVERAGE_SKIP_REPORT=1 pnpm run test:e2e || true
-          fi
-          node scripts/merge-coverage.js || true
 
       - name: Read combined coverage
         id: combined-coverage
