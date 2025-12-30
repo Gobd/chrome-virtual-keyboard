@@ -84,7 +84,8 @@ const buildOptions = {
   format: "iife",
   target: ["chrome120"],
   minify: false, // Keep readable for debugging
-  sourcemap: false,
+  // Enable inline source maps for test builds so E2E coverage can map to source files
+  sourcemap: isTest ? "inline" : false,
   logLevel: "info",
   // For test builds, use open shadow DOM so tests can access elements
   define: isTest ? { __SHADOW_MODE__: '"open"' } : {},

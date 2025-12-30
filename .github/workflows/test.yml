@@ -47,7 +47,7 @@ jobs:
           fi
 
       - name: Run E2E tests with coverage
-        run: COVERAGE=1 pnpm run test:e2e
+        run: COVERAGE=1 COVERAGE_SKIP_REPORT=1 pnpm run test:e2e
 
       - name: Generate all coverage reports
         if: ${{ !cancelled() }}
