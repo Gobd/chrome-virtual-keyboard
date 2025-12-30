@@ -1,32 +1,44 @@
 {
   "name": "chrome-virtual-keyboard",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
   "main": "index.js",
   "scripts": {
     "build": "node build.js",
     "build:test": "node build.js --test",
     "watch": "node build.js --watch",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format": "pnpm exec biome format --write .",
+    "format:check": "pnpm exec biome check .",
+    "lint": "pnpm exec biome lint .",
+    "lint:fix": "pnpm exec biome lint --write .",
     "package": "pnpm run build && cd dist && zip -r ../chrome-virtual-keyboard.zip . -x \".DS_Store\"",
-    "test": "pnpm exec playwright test",
+    "test": "pnpm run test:unit && pnpm run test:e2e",
+    "test:unit": "pnpm exec vitest run",
+    "test:e2e": "pnpm exec playwright test",
     "test:ui": "pnpm exec playwright test --ui",
     "test:headed": "pnpm exec playwright test --headed",
     "test:debug": "pnpm exec playwright test --debug",
     "test:install": "pnpm exec playwright install chromium --with-deps",
     "test:report": "pnpm exec playwright show-report",
-    "coverage": "rm -rf coverage && COVERAGE=1 pnpm exec playwright test"
+    "coverage": "pnpm run coverage:all",
+    "coverage:unit": "rm -rf coverage-unit && pnpm exec vitest run --coverage",
+    "coverage:e2e": "rm -rf coverage-e2e .coverage-data && COVERAGE=1 pnpm exec playwright test",
+    "coverage:all": "rm -rf coverage coverage-unit coverage-e2e .coverage-data && pnpm run coverage:unit && COVERAGE=1 COVERAGE_SKIP_REPORT=1 pnpm exec playwright test && node scripts/merge-coverage.js",
+    "coverage:summary": "node scripts/coverage-summary.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.23.0",
   "devDependencies": {
+    "@biomejs/biome": "^2.3.10",
     "@playwright/test": "^1.57.0",
+    "@vitest/coverage-v8": "^4.0.16",
     "esbuild": "^0.24.2",
+    "happy-dom": "^20.0.11",
     "http-server": "^14.1.1",
     "monocart-coverage-reports": "^2.12.9",
-    "prettier": "^3.7.4"
+    "vitest": "^4.0.16"
   }
 }

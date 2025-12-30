@@ -4,9 +4,9 @@
  * Uses monocart-coverage-reports for V8 coverage collection.
  */
 
+import fs from "node:fs";
+import path from "node:path";
 import { test as base, chromium } from "@playwright/test";
-import path from "path";
-import fs from "fs";
 
 const EXTENSION_PATH = path.resolve("./dist");
 const COVERAGE_DATA_DIR = path.resolve("./.coverage-data");
@@ -23,7 +23,7 @@ export const test = base.extend({
     const userDataDir = path.join(
       process.cwd(),
       ".playwright-user-data",
-      `test-${uniqueId}`,
+      `test-${uniqueId}`
     );
 
     // Launch with persistent context (required for extensions)
@@ -46,7 +46,7 @@ export const test = base.extend({
     // Remove temp user data dir
     try {
       fs.rmSync(userDataDir, { recursive: true, force: true });
-    } catch (e) {
+    } catch (_e) {
       // Ignore cleanup errors
     }
   },
@@ -72,7 +72,7 @@ export const test = base.extend({
       const extensionCoverage = coverage.filter(
         (entry) =>
           entry.url.includes("chrome-extension://") &&
-          entry.url.includes("main.js"),
+          entry.url.includes("main.js")
       );
 
       if (extensionCoverage.length > 0) {
@@ -84,7 +84,7 @@ export const test = base.extend({
         const filename = `coverage-${testInfo.testId}-${Date.now()}.json`;
         fs.writeFileSync(
           path.join(COVERAGE_DATA_DIR, filename),
-          JSON.stringify(extensionCoverage),
+          JSON.stringify(extensionCoverage)
         );
       }
     }

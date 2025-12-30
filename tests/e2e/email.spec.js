@@ -1,12 +1,12 @@
-import { test, expect } from "./fixtures.js";
+import { expect, test } from "./fixtures.js";
 import {
-  waitForExtension,
-  waitForKeyboardOpen,
-  isEmailKeyVisible,
-  getUrlButtonText,
   clickKey,
   clickUrlButton,
+  getUrlButtonText,
+  isEmailKeyVisible,
   typeWithKeyboard,
+  waitForExtension,
+  waitForKeyboardOpen,
 } from "./helpers.js";
 
 test.describe("Virtual Keyboard - Email Input", () => {

@@ -5,8 +5,11 @@ dist/
 # Test output
 test-results/
 .playwright-user-data/
-coverage/
 playwright-report/
+coverage/
+coverage-unit/
+coverage-e2e/
+.coverage-data/
 
 # Dependencies
 node_modules/

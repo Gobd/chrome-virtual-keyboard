@@ -1,28 +1,28 @@
 // Keyboard
 // Main keyboard UI class - rendering, show/hide, event delegation
 
-import { DOM_IDS, CSS_CLASSES, TIMING, KEYBOARD } from "../core/config.js";
+import { CSS_CLASSES, DOM_IDS, TIMING } from "../core/config.js";
+import { EVENTS, emit, on } from "../core/events.js";
 import {
-  keyboardState,
   focusState,
-  settingsState,
+  keyboardState,
   runtimeState,
+  settingsState,
   urlBarState,
 } from "../core/state.js";
-import { emit, on, EVENTS } from "../core/events.js";
-import { renderLayout, getLayoutsList } from "../layouts/LayoutRenderer.js";
-import { getKeyWithShift } from "./KeyMap.js";
-import { handleKeyPress } from "./KeyHandler.js";
+import storage from "../core/storage.js";
 import {
+  addBodyPadding,
+  clearCloseTimer,
+  removeBodyPadding,
+  restoreScrollPosition,
+  saveInputType,
   saveScrollPosition,
   scrollInputIntoView,
-  restoreScrollPosition,
-  addBodyPadding,
-  removeBodyPadding,
-  clearCloseTimer,
-  saveInputType,
 } from "../input/InputTracker.js";
-import storage from "../core/storage.js";
+import { renderLayout } from "../layouts/LayoutRenderer.js";
+import { handleKeyPress } from "./KeyHandler.js";
+import { getKeyWithShift } from "./KeyMap.js";
 
 let keyboardElement = null;
 let shadowRoot = null;
@@ -79,14 +79,14 @@ function getCachedElements() {
     cachedElements.mainKbd = shadowRoot.getElementById(DOM_IDS.MAIN_KBD);
     cachedElements.numbersKbd = shadowRoot.getElementById(DOM_IDS.MAIN_NUMBERS);
     cachedElements.numberInput = shadowRoot.getElementById(
-      DOM_IDS.NUMBER_BAR_INPUT,
+      DOM_IDS.NUMBER_BAR_INPUT
     );
     cachedElements.urlBar = shadowRoot.getElementById(DOM_IDS.URL_BAR);
     cachedElements.urlBarTextbox = shadowRoot.getElementById(
-      DOM_IDS.URL_BAR_TEXTBOX,
+      DOM_IDS.URL_BAR_TEXTBOX
     );
     cachedElements.placeholder = shadowRoot.getElementById(
-      DOM_IDS.MAIN_KBD_PLACEHOLDER,
+      DOM_IDS.MAIN_KBD_PLACEHOLDER
     );
   }
   // Cache layout-dependent elements separately (created in loadLayout)
@@ -95,7 +95,7 @@ function getCachedElements() {
   }
   if (!cachedElements.langButton && shadowRoot) {
     cachedElements.langButton = shadowRoot.getElementById(
-      DOM_IDS.LANGUAGE_BUTTON,
+      DOM_IDS.LANGUAGE_BUTTON
     );
   }
   return cachedElements;
@@ -119,7 +119,7 @@ function clearLayoutCache() {
 function getCachedShiftKeys() {
   return (
     getOrCache("shiftKeys", () =>
-      shadowRoot.querySelectorAll(`.${CSS_CLASSES.KEY_CASE_DISPLAY}`),
+      shadowRoot.querySelectorAll(`.${CSS_CLASSES.KEY_CASE_DISPLAY}`)
     ) || []
   );
 }
@@ -146,10 +146,10 @@ function getOrCache(key, queryFn) {
 function getCachedEmailKeys() {
   return {
     emailKeys: getOrCache("emailKeys", () =>
-      shadowRoot.querySelectorAll(`.${CSS_CLASSES.EMAIL_INPUT}`),
+      shadowRoot.querySelectorAll(`.${CSS_CLASSES.EMAIL_INPUT}`)
     ),
     hideEmailKeys: getOrCache("hideEmailKeys", () =>
-      shadowRoot.querySelectorAll(`.${CSS_CLASSES.HIDE_EMAIL_INPUT}`),
+      shadowRoot.querySelectorAll(`.${CSS_CLASSES.HIDE_EMAIL_INPUT}`)
     ),
   };
 }
@@ -316,7 +316,7 @@ function createUrlBar() {
     const input = shadowRoot.getElementById(DOM_IDS.URL_BAR_TEXTBOX);
     let url = input.value;
     if (!url.startsWith("http://") && !url.startsWith("https://")) {
-      url = "https://" + url;
+      url = `https://${url}`;
     }
     window.location.href = url;
   };
@@ -364,7 +364,7 @@ function createUrlBar() {
           "closeTimer",
           setTimeout(() => {
             emit(EVENTS.KEYBOARD_CLOSE);
-          }, TIMING.URL_CLOSE_DELAY),
+          }, TIMING.URL_CLOSE_DELAY)
         );
       }
       urlBarCloseTimeout = null;
@@ -655,7 +655,7 @@ function toggleOverlay(menuId, buttonElement) {
     // Calculate position relative to keyboard element
     // Divide by zoom since getBoundingClientRect returns zoomed values
     // but CSS left/top will be zoomed again
-    const buttonLeft = (buttonRect.left - keyboardRect.left) / zoom;
+    const _buttonLeft = (buttonRect.left - keyboardRect.left) / zoom;
     const buttonTop = (buttonRect.top - keyboardRect.top) / zoom;
     const padding = 5;
 
@@ -757,7 +757,7 @@ function setupStateSubscriptions() {
  * Set up event listeners
  */
 function setupEventListeners() {
-  on(EVENTS.KEYBOARD_OPEN, ({ force, posY, posX }) => {
+  on(EVENTS.KEYBOARD_OPEN, ({ force, posY: _posY, posX: _posX }) => {
     open(force);
   });
 
@@ -837,7 +837,7 @@ function calculateKeyMinWidth() {
 
   // Find the widest key content in numbers keyboard
   const keys = numbersKbd.querySelectorAll(
-    ".vk-key:not(.vk-key-backspace):not(.vk-key-enter)",
+    ".vk-key:not(.vk-key-backspace):not(.vk-key-enter)"
   );
   let maxWidth = 0;
 
@@ -1034,7 +1034,7 @@ function renderInputType() {
       try {
         element.selectionStart = selStart;
         element.selectionEnd = selEnd;
-      } catch (e) {
+      } catch (_e) {
         // Some types don't support selection restoration
       }
     }
@@ -1122,7 +1122,7 @@ function moveCursor(direction) {
   if (type === "contenteditable") {
     const selection = element.ownerDocument.defaultView.getSelection();
     if (selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
+      const _range = selection.getRangeAt(0);
       if (direction < 0) {
         // Move left
         selection.modify("move", "backward", "character");
@@ -1137,10 +1137,10 @@ function moveCursor(direction) {
       const pos = element.selectionStart;
       const newPos = Math.max(
         0,
-        Math.min(element.value.length, pos + direction),
+        Math.min(element.value.length, pos + direction)
       );
       element.selectionStart = element.selectionEnd = newPos;
-    } catch (e) {
+    } catch (_e) {
       // Some input types don't support selection
     }
   }
@@ -1208,7 +1208,7 @@ function setupSpacebarSwipe() {
     spacebarSwipeState.spaceKey = null;
   });
 
-  keyboardElement.addEventListener("pointercancel", (e) => {
+  keyboardElement.addEventListener("pointercancel", (_e) => {
     spacebarSwipeState.active = false;
     spacebarSwipeState.spaceKey = null;
   });
@@ -1271,7 +1271,7 @@ function createDragHandle() {
     storage.setKeyboardPosition(position);
   });
 
-  dragHandleElement.addEventListener("pointercancel", (e) => {
+  dragHandleElement.addEventListener("pointercancel", (_e) => {
     dragState.active = false;
     keyboardElement.classList.remove("vk-dragging");
   });

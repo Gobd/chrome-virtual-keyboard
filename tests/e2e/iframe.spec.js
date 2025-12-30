@@ -1,15 +1,15 @@
-import { test, expect } from "./fixtures.js";
+import { expect, test } from "./fixtures.js";
 import {
-  waitForExtension,
-  waitForKeyboardOpen,
-  isKeyboardOpen,
-  typeWithKeyboard,
   clickKey,
   focusInputInIframe,
   getIframeInputValue,
-  isEmailKeyVisible,
-  isNumberKeyboardVisible,
   getUrlButtonText,
+  isEmailKeyVisible,
+  isKeyboardOpen,
+  isNumberKeyboardVisible,
+  typeWithKeyboard,
+  waitForExtension,
+  waitForKeyboardOpen,
 } from "./helpers.js";
 
 const IFRAME_SELECTOR = "#same-origin-iframe";
@@ -42,7 +42,7 @@ test.describe("Virtual Keyboard - Iframe Support", () => {
       const value = await getIframeInputValue(
         page,
         IFRAME_SELECTOR,
-        "#iframe-text",
+        "#iframe-text"
       );
       expect(value).toBe("hello iframe");
     });
@@ -63,7 +63,7 @@ test.describe("Virtual Keyboard - Iframe Support", () => {
       const value = await getIframeInputValue(
         page,
         IFRAME_SELECTOR,
-        "#iframe-text",
+        "#iframe-text"
       );
       expect(value).toBe("hello world");
     });
@@ -84,7 +84,7 @@ test.describe("Virtual Keyboard - Iframe Support", () => {
       const value = await getIframeInputValue(
         page,
         IFRAME_SELECTOR,
-        "#iframe-text",
+        "#iframe-text"
       );
       expect(value).toBe("helloworld");
     });
@@ -118,7 +118,7 @@ test.describe("Virtual Keyboard - Iframe Support", () => {
       const value = await getIframeInputValue(
         page,
         IFRAME_SELECTOR,
-        "#iframe-email",
+        "#iframe-email"
       );
       expect(value).toBe("user@example.com");
     });
@@ -139,7 +139,7 @@ test.describe("Virtual Keyboard - Iframe Support", () => {
       const value = await getIframeInputValue(
         page,
         IFRAME_SELECTOR,
-        "#iframe-email",
+        "#iframe-email"
       );
       expect(value).toBe("user@example.com");
     });
@@ -163,7 +163,7 @@ test.describe("Virtual Keyboard - Iframe Support", () => {
       const value = await getIframeInputValue(
         page,
         IFRAME_SELECTOR,
-        "#iframe-password",
+        "#iframe-password"
       );
       expect(value).toBe("secret123");
     });
@@ -184,7 +184,7 @@ test.describe("Virtual Keyboard - Iframe Support", () => {
       const value = await getIframeInputValue(
         page,
         IFRAME_SELECTOR,
-        "#iframe-password",
+        "#iframe-password"
       );
       expect(value).toBe("mypass");
     });
@@ -208,7 +208,7 @@ test.describe("Virtual Keyboard - Iframe Support", () => {
       const value = await getIframeInputValue(
         page,
         IFRAME_SELECTOR,
-        "#iframe-search",
+        "#iframe-search"
       );
       expect(value).toBe("search query");
     });
@@ -229,7 +229,7 @@ test.describe("Virtual Keyboard - Iframe Support", () => {
       const value = await getIframeInputValue(
         page,
         IFRAME_SELECTOR,
-        "#iframe-search",
+        "#iframe-search"
       );
       expect(value).toBe("search term");
     });
@@ -257,7 +257,7 @@ test.describe("Virtual Keyboard - Iframe Support", () => {
       const value = await getIframeInputValue(
         page,
         IFRAME_SELECTOR,
-        "#iframe-number",
+        "#iframe-number"
       );
       expect(value).toBe("123");
     });
@@ -273,7 +273,7 @@ test.describe("Virtual Keyboard - Iframe Support", () => {
       const value = await getIframeInputValue(
         page,
         IFRAME_SELECTOR,
-        "#iframe-number",
+        "#iframe-number"
       );
       expect(value).toBe("1.5");
     });
@@ -304,7 +304,7 @@ test.describe("Virtual Keyboard - Iframe Support", () => {
       const value = await getIframeInputValue(
         page,
         IFRAME_SELECTOR,
-        "#iframe-tel",
+        "#iframe-tel"
       );
       expect(value).toBe("555-1234");
     });
@@ -328,7 +328,7 @@ test.describe("Virtual Keyboard - Iframe Support", () => {
       const value = await getIframeInputValue(
         page,
         IFRAME_SELECTOR,
-        "#iframe-url",
+        "#iframe-url"
       );
       expect(value).toBe("example.com");
     });
@@ -349,7 +349,7 @@ test.describe("Virtual Keyboard - Iframe Support", () => {
       const value = await getIframeInputValue(
         page,
         IFRAME_SELECTOR,
-        "#iframe-url",
+        "#iframe-url"
       );
       expect(value).toBe("www.example.com");
     });
@@ -373,7 +373,7 @@ test.describe("Virtual Keyboard - Iframe Support", () => {
       const value = await getIframeInputValue(
         page,
         IFRAME_SELECTOR,
-        "#iframe-textarea",
+        "#iframe-textarea"
       );
       expect(value).toBe("multiline text");
     });
@@ -389,7 +389,7 @@ test.describe("Virtual Keyboard - Iframe Support", () => {
       const value = await getIframeInputValue(
         page,
         IFRAME_SELECTOR,
-        "#iframe-textarea",
+        "#iframe-textarea"
       );
       expect(value).toBe("line1\nline2");
     });
@@ -410,7 +410,7 @@ test.describe("Virtual Keyboard - Iframe Support", () => {
       const value = await getIframeInputValue(
         page,
         IFRAME_SELECTOR,
-        "#iframe-textarea",
+        "#iframe-textarea"
       );
       expect(value).toBe("hello world");
     });
@@ -580,7 +580,7 @@ test.describe("Virtual Keyboard - Iframe Support", () => {
       const iframeValue = await getIframeInputValue(
         page,
         IFRAME_SELECTOR,
-        "#iframe-text",
+        "#iframe-text"
       );
 
       expect(mainValue).toBe("main");
@@ -602,7 +602,7 @@ test.describe("Virtual Keyboard - Iframe Support", () => {
       const iframeValue = await getIframeInputValue(
         page,
         IFRAME_SELECTOR,
-        "#iframe-text",
+        "#iframe-text"
       );
 
       expect(mainValue).toBe("main");
@@ -643,12 +643,12 @@ test.describe("Virtual Keyboard - Iframe Support", () => {
       const value1 = await getIframeInputValue(
         page,
         "#iframe-1",
-        "#iframe-text",
+        "#iframe-text"
       );
       const value2 = await getIframeInputValue(
         page,
         "#iframe-2",
-        "#iframe-text",
+        "#iframe-text"
       );
 
       expect(value1).toBe("first");
@@ -683,12 +683,12 @@ test.describe("Virtual Keyboard - Iframe Support", () => {
       const value1 = await getIframeInputValue(
         page,
         "#iframe-1",
-        "#iframe-text",
+        "#iframe-text"
       );
       const value2 = await getIframeInputValue(
         page,
         "#iframe-2",
-        "#iframe-text",
+        "#iframe-text"
       );
 
       expect(value1).toBe("Ahello");

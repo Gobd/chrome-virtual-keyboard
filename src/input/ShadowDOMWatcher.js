@@ -2,9 +2,9 @@
 // Monitors shadow roots for dynamically added inputs
 
 import {
+  bindAllInputs,
   bindInput,
   isSupportedInput,
-  bindAllInputs,
   processAddedNode,
 } from "./InputBinder.js";
 

@@ -24,18 +24,123 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Lint
+        run: pnpm run lint
+
       - name: Install Playwright browsers
         run: pnpm run test:install
 
-      - name: Run tests with coverage
-        run: pnpm run coverage
+      - name: Run unit tests with coverage
+        run: pnpm run coverage:unit
 
-      - name: Upload coverage report
+      - name: Read unit coverage
+        id: unit-coverage
+        if: ${{ !cancelled() }}
+        run: |
+          if [ -f coverage-unit/coverage-summary.json ]; then
+            LINES=$(jq -r '.total.lines.pct // 0' coverage-unit/coverage-summary.json 2>/dev/null || echo "0")
+            FUNCTIONS=$(jq -r '.total.functions.pct // 0' coverage-unit/coverage-summary.json 2>/dev/null || echo "0")
+            BRANCHES=$(jq -r '.total.branches.pct // 0' coverage-unit/coverage-summary.json 2>/dev/null || echo "0")
+            echo "lines=$LINES" >> $GITHUB_OUTPUT
+            echo "functions=$FUNCTIONS" >> $GITHUB_OUTPUT
+            echo "branches=$BRANCHES" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run E2E tests with coverage
+        run: COVERAGE=1 pnpm run test:e2e
+
+      - name: Read E2E coverage
+        id: e2e-coverage
+        if: ${{ !cancelled() }}
+        run: |
+          if [ -f coverage-e2e/coverage-summary.json ]; then
+            BYTES=$(jq -r '.bytes // 0' coverage-e2e/coverage-summary.json)
+            LINES=$(jq -r '.lines // 0' coverage-e2e/coverage-summary.json)
+            FUNCTIONS=$(jq -r '.functions // 0' coverage-e2e/coverage-summary.json)
+            BRANCHES=$(jq -r '.branches // 0' coverage-e2e/coverage-summary.json)
+            echo "bytes=$BYTES" >> $GITHUB_OUTPUT
+            echo "lines=$LINES" >> $GITHUB_OUTPUT
+            echo "functions=$FUNCTIONS" >> $GITHUB_OUTPUT
+            echo "branches=$BRANCHES" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate combined coverage report
+        if: ${{ !cancelled() }}
+        run: |
+          # Copy E2E coverage data for merging
+          if [ -d coverage-e2e ]; then
+            mkdir -p .coverage-data
+            # E2E already generated its report, we need the raw V8 data
+            # Re-run to get combined report with unit LCOV
+            COVERAGE=1 COVERAGE_SKIP_REPORT=1 pnpm run test:e2e || true
+          fi
+          node scripts/merge-coverage.js || true
+
+      - name: Read combined coverage
+        id: combined-coverage
+        if: ${{ !cancelled() }}
+        run: |
+          if [ -f coverage/coverage-summary.json ]; then
+            BYTES=$(jq -r '.bytes // 0' coverage/coverage-summary.json)
+            LINES=$(jq -r '.lines // 0' coverage/coverage-summary.json)
+            FUNCTIONS=$(jq -r '.functions // 0' coverage/coverage-summary.json)
+            BRANCHES=$(jq -r '.branches // 0' coverage/coverage-summary.json)
+            echo "bytes=$BYTES" >> $GITHUB_OUTPUT
+            echo "lines=$LINES" >> $GITHUB_OUTPUT
+            echo "functions=$FUNCTIONS" >> $GITHUB_OUTPUT
+            echo "branches=$BRANCHES" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Write coverage summary
+        if: ${{ !cancelled() }}
+        run: |
+          echo "## Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Combined Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Coverage |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Lines | ${{ steps.combined-coverage.outputs.lines || 'N/A' }}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| Functions | ${{ steps.combined-coverage.outputs.functions || 'N/A' }}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branches | ${{ steps.combined-coverage.outputs.branches || 'N/A' }}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| Bytes | ${{ steps.combined-coverage.outputs.bytes || 'N/A' }}% |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Unit Test Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Coverage |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Lines | ${{ steps.unit-coverage.outputs.lines || 'N/A' }}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| Functions | ${{ steps.unit-coverage.outputs.functions || 'N/A' }}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branches | ${{ steps.unit-coverage.outputs.branches || 'N/A' }}% |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### E2E Test Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Coverage |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Lines | ${{ steps.e2e-coverage.outputs.lines || 'N/A' }}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| Functions | ${{ steps.e2e-coverage.outputs.functions || 'N/A' }}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branches | ${{ steps.e2e-coverage.outputs.branches || 'N/A' }}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| Bytes | ${{ steps.e2e-coverage.outputs.bytes || 'N/A' }}% |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload combined coverage report
         uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
-          name: coverage-report
+          name: coverage-combined
           path: coverage/
+          retention-days: 30
+
+      - name: Upload E2E coverage report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: coverage-e2e
+          path: coverage-e2e/
+          retention-days: 30
+
+      - name: Upload unit coverage report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: coverage-unit
+          path: coverage-unit/
           retention-days: 30
 
       - name: Upload test report
@@ -45,3 +150,88 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+      - name: Comment coverage on PR
+        if: github.event_name == 'pull_request' && !cancelled()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const combined = {
+              bytes: '${{ steps.combined-coverage.outputs.bytes }}' || 'N/A',
+              lines: '${{ steps.combined-coverage.outputs.lines }}' || 'N/A',
+              functions: '${{ steps.combined-coverage.outputs.functions }}' || 'N/A',
+              branches: '${{ steps.combined-coverage.outputs.branches }}' || 'N/A',
+            };
+            const unit = {
+              lines: '${{ steps.unit-coverage.outputs.lines }}' || 'N/A',
+              functions: '${{ steps.unit-coverage.outputs.functions }}' || 'N/A',
+              branches: '${{ steps.unit-coverage.outputs.branches }}' || 'N/A',
+            };
+            const e2e = {
+              bytes: '${{ steps.e2e-coverage.outputs.bytes }}' || 'N/A',
+              lines: '${{ steps.e2e-coverage.outputs.lines }}' || 'N/A',
+              functions: '${{ steps.e2e-coverage.outputs.functions }}' || 'N/A',
+              branches: '${{ steps.e2e-coverage.outputs.branches }}' || 'N/A',
+            };
+
+            const body = `## Test Coverage Report
+
+            ### Combined Coverage (Unit + E2E)
+            | Metric | Coverage |
+            |--------|----------|
+            | Lines | ${combined.lines}% |
+            | Functions | ${combined.functions}% |
+            | Branches | ${combined.branches}% |
+            | Bytes | ${combined.bytes}% |
+
+            <details>
+            <summary>Unit Test Coverage</summary>
+
+            | Metric | Coverage |
+            |--------|----------|
+            | Lines | ${unit.lines}% |
+            | Functions | ${unit.functions}% |
+            | Branches | ${unit.branches}% |
+
+            </details>
+
+            <details>
+            <summary>E2E Test Coverage</summary>
+
+            | Metric | Coverage |
+            |--------|----------|
+            | Lines | ${e2e.lines}% |
+            | Functions | ${e2e.functions}% |
+            | Branches | ${e2e.branches}% |
+            | Bytes | ${e2e.bytes}% |
+
+            </details>
+
+            _View full reports in [Actions artifacts](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})_`;
+
+            // Check if comment already exists
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes('Test Coverage Report')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body,
+              });
+            }

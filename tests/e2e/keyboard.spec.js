@@ -1,12 +1,12 @@
-import { test, expect } from "./fixtures.js";
+import { expect, test } from "./fixtures.js";
 import {
-  waitForExtension,
-  waitForKeyboardOpen,
-  waitForKeyboardClose,
-  isKeyboardOpen,
-  clickKey,
-  typeWithKeyboard,
   clickCloseButton,
+  clickKey,
+  isKeyboardOpen,
+  typeWithKeyboard,
+  waitForExtension,
+  waitForKeyboardClose,
+  waitForKeyboardOpen,
 } from "./helpers.js";
 
 test.describe("Virtual Keyboard - Core Functionality", () => {
