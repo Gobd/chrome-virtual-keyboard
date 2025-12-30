@@ -348,7 +348,9 @@ test.describe("Virtual Keyboard - Zoom Setting", () => {
       const host = document.querySelector("#virtual-keyboard-host");
       // Zoom transform is applied to .vk-scale-wrapper, not #virtual-keyboard
       const scaleWrapper = host?.shadowRoot?.querySelector(".vk-scale-wrapper");
-      const computedStyle = scaleWrapper ? getComputedStyle(scaleWrapper) : null;
+      const computedStyle = scaleWrapper
+        ? getComputedStyle(scaleWrapper)
+        : null;
       return computedStyle?.transform?.includes("matrix");
     });
 
