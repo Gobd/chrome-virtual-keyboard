@@ -96,6 +96,7 @@
 .vk-scale-wrapper {
   --vk-zoom-width: 1;
   --vk-zoom-height: 1;
+  position: relative;
   transform: scale(var(--vk-zoom-width), var(--vk-zoom-height));
   transform-origin: bottom center;
   padding: var(--vk-padding);

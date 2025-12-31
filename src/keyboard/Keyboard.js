@@ -697,34 +697,50 @@ function toggleOverlay(menuId, buttonElement) {
     const overlayWidth = overlay.offsetWidth;
     const overlayHeight = overlay.offsetHeight;
 
-    // Get button position relative to keyboard (in screen coords, already scaled)
+    // Get button position relative to scale wrapper (positioning context)
     const buttonRect = buttonElement.getBoundingClientRect();
-    const keyboardRect = keyboardElement.getBoundingClientRect();
+    const wrapperRect = scaleWrapperElement.getBoundingClientRect();
 
-    // Calculate position relative to keyboard element
+    // Calculate position relative to scale wrapper
     // Divide by scale since getBoundingClientRect returns scaled values
     // but CSS left/top will be scaled again
-    const _buttonLeft = (buttonRect.left - keyboardRect.left) / zoomWidth;
-    const buttonTop = (buttonRect.top - keyboardRect.top) / zoomHeight;
+    const buttonLeft = (buttonRect.left - wrapperRect.left) / zoomWidth;
+    const buttonTop = (buttonRect.top - wrapperRect.top) / zoomHeight;
+    const buttonWidth = buttonRect.width / zoomWidth;
     const padding = 5;
+    const wrapperWidth = wrapperRect.width / zoomWidth;
 
-    // Try positioning at left edge of keyboard first
-    let left = padding;
-    const top = buttonTop - overlayHeight - 10;
+    // Center overlay horizontally over the button
+    let left = buttonLeft + buttonWidth / 2 - overlayWidth / 2;
+    // Position overlay directly above button
+    // Language overlay needs extra offset due to being in bottom row
+    const isLanguageOverlay = overlay.id === DOM_IDS.OVERLAY_LANGUAGE;
+    const top = buttonTop - overlayHeight + (isLanguageOverlay ? 25 : 0);
 
-    // Check if overlay would overflow viewport on the right
-    // Use scaled overlay width for screen coordinate comparison
-    const overlayRightEdge =
-      keyboardRect.left + left * zoomWidth + overlayWidth * zoomWidth;
-    if (overlayRightEdge > window.innerWidth - padding) {
-      // Position from right side instead
-      left = keyboardRect.width / zoomWidth - overlayWidth - padding;
+    // Clamp left to stay within wrapper bounds
+    if (left < padding) {
+      left = padding;
+    }
+    if (left + overlayWidth > wrapperWidth - padding) {
+      left = wrapperWidth - overlayWidth - padding;
     }
 
-    // Check if overlay would overflow viewport on the left
-    const overlayLeftEdge = keyboardRect.left + left * zoomWidth;
-    if (overlayLeftEdge < padding) {
-      left = (padding - keyboardRect.left) / zoomWidth;
+    // Check viewport overflow and adjust
+    // Calculate where overlay would appear in viewport coordinates
+    const overlayLeftInViewport = wrapperRect.left + left * zoomWidth;
+    const overlayRightInViewport =
+      overlayLeftInViewport + overlayWidth * zoomWidth;
+
+    // If overflowing right side of viewport, shift left
+    if (overlayRightInViewport > window.innerWidth - padding) {
+      const shift =
+        (overlayRightInViewport - window.innerWidth + padding) / zoomWidth;
+      left -= shift;
+    }
+
+    // If overflowing left side of viewport, shift right
+    if (wrapperRect.left + left * zoomWidth < padding) {
+      left = (padding - wrapperRect.left) / zoomWidth;
     }
 
     overlay.style.left = `${left}px`;
