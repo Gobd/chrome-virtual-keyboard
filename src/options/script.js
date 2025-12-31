@@ -38,8 +38,6 @@ function saveDisplaySettings() {
     [STORAGE_KEYS.STICKY_SHIFT]: stickyShift,
     [STORAGE_KEYS.AUTOSTART]: autostart,
   });
-
-  $("changeEffect").className = "show";
 }
 
 async function loadDisplaySettings() {
@@ -164,8 +162,6 @@ function saveLayouts() {
     [STORAGE_KEYS.KEYBOARD_LAYOUTS_LIST]: JSON.stringify(layouts),
     [STORAGE_KEYS.KEYBOARD_LAYOUT]: layouts[0].value,
   });
-
-  $("changeEffect").className = "show";
 }
 
 async function loadLayouts() {
@@ -208,6 +204,5 @@ window.addEventListener("load", async () => {
   $("autostart").addEventListener("change", saveDisplaySettings);
   $("resetPosition").addEventListener("click", () => {
     chrome.storage.local.set({ [STORAGE_KEYS.KEYBOARD_POSITION]: null });
-    $("changeEffect").className = "show";
   });
 });

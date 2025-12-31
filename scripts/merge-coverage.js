@@ -162,7 +162,7 @@ async function generateReportFromDir(name, outputDir, inputDir, sources) {
       // inputDir is inside outputDir, only delete other files
       for (const entry of fs.readdirSync(outputDir)) {
         const entryPath = path.join(outputDir, entry);
-        if (entryPath !== inputDir && !inputDir.startsWith(entryPath + "/")) {
+        if (entryPath !== inputDir && !inputDir.startsWith(`${entryPath}/`)) {
           fs.rmSync(entryPath, { recursive: true });
         }
       }
