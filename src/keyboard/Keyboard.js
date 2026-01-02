@@ -834,6 +834,16 @@ function setupEventListeners() {
     const { urlBarTextbox } = getCachedElements();
     if (urlBarTextbox) urlBarTextbox.focus();
   });
+
+  // Re-apply zoom and constrain position on window resize
+  window.addEventListener("resize", () => {
+    applyZoom();
+    // Re-constrain position if keyboard was dragged
+    const savedPosition = settingsState.get("keyboardPosition");
+    if (savedPosition && settingsState.get("keyboardDraggable")) {
+      applyKeyboardPosition(savedPosition.x, savedPosition.y);
+    }
+  });
 }
 
 /**
@@ -1172,15 +1182,26 @@ function setUrlButtonMode(isDotCom) {
 
 /**
  * Apply zoom setting (independent width/height via CSS scale transform on wrapper)
+ * Auto-reduces width zoom when window is too narrow to fit the keyboard
  */
 function applyZoom() {
-  if (!scaleWrapperElement) return;
+  if (!scaleWrapperElement || !keyboardElement) return;
   const zoomWidth = settingsState.get("keyboardZoomWidth") / 100;
   const zoomHeight = settingsState.get("keyboardZoomHeight") / 100;
 
-  // Apply scale to wrapper, not outer element (keeps drag positioning simple)
-  scaleWrapperElement.style.setProperty("--vk-zoom-width", zoomWidth);
+  // First, set zoom to 1 to measure true base width
+  scaleWrapperElement.style.setProperty("--vk-zoom-width", 1);
   scaleWrapperElement.style.setProperty("--vk-zoom-height", zoomHeight);
+  const baseWidth = scaleWrapperElement.getBoundingClientRect().width;
+
+  // Auto-fit: reduce width zoom if keyboard would exceed window width
+  // Subtract padding (20px) to keep keyboard from touching edges
+  const availableWidth = window.innerWidth - 20;
+  const maxZoomWidth = availableWidth / baseWidth;
+  const effectiveZoom = Math.min(zoomWidth, maxZoomWidth);
+
+  // Apply the effective zoom
+  scaleWrapperElement.style.setProperty("--vk-zoom-width", effectiveZoom);
 
   invalidateKeyboardHeightCache();
 }

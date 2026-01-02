@@ -64,15 +64,11 @@
   --vk-offset-x: 0px;
   position: fixed;
   bottom: 0;
-  left: 0;
-  right: 0;
+  left: 50%;
   overflow: visible;
-  margin-left: auto;
-  margin-right: auto;
-  transform: translateX(var(--vk-offset-x)) translateY(100%);
+  transform: translateX(-50%) translateX(var(--vk-offset-x)) translateY(100%);
   opacity: 0;
-  max-width: fit-content;
-  width: 100%;
+  width: fit-content;
   box-sizing: border-box;
   z-index: var(--vk-z-index);
   user-select: none;
@@ -83,12 +79,12 @@
 }
 
 #virtual-keyboard.keyboard-open {
-  transform: translateX(var(--vk-offset-x)) translateY(0);
+  transform: translateX(-50%) translateX(var(--vk-offset-x)) translateY(0);
   opacity: 1;
 }
 
 #virtual-keyboard.keyboard-closed {
-  transform: translateX(var(--vk-offset-x)) translateY(100%);
+  transform: translateX(-50%) translateX(var(--vk-offset-x)) translateY(100%);
   opacity: 0;
 }
 
@@ -113,8 +109,6 @@
   justify-content: center;
   gap: 6px;
   margin: 5px 0;
-  width: 100%;
-  max-width: 100%;
   line-height: normal;
   height: auto;
 }
@@ -521,20 +515,6 @@
 
 #virtual-keyboard.vk-dragging {
   transition: none;
-}
-
-/* =============================================================================
-   Responsive Zoom (based on viewport size)
-   Uses min() to pick the smaller scale when both width and height are constrained
-   - Height: scales from 100% at 950px down to 35% minimum
-   - Width: scales from 100% at 850px down to 45% minimum
-   ============================================================================= */
-
-.vk-scale-wrapper {
-  zoom: min(
-    clamp(0.35, calc(100vh / 950), 1),
-    clamp(0.45, calc(100vw / 850), 1)
-  );
 }
 
 /* =============================================================================
