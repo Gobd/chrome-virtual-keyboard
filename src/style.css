@@ -185,6 +185,8 @@
   background: var(--vk-space-key-bg);
   /* Ensure spacebar has proper height even when it's the only key in the row */
   min-height: calc(1.2em + var(--vk-key-padding) * 2);
+  /* Prevent browser from intercepting touch gestures during swipe */
+  touch-action: none;
 }
 
 /* Wider space key (when language button is hidden) */
@@ -522,86 +524,17 @@
 }
 
 /* =============================================================================
-   Responsive Zoom (based on viewport height)
-   Applied to inner wrapper so it doesn't affect drag positioning on outer element
+   Responsive Zoom (based on viewport size)
+   Uses min() to pick the smaller scale when both width and height are constrained
+   - Height: scales from 100% at 950px down to 35% minimum
+   - Width: scales from 100% at 850px down to 45% minimum
    ============================================================================= */
 
-@media (max-height: 950px) {
-  .vk-scale-wrapper {
-    zoom: 0.95;
-  }
-}
-
-@media (max-height: 900px) {
-  .vk-scale-wrapper {
-    zoom: 0.9;
-  }
-}
-
-@media (max-height: 850px) {
-  .vk-scale-wrapper {
-    zoom: 0.85;
-  }
-}
-
-@media (max-height: 800px) {
-  .vk-scale-wrapper {
-    zoom: 0.8;
-  }
-}
-
-@media (max-height: 750px) {
-  .vk-scale-wrapper {
-    zoom: 0.75;
-  }
-}
-
-@media (max-height: 700px) {
-  .vk-scale-wrapper {
-    zoom: 0.7;
-  }
-}
-
-@media (max-height: 650px) {
-  .vk-scale-wrapper {
-    zoom: 0.65;
-  }
-}
-
-@media (max-height: 550px) {
-  .vk-scale-wrapper {
-    zoom: 0.6;
-  }
-}
-
-@media (max-height: 500px) {
-  .vk-scale-wrapper {
-    zoom: 0.55;
-  }
-}
-
-@media (max-height: 450px) {
-  .vk-scale-wrapper {
-    zoom: 0.5;
-  }
-}
-
-@media (max-height: 400px) {
-  .vk-scale-wrapper {
-    zoom: 0.45;
-  }
-}
-
-@media (max-height: 350px) {
-  .vk-scale-wrapper {
-    zoom: 0.4;
-  }
-}
-
-@media (max-height: 300px) {
-  .vk-scale-wrapper {
-    zoom: 0.35;
-  }
+.vk-scale-wrapper {
+  zoom: min(
+    clamp(0.35, calc(100vh / 950), 1),
+    clamp(0.45, calc(100vw / 850), 1)
+  );
 }
 
 /* =============================================================================
