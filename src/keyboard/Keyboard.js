@@ -9,6 +9,7 @@ import {
   runtimeState,
   settingsState,
   urlBarState,
+  voiceState,
 } from "../core/state.js";
 import storage from "../core/storage.js";
 import {
@@ -64,6 +65,7 @@ const cachedElements = {
   // Layout-dependent elements (cleared when layout changes)
   urlButton: null,
   langButton: null,
+  voiceButton: null,
   shiftKeys: null,
   emailKeys: null,
   hideEmailKeys: null,
@@ -110,9 +112,23 @@ function getCachedElements() {
 function clearLayoutCache() {
   cachedElements.urlButton = null;
   cachedElements.langButton = null;
+  cachedElements.voiceButton = null;
   cachedElements.shiftKeys = null;
   cachedElements.emailKeys = null;
   cachedElements.hideEmailKeys = null;
+}
+
+/**
+ * Get the voice button element
+ * @returns {HTMLElement|null}
+ */
+function getVoiceButton() {
+  if (!cachedElements.voiceButton && shadowRoot) {
+    cachedElements.voiceButton = shadowRoot.getElementById(
+      DOM_IDS.VOICE_BUTTON
+    );
+  }
+  return cachedElements.voiceButton;
 }
 
 /**
@@ -817,6 +833,42 @@ function setupStateSubscriptions() {
       resetKeyboardPosition();
     }
   });
+
+  // Voice state changes - update button appearance
+  voiceState.subscribe("state", (state) => {
+    updateVoiceButtonState(state);
+  });
+}
+
+/**
+ * Update voice button appearance based on voice state
+ * @param {string} state - Voice state ('idle', 'loading_model', 'recording', 'transcribing', 'error')
+ */
+function updateVoiceButtonState(state) {
+  const voiceButton = getVoiceButton();
+  if (!voiceButton) return;
+
+  // Remove all state classes
+  voiceButton.classList.remove(
+    "vk-voice-recording",
+    "vk-voice-loading",
+    "vk-voice-error"
+  );
+
+  // Add appropriate class based on state
+  switch (state) {
+    case "recording":
+      voiceButton.classList.add("vk-voice-recording");
+      break;
+    case "loading_model":
+    case "transcribing":
+      voiceButton.classList.add("vk-voice-loading");
+      break;
+    case "error":
+      voiceButton.classList.add("vk-voice-error");
+      break;
+    // 'idle' - no class needed
+  }
 }
 
 /**
@@ -866,12 +918,14 @@ export async function loadLayout(layoutId) {
   const showUrlButton = settingsState.get("showUrlButton");
   const showCloseButton = settingsState.get("showCloseButton");
   const showNumbersButton = settingsState.get("showNumbersButton");
+  const showVoiceButton = settingsState.get("voiceEnabled");
   const fragment = renderLayout(layoutId, {
     showLanguageButton,
     showSettingsButton,
     showUrlButton,
     showCloseButton,
     showNumbersButton,
+    showVoiceButton,
   });
   placeholder.appendChild(fragment);
 

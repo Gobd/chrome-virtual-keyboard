@@ -40,5 +40,8 @@
     "monocart-coverage-reports": "^2.12.9",
     "vitest": "^4.0.16",
     "vitest-monocart-coverage": "^4.0.1"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^3.8.1"
   }
 }

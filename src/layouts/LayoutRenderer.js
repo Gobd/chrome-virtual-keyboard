@@ -13,6 +13,7 @@ import { getLayoutsList, layouts } from "./layouts.js";
  * @param {boolean} options.showUrlButton - Whether to show the URL button
  * @param {boolean} options.showCloseButton - Whether to show the close button
  * @param {boolean} options.showNumbersButton - Whether to show the &123 numbers toggle button
+ * @param {boolean} options.showVoiceButton - Whether to show the voice input button
  * @returns {DocumentFragment} DOM fragment containing the keyboard
  */
 export function renderLayout(layoutId, options = {}) {
@@ -28,6 +29,7 @@ export function renderLayout(layoutId, options = {}) {
     showUrlButton = true,
     showCloseButton = true,
     showNumbersButton = true,
+    showVoiceButton = false, // Voice is opt-in
   } = options;
 
   const fragment = document.createDocumentFragment();
@@ -62,12 +64,16 @@ export function renderLayout(layoutId, options = {}) {
   if (!showNumbersButton) {
     bottomRow = bottomRow.filter((key) => key !== "&123");
   }
+  if (!showVoiceButton) {
+    bottomRow = bottomRow.filter((key) => key !== "Voice");
+  }
   const hiddenButtonCount =
     (!showLanguageButton ? 1 : 0) +
     (!showSettingsButton ? 1 : 0) +
     (!showUrlButton ? 1 : 0) +
     (!showCloseButton ? 1 : 0) +
-    (!showNumbersButton ? 1 : 0);
+    (!showNumbersButton ? 1 : 0) +
+    (!showVoiceButton ? 1 : 0);
   fragment.appendChild(
     renderRow(bottomRow, labels, { widenSpace: hiddenButtonCount > 0 })
   );

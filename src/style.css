@@ -295,6 +295,56 @@
   content: "⚙";
 }
 
+.vk-icon-mic::before {
+  content: "🎤";
+}
+
+/* =============================================================================
+   Voice Input States
+   ============================================================================= */
+
+/* Voice button - recording state */
+.vk-key-voice.vk-voice-recording {
+  background: #c0392b;
+  animation: vk-pulse 1s infinite;
+}
+
+.vk-key-voice.vk-voice-recording .vk-icon-mic::before {
+  content: "⏺";
+}
+
+/* Voice button - loading/transcribing state */
+.vk-key-voice.vk-voice-loading {
+  background: #2980b9;
+}
+
+.vk-key-voice.vk-voice-loading .vk-icon-mic::before {
+  content: "⏳";
+}
+
+/* Voice button - error state */
+.vk-key-voice.vk-voice-error {
+  background: #7f8c8d;
+}
+
+.vk-key-voice.vk-voice-error .vk-icon-mic::before {
+  content: "🎤";
+  opacity: 0.5;
+}
+
+/* Pulsing animation for recording */
+@keyframes vk-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(192, 57, 43, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(192, 57, 43, 0);
+  }
+}
+
 /* =============================================================================
    Shift Mode - Uppercase Display
    ============================================================================= */

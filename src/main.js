@@ -150,6 +150,9 @@ async function loadSettings() {
       keyboardPosition: null,
       autostart: false,
       stickyShift: false,
+      voiceEnabled: false,
+      voiceModel: "base-q8",
+      voiceLanguage: "multilingual",
     });
   } else {
     settingsState.set({
@@ -169,6 +172,9 @@ async function loadSettings() {
       keyboardPosition: settings.keyboardPosition,
       autostart: settings.autostart,
       stickyShift: settings.stickyShift,
+      voiceEnabled: settings.voiceEnabled,
+      voiceModel: settings.voiceModel,
+      voiceLanguage: settings.voiceLanguage,
     });
   }
 
@@ -290,6 +296,25 @@ async function loadSettings() {
       import("./keyboard/Keyboard.js").then((Keyboard) => {
         Keyboard.updateNumberBarVisibility();
       });
+    }
+    if (changes.voiceEnabled !== undefined) {
+      settingsState.set("voiceEnabled", changes.voiceEnabled.newValue === true);
+      // Reload layout to show/hide voice button
+      const currentLayout = settingsState.get("layout");
+      if (currentLayout) {
+        import("./keyboard/Keyboard.js").then((Keyboard) => {
+          Keyboard.loadLayout(currentLayout);
+        });
+      }
+    }
+    if (changes.voiceModel !== undefined) {
+      settingsState.set("voiceModel", changes.voiceModel.newValue || "base-q8");
+    }
+    if (changes.voiceLanguage !== undefined) {
+      settingsState.set(
+        "voiceLanguage",
+        changes.voiceLanguage.newValue || "multilingual"
+      );
     }
     if (changes.autostart !== undefined) {
       const autostartEnabled = changes.autostart.newValue === true;

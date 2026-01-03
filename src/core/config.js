@@ -17,6 +17,7 @@ export const DOM_IDS = {
   LANGUAGE_BUTTON: "vk-lang-btn",
   URL_BUTTON: "vk-url-btn",
   OPEN_BUTTON: "vk-open-btn",
+  VOICE_BUTTON: "vk-voice-btn",
 };
 
 export const CSS_CLASSES = {
@@ -73,6 +74,7 @@ export const SPECIAL_KEYS = {
   SHIFT: "Shift",
   BACKSPACE: "Backspace",
   SPACE: "Space",
+  VOICE: "Voice",
 };
 
 export const STORAGE_KEYS = {
@@ -94,6 +96,10 @@ export const STORAGE_KEYS = {
   KEYBOARD_POSITION: "keyboardPosition",
   AUTOSTART: "autostart",
   STICKY_SHIFT: "stickyShift",
+  // Voice input settings
+  VOICE_ENABLED: "voiceEnabled",
+  VOICE_MODEL: "voiceModel",
+  VOICE_LANGUAGE: "voiceLanguage",
 };
 
 export const MESSAGE_TYPES = {
@@ -158,6 +164,12 @@ export const KEY_TYPES = {
     attrs: { id: DOM_IDS.URL_BUTTON },
     dataKey: "Url",
   },
+  Voice: {
+    class: "vk-key vk-key-action vk-key-voice",
+    icon: "mic",
+    attrs: { id: DOM_IDS.VOICE_BUTTON },
+    dataKey: "Voice",
+  },
   _spacer: {
     class: "vk-spacer",
     label: "",
@@ -170,6 +182,7 @@ export const DEFAULT_BOTTOM_ROW = [
   "&123",
   "Language",
   "Space",
+  "Voice",
   "Url",
   "Settings",
   "Close",
