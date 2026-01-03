@@ -21,6 +21,9 @@ function saveDisplaySettings() {
   const spacebarCursorSwipe = $("spacebarCursorSwipe").checked;
   const stickyShift = $("stickyShift").checked;
   const autostart = $("autostart").checked;
+  const voiceEnabled = $("voiceEnabled").checked;
+  const voiceModel = $("voiceModel").value;
+  const voiceLanguage = $("voiceLanguage").value;
 
   chrome.storage.local.set({
     [STORAGE_KEYS.SHOW_OPEN_BUTTON]: showOpenButton,
@@ -37,7 +40,18 @@ function saveDisplaySettings() {
     [STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE]: spacebarCursorSwipe,
     [STORAGE_KEYS.STICKY_SHIFT]: stickyShift,
     [STORAGE_KEYS.AUTOSTART]: autostart,
+    [STORAGE_KEYS.VOICE_ENABLED]: voiceEnabled,
+    [STORAGE_KEYS.VOICE_MODEL]: voiceModel,
+    [STORAGE_KEYS.VOICE_LANGUAGE]: voiceLanguage,
   });
+
+  // Toggle voice options visibility
+  updateVoiceOptionsVisibility();
+}
+
+function updateVoiceOptionsVisibility() {
+  const voiceEnabled = $("voiceEnabled").checked;
+  $("voiceOptions").style.display = voiceEnabled ? "block" : "none";
 }
 
 async function loadDisplaySettings() {
@@ -56,6 +70,9 @@ async function loadDisplaySettings() {
     STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE,
     STORAGE_KEYS.STICKY_SHIFT,
     STORAGE_KEYS.AUTOSTART,
+    STORAGE_KEYS.VOICE_ENABLED,
+    STORAGE_KEYS.VOICE_MODEL,
+    STORAGE_KEYS.VOICE_LANGUAGE,
   ]);
 
   $("showOpenButton").checked = result[STORAGE_KEYS.SHOW_OPEN_BUTTON] !== false;
@@ -81,6 +98,11 @@ async function loadDisplaySettings() {
     result[STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE] === true;
   $("stickyShift").checked = result[STORAGE_KEYS.STICKY_SHIFT] === true;
   $("autostart").checked = result[STORAGE_KEYS.AUTOSTART] === true;
+  $("voiceEnabled").checked = result[STORAGE_KEYS.VOICE_ENABLED] === true;
+  $("voiceModel").value = result[STORAGE_KEYS.VOICE_MODEL] || "base-q8";
+  $("voiceLanguage").value =
+    result[STORAGE_KEYS.VOICE_LANGUAGE] || "multilingual";
+  updateVoiceOptionsVisibility();
 }
 
 function updateZoomLockCheckbox() {
@@ -205,4 +227,7 @@ window.addEventListener("load", async () => {
   $("resetPosition").addEventListener("click", () => {
     chrome.storage.local.set({ [STORAGE_KEYS.KEYBOARD_POSITION]: null });
   });
+  $("voiceEnabled").addEventListener("change", saveDisplaySettings);
+  $("voiceModel").addEventListener("change", saveDisplaySettings);
+  $("voiceLanguage").addEventListener("change", saveDisplaySettings);
 });

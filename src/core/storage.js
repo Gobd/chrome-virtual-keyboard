@@ -332,6 +332,57 @@ export async function setStickyShift(enabled) {
 }
 
 /**
+ * Get voice enabled setting
+ * @returns {Promise<boolean>}
+ */
+export async function getVoiceEnabled() {
+  const result = await get(STORAGE_KEYS.VOICE_ENABLED);
+  return result[STORAGE_KEYS.VOICE_ENABLED] === true;
+}
+
+/**
+ * Set voice enabled setting
+ * @param {boolean} enabled
+ */
+export async function setVoiceEnabled(enabled) {
+  await set({ [STORAGE_KEYS.VOICE_ENABLED]: enabled });
+}
+
+/**
+ * Get voice model setting
+ * @returns {Promise<string>} Model key like 'tiny-q8', 'base-q8', 'base', etc.
+ */
+export async function getVoiceModel() {
+  const result = await get(STORAGE_KEYS.VOICE_MODEL);
+  return result[STORAGE_KEYS.VOICE_MODEL] || "base-q8";
+}
+
+/**
+ * Set voice model setting
+ * @param {string} model - 'tiny' or 'base'
+ */
+export async function setVoiceModel(model) {
+  await set({ [STORAGE_KEYS.VOICE_MODEL]: model });
+}
+
+/**
+ * Get voice language setting
+ * @returns {Promise<string>} 'en' or 'multilingual'
+ */
+export async function getVoiceLanguage() {
+  const result = await get(STORAGE_KEYS.VOICE_LANGUAGE);
+  return result[STORAGE_KEYS.VOICE_LANGUAGE] || "multilingual";
+}
+
+/**
+ * Set voice language setting
+ * @param {string} language - 'en' or 'multilingual'
+ */
+export async function setVoiceLanguage(language) {
+  await set({ [STORAGE_KEYS.VOICE_LANGUAGE]: language });
+}
+
+/**
  * Check if this is the first time the extension has been opened
  * @returns {Promise<boolean>}
  */
@@ -371,6 +422,9 @@ export async function loadAllSettings() {
     STORAGE_KEYS.KEYBOARD_POSITION,
     STORAGE_KEYS.AUTOSTART,
     STORAGE_KEYS.STICKY_SHIFT,
+    STORAGE_KEYS.VOICE_ENABLED,
+    STORAGE_KEYS.VOICE_MODEL,
+    STORAGE_KEYS.VOICE_LANGUAGE,
   ]);
 
   return {
@@ -392,6 +446,9 @@ export async function loadAllSettings() {
     keyboardPosition: result[STORAGE_KEYS.KEYBOARD_POSITION] || null,
     autostart: result[STORAGE_KEYS.AUTOSTART] === true,
     stickyShift: result[STORAGE_KEYS.STICKY_SHIFT] === true,
+    voiceEnabled: result[STORAGE_KEYS.VOICE_ENABLED] === true,
+    voiceModel: result[STORAGE_KEYS.VOICE_MODEL] || "base-q8",
+    voiceLanguage: result[STORAGE_KEYS.VOICE_LANGUAGE] || "multilingual",
   };
 }
 
@@ -419,6 +476,9 @@ export async function initializeDefaults(defaultLayouts) {
     [STORAGE_KEYS.KEYBOARD_POSITION]: null,
     [STORAGE_KEYS.AUTOSTART]: false,
     [STORAGE_KEYS.STICKY_SHIFT]: false,
+    [STORAGE_KEYS.VOICE_ENABLED]: false,
+    [STORAGE_KEYS.VOICE_MODEL]: "base-q8",
+    [STORAGE_KEYS.VOICE_LANGUAGE]: "multilingual",
   });
 }
 
@@ -475,6 +535,12 @@ export default {
   setAutostart,
   getStickyShift,
   setStickyShift,
+  getVoiceEnabled,
+  setVoiceEnabled,
+  getVoiceModel,
+  setVoiceModel,
+  getVoiceLanguage,
+  setVoiceLanguage,
   isFirstTime,
   markOpened,
   loadAllSettings,

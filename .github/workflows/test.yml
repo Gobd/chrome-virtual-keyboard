@@ -10,15 +10,15 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
           cache: "pnpm"
 
       - name: Install dependencies
@@ -38,7 +38,7 @@ jobs:
 
       - name: Generate all coverage reports
         if: ${{ !cancelled() }}
-        run: node scripts/merge-coverage.js || true
+        run: node --max-old-space-size=6144 scripts/merge-coverage.js || true
 
       - name: Read unit coverage
         id: unit-coverage
@@ -112,7 +112,7 @@ jobs:
           echo "| Bytes | ${{ steps.e2e-coverage.outputs.bytes || 'N/A' }}% |" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload combined coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: ${{ !cancelled() }}
         with:
           name: coverage-combined
@@ -120,7 +120,7 @@ jobs:
           retention-days: 30
 
       - name: Upload E2E coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: ${{ !cancelled() }}
         with:
           name: coverage-e2e
@@ -128,7 +128,7 @@ jobs:
           retention-days: 30
 
       - name: Upload unit coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: ${{ !cancelled() }}
         with:
           name: coverage-unit
@@ -136,7 +136,7 @@ jobs:
           retention-days: 30
 
       - name: Upload test report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
@@ -145,7 +145,7 @@ jobs:
 
       - name: Comment coverage on PR
         if: github.event_name == 'pull_request' && !cancelled()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const combined = {

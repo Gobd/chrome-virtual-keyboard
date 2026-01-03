@@ -23,22 +23,25 @@
     "test:report": "pnpm exec playwright show-report",
     "coverage": "pnpm run coverage:all",
     "coverage:unit": "rm -rf coverage-unit && pnpm exec vitest run --coverage",
-    "coverage:e2e": "rm -rf coverage-e2e .coverage-data && COVERAGE=1 pnpm exec playwright test && node scripts/merge-coverage.js",
-    "coverage:all": "rm -rf coverage coverage-unit coverage-e2e .coverage-data && pnpm run coverage:unit && COVERAGE=1 COVERAGE_SKIP_REPORT=1 pnpm exec playwright test && node scripts/merge-coverage.js",
+    "coverage:e2e": "rm -rf coverage-e2e .coverage-data && COVERAGE=1 pnpm exec playwright test && node --max-old-space-size=6144 scripts/merge-coverage.js",
+    "coverage:all": "rm -rf coverage coverage-unit coverage-e2e .coverage-data && pnpm run coverage:unit && COVERAGE=1 COVERAGE_SKIP_REPORT=1 pnpm exec playwright test && node --max-old-space-size=6144 scripts/merge-coverage.js",
     "coverage:summary": "node scripts/coverage-summary.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.23.0",
+  "packageManager": "pnpm@10.27.0",
   "devDependencies": {
     "@biomejs/biome": "^2.3.10",
     "@playwright/test": "^1.57.0",
-    "esbuild": "^0.24.2",
+    "esbuild": "^0.27.2",
     "happy-dom": "^20.0.11",
     "http-server": "^14.1.1",
     "monocart-coverage-reports": "^2.12.9",
     "vitest": "^4.0.16",
     "vitest-monocart-coverage": "^4.0.1"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^3.8.1"
   }
 }

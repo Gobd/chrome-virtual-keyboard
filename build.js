@@ -24,6 +24,12 @@ const STATIC_FILES = [
 
 const STATIC_DIRS = ["options", "buttons", "core"];
 
+// ONNX Runtime WASM files needed for Transformers.js (voice input)
+const WASM_FILES = [
+  "ort-wasm-simd-threaded.jsep.mjs",
+  "ort-wasm-simd-threaded.jsep.wasm",
+];
+
 // Ensure dist directory exists
 function ensureDir(dir) {
   if (!fs.existsSync(dir)) {
@@ -76,6 +82,31 @@ function copyStatic() {
   }
 }
 
+// Copy ONNX Runtime WASM files for Transformers.js
+function copyWasmFiles() {
+  console.log("\nCopying ONNX Runtime WASM files...");
+  const wasmDir = path.join(DIST_DIR, "wasm");
+  ensureDir(wasmDir);
+
+  const transformersDistDir = path.join(
+    __dirname,
+    "node_modules",
+    "@huggingface",
+    "transformers",
+    "dist"
+  );
+
+  for (const file of WASM_FILES) {
+    const src = path.join(transformersDistDir, file);
+    const dest = path.join(wasmDir, file);
+    if (fs.existsSync(src)) {
+      copyFile(src, dest);
+    } else {
+      console.warn(`  Warning: WASM file not found: ${src}`);
+    }
+  }
+}
+
 // Build configuration
 const buildOptions = {
   entryPoints: [path.join(SRC_DIR, "main.js")],
@@ -107,6 +138,9 @@ async function build() {
 
   // Copy static files
   copyStatic();
+
+  // Copy WASM files for voice input
+  copyWasmFiles();
 
   // Bundle main.js
   console.log("\nBundling main.js...");

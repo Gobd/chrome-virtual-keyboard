@@ -9,6 +9,7 @@ import {
   runtimeState,
   settingsState,
   urlBarState,
+  voiceState,
 } from "../core/state.js";
 import storage from "../core/storage.js";
 import {
@@ -64,6 +65,7 @@ const cachedElements = {
   // Layout-dependent elements (cleared when layout changes)
   urlButton: null,
   langButton: null,
+  voiceButton: null,
   shiftKeys: null,
   emailKeys: null,
   hideEmailKeys: null,
@@ -110,9 +112,23 @@ function getCachedElements() {
 function clearLayoutCache() {
   cachedElements.urlButton = null;
   cachedElements.langButton = null;
+  cachedElements.voiceButton = null;
   cachedElements.shiftKeys = null;
   cachedElements.emailKeys = null;
   cachedElements.hideEmailKeys = null;
+}
+
+/**
+ * Get the voice button element
+ * @returns {HTMLElement|null}
+ */
+function getVoiceButton() {
+  if (!cachedElements.voiceButton && shadowRoot) {
+    cachedElements.voiceButton = shadowRoot.getElementById(
+      DOM_IDS.VOICE_BUTTON
+    );
+  }
+  return cachedElements.voiceButton;
 }
 
 /**
@@ -817,6 +833,42 @@ function setupStateSubscriptions() {
       resetKeyboardPosition();
     }
   });
+
+  // Voice state changes - update button appearance
+  voiceState.subscribe("state", (state) => {
+    updateVoiceButtonState(state);
+  });
+}
+
+/**
+ * Update voice button appearance based on voice state
+ * @param {string} state - Voice state ('idle', 'loading_model', 'recording', 'transcribing', 'error')
+ */
+function updateVoiceButtonState(state) {
+  const voiceButton = getVoiceButton();
+  if (!voiceButton) return;
+
+  // Remove all state classes
+  voiceButton.classList.remove(
+    "vk-voice-recording",
+    "vk-voice-loading",
+    "vk-voice-error"
+  );
+
+  // Add appropriate class based on state
+  switch (state) {
+    case "recording":
+      voiceButton.classList.add("vk-voice-recording");
+      break;
+    case "loading_model":
+    case "transcribing":
+      voiceButton.classList.add("vk-voice-loading");
+      break;
+    case "error":
+      voiceButton.classList.add("vk-voice-error");
+      break;
+    // 'idle' - no class needed
+  }
 }
 
 /**
@@ -833,6 +885,16 @@ function setupEventListeners() {
     setUrlBarOpen(true);
     const { urlBarTextbox } = getCachedElements();
     if (urlBarTextbox) urlBarTextbox.focus();
+  });
+
+  // Re-apply zoom and constrain position on window resize
+  window.addEventListener("resize", () => {
+    applyZoom();
+    // Re-constrain position if keyboard was dragged
+    const savedPosition = settingsState.get("keyboardPosition");
+    if (savedPosition && settingsState.get("keyboardDraggable")) {
+      applyKeyboardPosition(savedPosition.x, savedPosition.y);
+    }
   });
 }
 
@@ -856,12 +918,14 @@ export async function loadLayout(layoutId) {
   const showUrlButton = settingsState.get("showUrlButton");
   const showCloseButton = settingsState.get("showCloseButton");
   const showNumbersButton = settingsState.get("showNumbersButton");
+  const showVoiceButton = settingsState.get("voiceEnabled");
   const fragment = renderLayout(layoutId, {
     showLanguageButton,
     showSettingsButton,
     showUrlButton,
     showCloseButton,
     showNumbersButton,
+    showVoiceButton,
   });
   placeholder.appendChild(fragment);
 
@@ -1172,15 +1236,26 @@ function setUrlButtonMode(isDotCom) {
 
 /**
  * Apply zoom setting (independent width/height via CSS scale transform on wrapper)
+ * Auto-reduces width zoom when window is too narrow to fit the keyboard
  */
 function applyZoom() {
-  if (!scaleWrapperElement) return;
+  if (!scaleWrapperElement || !keyboardElement) return;
   const zoomWidth = settingsState.get("keyboardZoomWidth") / 100;
   const zoomHeight = settingsState.get("keyboardZoomHeight") / 100;
 
-  // Apply scale to wrapper, not outer element (keeps drag positioning simple)
-  scaleWrapperElement.style.setProperty("--vk-zoom-width", zoomWidth);
+  // First, set zoom to 1 to measure true base width
+  scaleWrapperElement.style.setProperty("--vk-zoom-width", 1);
   scaleWrapperElement.style.setProperty("--vk-zoom-height", zoomHeight);
+  const baseWidth = scaleWrapperElement.getBoundingClientRect().width;
+
+  // Auto-fit: reduce width zoom if keyboard would exceed window width
+  // Subtract padding (20px) to keep keyboard from touching edges
+  const availableWidth = window.innerWidth - 20;
+  const maxZoomWidth = availableWidth / baseWidth;
+  const effectiveZoom = Math.min(zoomWidth, maxZoomWidth);
+
+  // Apply the effective zoom
+  scaleWrapperElement.style.setProperty("--vk-zoom-width", effectiveZoom);
 
   invalidateKeyboardHeightCache();
 }
@@ -1220,6 +1295,21 @@ function moveCursor(direction) {
       // Some input types don't support selection
     }
   }
+
+  // Also dispatch arrow key event so apps can intercept cursor movement
+  // (e.g., for proxying to iframes or custom editors)
+  const key = direction < 0 ? "ArrowLeft" : "ArrowRight";
+  const keyCode = direction < 0 ? 37 : 39;
+  element.dispatchEvent(
+    new KeyboardEvent("keydown", {
+      key,
+      code: key,
+      keyCode,
+      which: keyCode,
+      bubbles: true,
+      cancelable: true,
+    })
+  );
 }
 
 /**

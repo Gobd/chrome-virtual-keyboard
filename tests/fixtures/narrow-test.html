@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Narrow Screen / Touch Test</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 0;
+        padding: 10px;
+        background: #f5f5f5;
+      }
+      h1 {
+        font-size: 18px;
+        margin: 0 0 10px 0;
+      }
+      .info-panel {
+        background: #333;
+        color: #0f0;
+        font-family: monospace;
+        font-size: 12px;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 4px;
+        max-height: 150px;
+        overflow-y: auto;
+      }
+      .info-panel div {
+        margin: 2px 0;
+      }
+      .section {
+        margin-bottom: 15px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background: #fff;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        font-size: 14px;
+      }
+      input,
+      textarea {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 16px;
+        box-sizing: border-box;
+      }
+      .viewport-info {
+        position: fixed;
+        top: 5px;
+        right: 5px;
+        background: rgba(0,0,0,0.8);
+        color: #fff;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-family: monospace;
+        z-index: 99999999;
+      }
+      .touch-indicator {
+        position: fixed;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: rgba(255, 0, 0, 0.5);
+        border: 2px solid red;
+        pointer-events: none;
+        transform: translate(-50%, -50%);
+        z-index: 99999998;
+        display: none;
+      }
+      .touch-indicator.active {
+        display: block;
+      }
+
+      /* Test button to simulate spacebar swipe behavior */
+      .swipe-test {
+        width: 100%;
+        height: 60px;
+        background: #525152;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        cursor: pointer;
+        touch-action: none; /* Prevents browser from handling touch gestures */
+        user-select: none;
+      }
+      .swipe-test.swiping {
+        background: #007bff;
+      }
+      .swipe-result {
+        margin-top: 10px;
+        padding: 10px;
+        background: #eee;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="viewport-info" id="viewport-info">--</div>
+    <div class="touch-indicator" id="touch-indicator"></div>
+
+    <h1>Narrow / Touch Test</h1>
+
+    <div class="info-panel" id="event-log">
+      <div>Event log (touch/pointer events)</div>
+    </div>
+
+    <div class="section">
+      <label for="text-input">Text Input (focus to open keyboard)</label>
+      <input type="text" id="text-input" placeholder="Type or swipe on space..." />
+    </div>
+
+    <div class="section">
+      <label for="textarea">Textarea</label>
+      <textarea id="textarea" placeholder="Test swipe here too..."></textarea>
+    </div>
+
+    <div class="section">
+      <label for="email-input">Email Input</label>
+      <input type="email" id="email-input" placeholder="test@example.com" />
+    </div>
+
+    <div class="section">
+      <label>Swipe Test (touch-action: none)</label>
+      <button class="swipe-test" id="swipe-test">Swipe left/right here</button>
+      <div class="swipe-result" id="swipe-result">Swipe distance: 0px | Moves: 0</div>
+    </div>
+
+    <script>
+      const viewportInfo = document.getElementById('viewport-info');
+      const eventLog = document.getElementById('event-log');
+      const touchIndicator = document.getElementById('touch-indicator');
+
+      function updateViewportInfo() {
+        viewportInfo.textContent = `${window.innerWidth}x${window.innerHeight}`;
+      }
+      updateViewportInfo();
+      window.addEventListener('resize', updateViewportInfo);
+
+      function logEvent(msg) {
+        const div = document.createElement('div');
+        div.textContent = `${new Date().toLocaleTimeString()}: ${msg}`;
+        eventLog.insertBefore(div, eventLog.firstChild.nextSibling);
+        // Keep only last 20 entries
+        while (eventLog.children.length > 21) {
+          eventLog.removeChild(eventLog.lastChild);
+        }
+      }
+
+      // Track pointer events globally
+      document.addEventListener('pointerdown', (e) => {
+        logEvent(`pointerdown: ${e.pointerType} (${Math.round(e.clientX)},${Math.round(e.clientY)}) id=${e.pointerId}`);
+        touchIndicator.style.left = e.clientX + 'px';
+        touchIndicator.style.top = e.clientY + 'px';
+        touchIndicator.classList.add('active');
+      });
+
+      document.addEventListener('pointermove', (e) => {
+        if (e.buttons > 0 || e.pointerType === 'touch') {
+          touchIndicator.style.left = e.clientX + 'px';
+          touchIndicator.style.top = e.clientY + 'px';
+        }
+      });
+
+      document.addEventListener('pointerup', (e) => {
+        logEvent(`pointerup: ${e.pointerType} (${Math.round(e.clientX)},${Math.round(e.clientY)})`);
+        touchIndicator.classList.remove('active');
+      });
+
+      document.addEventListener('pointercancel', (e) => {
+        logEvent(`pointercancel: ${e.pointerType}`);
+        touchIndicator.classList.remove('active');
+      });
+
+      // Track touch events specifically
+      document.addEventListener('touchstart', (e) => {
+        const t = e.touches[0];
+        logEvent(`touchstart: (${Math.round(t.clientX)},${Math.round(t.clientY)}) touches=${e.touches.length}`);
+      }, { passive: true });
+
+      document.addEventListener('touchmove', (e) => {
+        // Only log occasionally to not spam
+      }, { passive: true });
+
+      document.addEventListener('touchend', (e) => {
+        logEvent(`touchend: touches=${e.touches.length} changed=${e.changedTouches.length}`);
+      }, { passive: true });
+
+      document.addEventListener('touchcancel', (e) => {
+        logEvent(`touchcancel`);
+      }, { passive: true });
+
+      // Log when inputs are focused
+      document.querySelectorAll('input, textarea').forEach(el => {
+        el.addEventListener('focus', () => {
+          logEvent(`focus: ${el.id || el.tagName}`);
+        });
+        el.addEventListener('blur', () => {
+          logEvent(`blur: ${el.id || el.tagName}`);
+        });
+      });
+
+      // Swipe test - mimics keyboard spacebar swipe behavior
+      const swipeTest = document.getElementById('swipe-test');
+      const swipeResult = document.getElementById('swipe-result');
+      const SWIPE_SENSITIVITY = 20;
+
+      let swipeState = {
+        active: false,
+        startX: 0,
+        lastX: 0,
+        totalMoves: 0
+      };
+
+      swipeTest.addEventListener('pointerdown', (e) => {
+        e.preventDefault(); // Important: prevents browser default handling
+        swipeState = {
+          active: true,
+          startX: e.clientX,
+          lastX: e.clientX,
+          totalMoves: 0
+        };
+        swipeTest.setPointerCapture(e.pointerId);
+        swipeTest.classList.add('swiping');
+        logEvent(`swipe pointerdown: ${e.pointerType} id=${e.pointerId}`);
+      });
+
+      swipeTest.addEventListener('pointermove', (e) => {
+        if (!swipeState.active) return;
+
+        const deltaX = e.clientX - swipeState.lastX;
+        const totalDelta = e.clientX - swipeState.startX;
+
+        if (Math.abs(deltaX) >= SWIPE_SENSITIVITY) {
+          swipeState.totalMoves++;
+          swipeState.lastX = e.clientX;
+          logEvent(`swipe move: ${deltaX > 0 ? 'RIGHT' : 'LEFT'}`);
+        }
+
+        swipeResult.textContent = `Swipe distance: ${Math.round(totalDelta)}px | Moves: ${swipeState.totalMoves}`;
+      });
+
+      swipeTest.addEventListener('pointerup', (e) => {
+        if (!swipeState.active) return;
+        swipeState.active = false;
+        swipeTest.releasePointerCapture(e.pointerId);
+        swipeTest.classList.remove('swiping');
+        logEvent(`swipe pointerup: moves=${swipeState.totalMoves}`);
+      });
+
+      swipeTest.addEventListener('pointercancel', (e) => {
+        logEvent(`swipe pointercancel! (this could be the problem)`);
+        swipeState.active = false;
+        swipeTest.classList.remove('swiping');
+      });
+
+      swipeTest.addEventListener('lostpointercapture', (e) => {
+        logEvent(`swipe lostpointercapture: ${e.pointerType}`);
+      });
+    </script>
+  </body>
+</html>

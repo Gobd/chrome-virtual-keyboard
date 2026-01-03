@@ -161,6 +161,10 @@ export const settingsState = createStore({
   keyboardPosition: null,
   autostart: false,
   stickyShift: false,
+  // Voice settings
+  voiceEnabled: false,
+  voiceModel: "base-q8", // 'tiny-q8', 'base-q8', 'small-q8', 'tiny', 'base', 'small'
+  voiceLanguage: "multilingual", // 'en' or 'multilingual'
 });
 
 // URL bar state
@@ -176,4 +180,11 @@ export const runtimeState = createStore({
   pointerOverKeyboard: false,
   keyboardElement: null,
   openButtonElement: null,
+});
+
+// Voice input state
+export const voiceState = createStore({
+  state: "idle", // 'idle' | 'loading_model' | 'recording' | 'transcribing' | 'error'
+  downloadProgress: 0,
+  error: null,
 });

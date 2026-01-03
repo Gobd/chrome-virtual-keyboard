@@ -8,8 +8,10 @@ import {
   keyboardState,
   settingsState,
   urlBarState,
+  voiceState,
 } from "../core/state.js";
 import { clearCloseTimer, markChanged } from "../input/InputTracker.js";
+import * as VoiceInput from "../voice/VoiceInput.js";
 import { applyShiftToCharacter } from "./KeyMap.js";
 
 /**
@@ -63,6 +65,10 @@ export function handleKeyPress(key, options = {}) {
 
     case SPECIAL_KEYS.BACKSPACE:
       handleBackspace();
+      break;
+
+    case SPECIAL_KEYS.VOICE:
+      handleVoice();
       break;
 
     default:
@@ -121,6 +127,22 @@ function handleEnter() {
   const element = focusState.get("element");
   if (!element) return;
 
+  // Dispatch keydown first - if prevented, skip action (allows proxy apps to intercept)
+  const keydownEvent = new KeyboardEvent("keydown", {
+    key: "Enter",
+    code: "Enter",
+    keyCode: 13,
+    which: 13,
+    bubbles: true,
+    cancelable: true,
+  });
+  const wasNotPrevented = element.dispatchEvent(keydownEvent);
+
+  if (!wasNotPrevented) {
+    // Event was prevented - proxy app will handle it
+    return;
+  }
+
   const type = focusState.get("type");
 
   if (type === "textarea") {
@@ -154,7 +176,6 @@ function handleEnter() {
         form.dispatchEvent(new Event("submit", { bubbles: true }));
       }
     }
-    element.dispatchEvent(createKeyboardEvent("keydown", 13));
     emit(EVENTS.KEYBOARD_CLOSE);
   }
 
@@ -171,11 +192,92 @@ function handleShift() {
 }
 
 /**
+ * Handle voice button press
+ */
+async function handleVoice() {
+  // Check if voice is enabled in settings
+  if (!settingsState.get("voiceEnabled")) {
+    return;
+  }
+
+  const element = focusState.get("element");
+  if (!element) return;
+
+  // Initialize transcriber if not already done
+  if (!VoiceInput.isModelLoaded()) {
+    const modelSize = settingsState.get("voiceModel") || "base";
+    const language = settingsState.get("voiceLanguage") || "multilingual";
+
+    voiceState.set("state", VoiceInput.VoiceState.LOADING_MODEL);
+
+    const success = await VoiceInput.initTranscriber({
+      modelSize,
+      language,
+      onProgress: (percent) => {
+        voiceState.set("downloadProgress", percent);
+      },
+      onStateChange: (state, error) => {
+        voiceState.set("state", state);
+        if (error) {
+          voiceState.set("error", error);
+        }
+      },
+    });
+
+    if (!success) {
+      return;
+    }
+  }
+
+  // Toggle recording
+  if (VoiceInput.getIsRecording()) {
+    // Stop recording and get transcription
+    const text = await VoiceInput.stopRecording();
+    if (text) {
+      // Insert transcribed text at cursor position
+      insertVoiceText(element, text);
+    }
+  } else {
+    // Start recording
+    await VoiceInput.startRecording();
+  }
+}
+
+/**
+ * Insert voice transcribed text character by character
+ * This ensures each character triggers keyboard events like manual typing,
+ * which is needed for proxy apps and special input handling.
+ * @param {string} text - Text to insert
+ */
+function insertVoiceText(_element, text) {
+  // Insert each character as if the user pressed the key
+  for (const char of text) {
+    insertCharacter(char);
+  }
+}
+
+/**
  * Handle backspace key press
  */
 function handleBackspace() {
   const element = focusState.get("element");
   if (!element) return;
+
+  // Dispatch keydown first - if prevented, skip deletion (allows proxy apps to intercept)
+  const keydownEvent = new KeyboardEvent("keydown", {
+    key: "Backspace",
+    code: "Backspace",
+    keyCode: 8,
+    which: 8,
+    bubbles: true,
+    cancelable: true,
+  });
+  const wasNotPrevented = element.dispatchEvent(keydownEvent);
+
+  if (!wasNotPrevented) {
+    // Event was prevented - proxy app will handle it
+    return;
+  }
 
   const type = focusState.get("type");
 
@@ -203,6 +305,7 @@ function handleBackspace() {
   }
 
   markChanged();
+  // Dispatch remaining events (keypress, keyup, input)
   dispatchBackspaceEvents(element);
 }
 
@@ -221,8 +324,22 @@ function insertCharacter(key) {
     key = applyShiftToCharacter(key);
   }
 
+  // Dispatch keydown first - if prevented, skip insertion (allows proxy apps to intercept)
+  const keydownEvent = createKeyboardEvent(
+    "keydown",
+    key.charCodeAt(0),
+    0,
+    key
+  );
+  const wasNotPrevented = element.dispatchEvent(keydownEvent);
+
+  if (!wasNotPrevented) {
+    // Event was prevented - proxy app will handle it
+    resetShiftIfNeeded();
+    return;
+  }
+
   if (type === "contenteditable") {
-    element.dispatchEvent(createKeyboardEvent("keydown", key.charCodeAt(0)));
     insertTextAtCursor(element, key);
     markChanged();
     resetShiftIfNeeded();
@@ -230,7 +347,6 @@ function insertCharacter(key) {
   } else {
     const maxLength = element.maxLength;
     if (maxLength <= 0 || element.value.length < maxLength) {
-      element.dispatchEvent(createKeyboardEvent("keydown", key.charCodeAt(0)));
       insertTextAtPosition(element, key);
       markChanged();
       resetShiftIfNeeded();
@@ -357,15 +473,17 @@ function clickSubmitButton(form) {
  * @param {string} type - Event type
  * @param {number} keyCode - Key code
  * @param {number} charCode - Character code
+ * @param {string} key - Key name (e.g., "Enter", "a")
  * @returns {KeyboardEvent}
  */
-function createKeyboardEvent(type, keyCode = 0, charCode = 0) {
+function createKeyboardEvent(type, keyCode = 0, charCode = 0, key = "") {
   return new KeyboardEvent(type, {
     bubbles: true,
     cancelable: true,
     keyCode,
     charCode,
     which: keyCode || charCode,
+    key: key || (charCode ? String.fromCharCode(charCode) : ""),
   });
 }
 
@@ -392,19 +510,20 @@ function dispatchKeyEvents(element, key) {
 }
 
 /**
- * Dispatch backspace events
+ * Dispatch backspace events (keypress, keyup, input - keydown already dispatched)
  * @param {HTMLElement} element
  */
 function dispatchBackspaceEvents(element) {
   const backspaceEvent = (type) =>
     new KeyboardEvent(type, {
+      key: "Backspace",
+      code: "Backspace",
       bubbles: true,
       cancelable: true,
       keyCode: 8,
       which: 8,
     });
 
-  element.dispatchEvent(backspaceEvent("keydown"));
   element.dispatchEvent(backspaceEvent("keypress"));
   element.dispatchEvent(backspaceEvent("keyup"));
   element.dispatchEvent(new Event("input", { bubbles: true }));

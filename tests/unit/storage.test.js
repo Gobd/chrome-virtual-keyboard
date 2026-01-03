@@ -428,6 +428,9 @@ describe("storage.js", () => {
         keyboardPosition: null,
         autostart: false,
         stickyShift: false,
+        voiceEnabled: false,
+        voiceModel: "base-q8",
+        voiceLanguage: "multilingual",
       });
     });
 
@@ -476,6 +479,9 @@ describe("storage.js", () => {
         keyboardPosition: { x: 100, y: 200 },
         autostart: true,
         stickyShift: true,
+        voiceEnabled: false,
+        voiceModel: "base-q8",
+        voiceLanguage: "multilingual",
       });
     });
   });

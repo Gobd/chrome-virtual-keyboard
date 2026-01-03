@@ -64,15 +64,11 @@
   --vk-offset-x: 0px;
   position: fixed;
   bottom: 0;
-  left: 0;
-  right: 0;
+  left: 50%;
   overflow: visible;
-  margin-left: auto;
-  margin-right: auto;
-  transform: translateX(var(--vk-offset-x)) translateY(100%);
+  transform: translateX(-50%) translateX(var(--vk-offset-x)) translateY(100%);
   opacity: 0;
-  max-width: fit-content;
-  width: 100%;
+  width: fit-content;
   box-sizing: border-box;
   z-index: var(--vk-z-index);
   user-select: none;
@@ -83,12 +79,12 @@
 }
 
 #virtual-keyboard.keyboard-open {
-  transform: translateX(var(--vk-offset-x)) translateY(0);
+  transform: translateX(-50%) translateX(var(--vk-offset-x)) translateY(0);
   opacity: 1;
 }
 
 #virtual-keyboard.keyboard-closed {
-  transform: translateX(var(--vk-offset-x)) translateY(100%);
+  transform: translateX(-50%) translateX(var(--vk-offset-x)) translateY(100%);
   opacity: 0;
 }
 
@@ -113,8 +109,6 @@
   justify-content: center;
   gap: 6px;
   margin: 5px 0;
-  width: 100%;
-  max-width: 100%;
   line-height: normal;
   height: auto;
 }
@@ -185,6 +179,8 @@
   background: var(--vk-space-key-bg);
   /* Ensure spacebar has proper height even when it's the only key in the row */
   min-height: calc(1.2em + var(--vk-key-padding) * 2);
+  /* Prevent browser from intercepting touch gestures during swipe */
+  touch-action: none;
 }
 
 /* Wider space key (when language button is hidden) */
@@ -297,6 +293,56 @@
 
 .vk-icon-settings::before {
   content: "⚙";
+}
+
+.vk-icon-mic::before {
+  content: "🎤";
+}
+
+/* =============================================================================
+   Voice Input States
+   ============================================================================= */
+
+/* Voice button - recording state */
+.vk-key-voice.vk-voice-recording {
+  background: #c0392b;
+  animation: vk-pulse 1s infinite;
+}
+
+.vk-key-voice.vk-voice-recording .vk-icon-mic::before {
+  content: "⏺";
+}
+
+/* Voice button - loading/transcribing state */
+.vk-key-voice.vk-voice-loading {
+  background: #2980b9;
+}
+
+.vk-key-voice.vk-voice-loading .vk-icon-mic::before {
+  content: "⏳";
+}
+
+/* Voice button - error state */
+.vk-key-voice.vk-voice-error {
+  background: #7f8c8d;
+}
+
+.vk-key-voice.vk-voice-error .vk-icon-mic::before {
+  content: "🎤";
+  opacity: 0.5;
+}
+
+/* Pulsing animation for recording */
+@keyframes vk-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(192, 57, 43, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(192, 57, 43, 0);
+  }
 }
 
 /* =============================================================================
@@ -456,6 +502,7 @@
 
 #vk-scroll-extend {
   height: 500px;
+  background: transparent;
 }
 
 /* =============================================================================
@@ -519,89 +566,6 @@
 
 #virtual-keyboard.vk-dragging {
   transition: none;
-}
-
-/* =============================================================================
-   Responsive Zoom (based on viewport height)
-   Applied to inner wrapper so it doesn't affect drag positioning on outer element
-   ============================================================================= */
-
-@media (max-height: 950px) {
-  .vk-scale-wrapper {
-    zoom: 0.95;
-  }
-}
-
-@media (max-height: 900px) {
-  .vk-scale-wrapper {
-    zoom: 0.9;
-  }
-}
-
-@media (max-height: 850px) {
-  .vk-scale-wrapper {
-    zoom: 0.85;
-  }
-}
-
-@media (max-height: 800px) {
-  .vk-scale-wrapper {
-    zoom: 0.8;
-  }
-}
-
-@media (max-height: 750px) {
-  .vk-scale-wrapper {
-    zoom: 0.75;
-  }
-}
-
-@media (max-height: 700px) {
-  .vk-scale-wrapper {
-    zoom: 0.7;
-  }
-}
-
-@media (max-height: 650px) {
-  .vk-scale-wrapper {
-    zoom: 0.65;
-  }
-}
-
-@media (max-height: 550px) {
-  .vk-scale-wrapper {
-    zoom: 0.6;
-  }
-}
-
-@media (max-height: 500px) {
-  .vk-scale-wrapper {
-    zoom: 0.55;
-  }
-}
-
-@media (max-height: 450px) {
-  .vk-scale-wrapper {
-    zoom: 0.5;
-  }
-}
-
-@media (max-height: 400px) {
-  .vk-scale-wrapper {
-    zoom: 0.45;
-  }
-}
-
-@media (max-height: 350px) {
-  .vk-scale-wrapper {
-    zoom: 0.4;
-  }
-}
-
-@media (max-height: 300px) {
-  .vk-scale-wrapper {
-    zoom: 0.35;
-  }
 }
 
 /* =============================================================================

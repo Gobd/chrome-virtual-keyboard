@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build extension
+        run: pnpm run build
+
+      - name: Create zip
+        run: |
+          mv dist smartkey
+          zip -r smartkey-${{ github.ref_name }}.zip smartkey
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: smartkey-${{ github.ref_name }}.zip
+          generate_release_notes: true
