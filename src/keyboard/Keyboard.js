@@ -1241,6 +1241,21 @@ function moveCursor(direction) {
       // Some input types don't support selection
     }
   }
+
+  // Also dispatch arrow key event so apps can intercept cursor movement
+  // (e.g., for proxying to iframes or custom editors)
+  const key = direction < 0 ? "ArrowLeft" : "ArrowRight";
+  const keyCode = direction < 0 ? 37 : 39;
+  element.dispatchEvent(
+    new KeyboardEvent("keydown", {
+      key,
+      code: key,
+      keyCode,
+      which: keyCode,
+      bubbles: true,
+      cancelable: true,
+    })
+  );
 }
 
 /**
