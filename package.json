@@ -23,8 +23,8 @@
     "test:report": "pnpm exec playwright show-report",
     "coverage": "pnpm run coverage:all",
     "coverage:unit": "rm -rf coverage-unit && pnpm exec vitest run --coverage",
-    "coverage:e2e": "rm -rf coverage-e2e .coverage-data && COVERAGE=1 pnpm exec playwright test && node scripts/merge-coverage.js",
-    "coverage:all": "rm -rf coverage coverage-unit coverage-e2e .coverage-data && pnpm run coverage:unit && COVERAGE=1 COVERAGE_SKIP_REPORT=1 pnpm exec playwright test && node scripts/merge-coverage.js",
+    "coverage:e2e": "rm -rf coverage-e2e .coverage-data && COVERAGE=1 pnpm exec playwright test && node --max-old-space-size=6144 scripts/merge-coverage.js",
+    "coverage:all": "rm -rf coverage coverage-unit coverage-e2e .coverage-data && pnpm run coverage:unit && COVERAGE=1 COVERAGE_SKIP_REPORT=1 pnpm exec playwright test && node --max-old-space-size=6144 scripts/merge-coverage.js",
     "coverage:summary": "node scripts/coverage-summary.js"
   },
   "keywords": [],

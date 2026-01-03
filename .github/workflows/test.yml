@@ -38,7 +38,7 @@ jobs:
 
       - name: Generate all coverage reports
         if: ${{ !cancelled() }}
-        run: node scripts/merge-coverage.js || true
+        run: node --max-old-space-size=6144 scripts/merge-coverage.js || true
 
       - name: Read unit coverage
         id: unit-coverage
