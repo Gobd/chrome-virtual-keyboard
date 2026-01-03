@@ -222,14 +222,15 @@ describe("config.js", () => {
         "&123",
         "Language",
         "Space",
+        "Voice",
         "Url",
         "Settings",
         "Close",
       ]);
     });
 
-    it("should have 6 keys", () => {
-      expect(DEFAULT_BOTTOM_ROW).toHaveLength(6);
+    it("should have 7 keys", () => {
+      expect(DEFAULT_BOTTOM_ROW).toHaveLength(7);
     });
   });
 });
