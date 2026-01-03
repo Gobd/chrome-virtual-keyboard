@@ -254,7 +254,12 @@ function insertCharacter(key) {
   }
 
   // Dispatch keydown first - if prevented, skip insertion (allows proxy apps to intercept)
-  const keydownEvent = createKeyboardEvent("keydown", key.charCodeAt(0), 0, key);
+  const keydownEvent = createKeyboardEvent(
+    "keydown",
+    key.charCodeAt(0),
+    0,
+    key
+  );
   const wasNotPrevented = element.dispatchEvent(keydownEvent);
 
   if (!wasNotPrevented) {
