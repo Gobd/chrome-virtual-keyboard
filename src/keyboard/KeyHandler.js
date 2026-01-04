@@ -258,6 +258,19 @@ function handleBackspace() {
   const element = focusState.get("element");
   if (!element) return;
 
+  const type = focusState.get("type");
+
+  // For contenteditable, capture selection state BEFORE dispatching keydown
+  // because some sites handle the keydown and move the cursor, which would
+  // cause us to delete at the wrong position
+  let savedRange = null;
+  if (type === "contenteditable") {
+    const selection = getSelectionForElement(element);
+    if (selection.rangeCount > 0) {
+      savedRange = selection.getRangeAt(0).cloneRange();
+    }
+  }
+
   // Dispatch keydown event
   const keydownEvent = new KeyboardEvent("keydown", {
     key: "Backspace",
@@ -269,10 +282,15 @@ function handleBackspace() {
   });
   element.dispatchEvent(keydownEvent);
 
-  const type = focusState.get("type");
+  // If site handled the keydown (prevented default), don't do manual deletion
+  if (keydownEvent.defaultPrevented) {
+    markChanged();
+    dispatchBackspaceEvents(element);
+    return;
+  }
 
   if (type === "contenteditable") {
-    deleteAtCursor(element);
+    deleteAtCursorWithRange(element, savedRange);
   } else {
     try {
       let pos = element.selectionStart;
@@ -407,28 +425,49 @@ function insertTextAtPosition(input, text) {
 }
 
 /**
- * Delete character at cursor for contenteditable
+ * Delete character at cursor for contenteditable using a saved range
  * @param {HTMLElement} element - The contenteditable element
+ * @param {Range|null} savedRange - The range captured before keydown dispatch
  */
-function deleteAtCursor(element) {
-  const selection = getSelectionForElement(element);
-  if (selection.rangeCount > 0) {
-    const range = selection.getRangeAt(0);
-    if (range.collapsed) {
-      const { startContainer, startOffset } = range;
-      if (startContainer.nodeType === Node.TEXT_NODE && startOffset > 0) {
-        startContainer.textContent =
-          startContainer.textContent.slice(0, startOffset - 1) +
-          startContainer.textContent.slice(startOffset);
-        range.setStart(startContainer, startOffset - 1);
-        range.setEnd(startContainer, startOffset - 1);
-      } else if (startOffset > 0) {
-        range.setStart(startContainer, startOffset - 1);
-        range.deleteContents();
-      }
+function deleteAtCursorWithRange(element, savedRange) {
+  if (!savedRange) {
+    // Fallback to current selection if no saved range
+    const selection = getSelectionForElement(element);
+    if (selection.rangeCount > 0) {
+      savedRange = selection.getRangeAt(0);
     } else {
+      return;
+    }
+  }
+
+  const { startContainer, startOffset } = savedRange;
+
+  if (savedRange.collapsed) {
+    if (startContainer.nodeType === Node.TEXT_NODE && startOffset > 0) {
+      // Delete character before cursor in text node
+      startContainer.textContent =
+        startContainer.textContent.slice(0, startOffset - 1) +
+        startContainer.textContent.slice(startOffset);
+      // Update selection to new position
+      const selection = getSelectionForElement(element);
+      const newRange = document.createRange();
+      newRange.setStart(startContainer, startOffset - 1);
+      newRange.setEnd(startContainer, startOffset - 1);
+      selection.removeAllRanges();
+      selection.addRange(newRange);
+    } else if (startOffset > 0) {
+      // For element nodes with startOffset > 0
+      const range = document.createRange();
+      range.setStart(startContainer, startOffset - 1);
+      range.setEnd(startContainer, startOffset);
       range.deleteContents();
     }
+    // When startOffset === 0, we're at start of a node/line
+    // The keydown event should have handled moving to previous line
+    // We intentionally do nothing here to avoid double-delete
+  } else {
+    // Selection exists, delete it
+    savedRange.deleteContents();
   }
 }
 
