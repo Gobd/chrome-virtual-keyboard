@@ -127,7 +127,7 @@ function handleEnter() {
   const element = focusState.get("element");
   if (!element) return;
 
-  // Dispatch keydown first - if prevented, skip action (allows proxy apps to intercept)
+  // Dispatch keydown event
   const keydownEvent = new KeyboardEvent("keydown", {
     key: "Enter",
     code: "Enter",
@@ -136,12 +136,7 @@ function handleEnter() {
     bubbles: true,
     cancelable: true,
   });
-  const wasNotPrevented = element.dispatchEvent(keydownEvent);
-
-  if (!wasNotPrevented) {
-    // Event was prevented - proxy app will handle it
-    return;
-  }
+  element.dispatchEvent(keydownEvent);
 
   const type = focusState.get("type");
 
@@ -263,7 +258,7 @@ function handleBackspace() {
   const element = focusState.get("element");
   if (!element) return;
 
-  // Dispatch keydown first - if prevented, skip deletion (allows proxy apps to intercept)
+  // Dispatch keydown event
   const keydownEvent = new KeyboardEvent("keydown", {
     key: "Backspace",
     code: "Backspace",
@@ -272,12 +267,7 @@ function handleBackspace() {
     bubbles: true,
     cancelable: true,
   });
-  const wasNotPrevented = element.dispatchEvent(keydownEvent);
-
-  if (!wasNotPrevented) {
-    // Event was prevented - proxy app will handle it
-    return;
-  }
+  element.dispatchEvent(keydownEvent);
 
   const type = focusState.get("type");
 
@@ -324,20 +314,14 @@ function insertCharacter(key) {
     key = applyShiftToCharacter(key);
   }
 
-  // Dispatch keydown first - if prevented, skip insertion (allows proxy apps to intercept)
+  // Dispatch keydown event
   const keydownEvent = createKeyboardEvent(
     "keydown",
     key.charCodeAt(0),
     0,
     key
   );
-  const wasNotPrevented = element.dispatchEvent(keydownEvent);
-
-  if (!wasNotPrevented) {
-    // Event was prevented - proxy app will handle it
-    resetShiftIfNeeded();
-    return;
-  }
+  element.dispatchEvent(keydownEvent);
 
   if (type === "contenteditable") {
     insertTextAtCursor(element, key);
