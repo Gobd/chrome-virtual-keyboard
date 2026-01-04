@@ -101,6 +101,13 @@ export function bindInput(element) {
   );
 
   markBound(element);
+
+  // If element is already focused (e.g., programmatic focus before binding),
+  // trigger the keyboard immediately
+  const doc = element.ownerDocument || document;
+  if (doc.activeElement === element) {
+    handleFocus(element, inputType, true);
+  }
 }
 
 /**
