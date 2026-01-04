@@ -99,7 +99,11 @@ async function downloadVoiceModel(forceReload = false) {
   const modelName = getModelDisplayName(modelSize, language);
 
   // Check if we already have this exact model loaded
-  if (!forceReload && loadedModelKey === modelKey && VoiceInput.isModelLoaded()) {
+  if (
+    !forceReload &&
+    loadedModelKey === modelKey &&
+    VoiceInput.isModelLoaded()
+  ) {
     showModelStatus("ready", 100, null, modelName);
     return;
   }
