@@ -425,6 +425,9 @@ export async function loadAllSettings() {
     STORAGE_KEYS.VOICE_ENABLED,
     STORAGE_KEYS.VOICE_MODEL,
     STORAGE_KEYS.VOICE_LANGUAGE,
+    STORAGE_KEYS.KEY_REPEAT_ENABLED,
+    STORAGE_KEYS.KEY_REPEAT_DELAY,
+    STORAGE_KEYS.KEY_REPEAT_SPEED,
   ]);
 
   return {
@@ -449,6 +452,9 @@ export async function loadAllSettings() {
     voiceEnabled: result[STORAGE_KEYS.VOICE_ENABLED] === true,
     voiceModel: result[STORAGE_KEYS.VOICE_MODEL] || "base-q8",
     voiceLanguage: result[STORAGE_KEYS.VOICE_LANGUAGE] || "multilingual",
+    keyRepeatEnabled: result[STORAGE_KEYS.KEY_REPEAT_ENABLED] === true,
+    keyRepeatDelay: result[STORAGE_KEYS.KEY_REPEAT_DELAY] || 400,
+    keyRepeatSpeed: result[STORAGE_KEYS.KEY_REPEAT_SPEED] || 75,
   };
 }
 
@@ -479,6 +485,9 @@ export async function initializeDefaults(defaultLayouts) {
     [STORAGE_KEYS.VOICE_ENABLED]: false,
     [STORAGE_KEYS.VOICE_MODEL]: "base-q8",
     [STORAGE_KEYS.VOICE_LANGUAGE]: "multilingual",
+    [STORAGE_KEYS.KEY_REPEAT_ENABLED]: false,
+    [STORAGE_KEYS.KEY_REPEAT_DELAY]: 400,
+    [STORAGE_KEYS.KEY_REPEAT_SPEED]: 75,
   });
 }
 

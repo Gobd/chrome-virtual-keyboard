@@ -153,6 +153,9 @@ async function loadSettings() {
       voiceEnabled: false,
       voiceModel: "base-q8",
       voiceLanguage: "multilingual",
+      keyRepeatEnabled: false,
+      keyRepeatDelay: 400,
+      keyRepeatSpeed: 75,
     });
   } else {
     settingsState.set({
@@ -175,6 +178,9 @@ async function loadSettings() {
       voiceEnabled: settings.voiceEnabled,
       voiceModel: settings.voiceModel,
       voiceLanguage: settings.voiceLanguage,
+      keyRepeatEnabled: settings.keyRepeatEnabled,
+      keyRepeatDelay: settings.keyRepeatDelay,
+      keyRepeatSpeed: settings.keyRepeatSpeed,
     });
   }
 
@@ -325,6 +331,24 @@ async function loadSettings() {
           Keyboard.open(true);
         });
       }
+    }
+    if (changes.keyRepeatEnabled !== undefined) {
+      settingsState.set(
+        "keyRepeatEnabled",
+        changes.keyRepeatEnabled.newValue === true
+      );
+    }
+    if (changes.keyRepeatDelay !== undefined) {
+      settingsState.set(
+        "keyRepeatDelay",
+        changes.keyRepeatDelay.newValue || 400
+      );
+    }
+    if (changes.keyRepeatSpeed !== undefined) {
+      settingsState.set(
+        "keyRepeatSpeed",
+        changes.keyRepeatSpeed.newValue || 75
+      );
     }
   });
 }

@@ -48,7 +48,53 @@ let dragState = {
   offsetY: 0,
 };
 
+// Key repeat state (for backspace hold-to-repeat)
+const keyRepeatState = {
+  active: false,
+  key: null,
+  initialTimeout: null,
+  repeatInterval: null,
+};
+
 const SWIPE_THRESHOLD = 10; // Pixels to move before considering it a swipe
+
+/**
+ * Start key repeat for a held key
+ * @param {string} keyValue - The key to repeat
+ */
+function startKeyRepeat(keyValue) {
+  if (!settingsState.get("keyRepeatEnabled")) return;
+
+  const delay = settingsState.get("keyRepeatDelay") || 400;
+  const speed = settingsState.get("keyRepeatSpeed") || 75;
+
+  keyRepeatState.active = true;
+  keyRepeatState.key = keyValue;
+
+  // Start repeat after initial delay
+  keyRepeatState.initialTimeout = setTimeout(() => {
+    // Repeat at interval
+    keyRepeatState.repeatInterval = setInterval(() => {
+      handleKeyPress(keyValue);
+    }, speed);
+  }, delay);
+}
+
+/**
+ * Stop key repeat
+ */
+function stopKeyRepeat() {
+  if (keyRepeatState.initialTimeout) {
+    clearTimeout(keyRepeatState.initialTimeout);
+    keyRepeatState.initialTimeout = null;
+  }
+  if (keyRepeatState.repeatInterval) {
+    clearInterval(keyRepeatState.repeatInterval);
+    keyRepeatState.repeatInterval = null;
+  }
+  keyRepeatState.active = false;
+  keyRepeatState.key = null;
+}
 
 // Track if key min-width has been calculated
 let keyMinWidthCalculated = false;
@@ -647,10 +693,32 @@ function setupEventDelegation() {
     closeAllOverlays();
   });
 
-  // Prevent default on pointer events
+  // Prevent default on pointer events and handle key repeat
   keyboardElement.addEventListener("pointerdown", (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // Check if this is a backspace key for repeat
+    const key = e.target.closest(`.${CSS_CLASSES.KEY_CLICK}`);
+    if (key) {
+      const keyValue = key.dataset.key;
+      if (keyValue === "Backspace") {
+        startKeyRepeat(keyValue);
+      }
+    }
+  });
+
+  // Stop key repeat on pointer up
+  keyboardElement.addEventListener("pointerup", () => {
+    stopKeyRepeat();
+  });
+
+  // Stop key repeat on pointer leave/cancel
+  keyboardElement.addEventListener("pointerleave", () => {
+    stopKeyRepeat();
+  });
+  keyboardElement.addEventListener("pointercancel", () => {
+    stopKeyRepeat();
   });
 
   // Close overlays when clicking outside keyboard
