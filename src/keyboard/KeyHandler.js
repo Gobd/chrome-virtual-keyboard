@@ -138,6 +138,13 @@ function handleEnter() {
   });
   element.dispatchEvent(keydownEvent);
 
+  // If site handled the keydown (prevented default), don't do manual insertion
+  if (keydownEvent.defaultPrevented) {
+    markChanged();
+    dispatchInputEvent(element);
+    return;
+  }
+
   const type = focusState.get("type");
 
   if (type === "textarea") {
