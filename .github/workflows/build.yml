@@ -6,6 +6,7 @@ on:
       - master
   pull_request:
     branches: [master]
+    types: [opened, reopened]
 
 jobs:
   build:
@@ -62,7 +63,7 @@ jobs:
             <!-- build-artifact-comment -->
             ## Build Artifact
 
-            Download the latest build: [smartkey.zip](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts)
+            Download the latest build: [smartkey.zip](https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/smartkey-${{ github.head_ref }}.zip)
 
             **Branch:** `${{ github.head_ref }}`
             **Commit:** ${{ github.event.pull_request.head.sha }}
