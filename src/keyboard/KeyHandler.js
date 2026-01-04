@@ -10,6 +10,7 @@ import {
   urlBarState,
   voiceState,
 } from "../core/state.js";
+import { getInputType, isSupportedInput } from "../input/InputBinder.js";
 import { clearCloseTimer, markChanged } from "../input/InputTracker.js";
 import * as VoiceInput from "../voice/VoiceInput.js";
 import { applyShiftToCharacter } from "./KeyMap.js";
@@ -21,6 +22,20 @@ import { applyShiftToCharacter } from "./KeyMap.js";
  */
 export function handleKeyPress(key, options = {}) {
   const { skip = false } = options;
+
+  // Sync focusState with document.activeElement if they don't match
+  // This handles dynamically added inputs or missed focus events
+  const trackedElement = focusState.get("element");
+  const activeElement = document.activeElement;
+  if (activeElement && activeElement !== trackedElement) {
+    if (isSupportedInput(activeElement)) {
+      focusState.set({
+        element: activeElement,
+        type: getInputType(activeElement),
+        changed: false,
+      });
+    }
+  }
 
   // Don't clear close timer for Close key
   if (key !== SPECIAL_KEYS.CLOSE) {
@@ -157,16 +172,25 @@ function handleEnter() {
   } else if (type === "contenteditable") {
     // Insert <br>
     const selection = getSelectionForElement(element);
+    let range;
+
     if (selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      range.deleteContents();
-      const br = element.ownerDocument.createElement("br");
-      range.insertNode(br);
-      range.setStartAfter(br);
-      range.setEndAfter(br);
-      selection.removeAllRanges();
+      range = selection.getRangeAt(0);
+    } else {
+      // No selection exists, create one at start
+      range = element.ownerDocument.createRange();
+      range.selectNodeContents(element);
+      range.collapse(true);
       selection.addRange(range);
     }
+
+    range.deleteContents();
+    const br = element.ownerDocument.createElement("br");
+    range.insertNode(br);
+    range.setStartAfter(br);
+    range.setEndAfter(br);
+    selection.removeAllRanges();
+    selection.addRange(range);
     dispatchInputEvent(element);
     markChanged();
   } else {
@@ -394,16 +418,26 @@ function getSelectionForElement(element) {
  */
 function insertTextAtCursor(element, text) {
   const selection = getSelectionForElement(element);
+  let range;
+
   if (selection.rangeCount > 0) {
-    const range = selection.getRangeAt(0);
-    range.deleteContents();
-    const textNode = element.ownerDocument.createTextNode(text);
-    range.insertNode(textNode);
-    range.setStartAfter(textNode);
-    range.setEndAfter(textNode);
-    selection.removeAllRanges();
+    range = selection.getRangeAt(0);
+  } else {
+    // No selection exists (e.g., element was focused programmatically)
+    // Create a range at the start of the element
+    range = element.ownerDocument.createRange();
+    range.selectNodeContents(element);
+    range.collapse(true); // Collapse to start
     selection.addRange(range);
   }
+
+  range.deleteContents();
+  const textNode = element.ownerDocument.createTextNode(text);
+  range.insertNode(textNode);
+  range.setStartAfter(textNode);
+  range.setEndAfter(textNode);
+  selection.removeAllRanges();
+  selection.addRange(range);
 }
 
 /**
