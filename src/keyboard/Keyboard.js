@@ -12,7 +12,6 @@ import {
   voiceState,
 } from "../core/state.js";
 import storage from "../core/storage.js";
-import { getInputType, isSupportedInput } from "../input/InputBinder.js";
 import {
   addBodyPadding,
   clearCloseTimer,
@@ -1075,19 +1074,6 @@ function calculateKeyMinWidth() {
  */
 export async function open(force = false) {
   if (keyboardState.get("open") && !force) return;
-
-  // Check if there's already a focused input that we should track
-  // This handles cases like autostart or open button when an input has autofocus
-  if (!focusState.get("element")) {
-    const activeElement = document.activeElement;
-    if (activeElement && isSupportedInput(activeElement)) {
-      focusState.set({
-        element: activeElement,
-        type: getInputType(activeElement),
-        changed: false,
-      });
-    }
-  }
 
   // Load layout if needed
   const currentLayout = settingsState.get("layout");
