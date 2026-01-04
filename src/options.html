@@ -122,6 +122,40 @@
             Sticky shift (stays on until pressed again)
           </label>
         </p>
+        <p>
+          <label>
+            <input type="checkbox" id="keyRepeatEnabled" />
+            Hold to repeat (backspace key)
+          </label>
+        </p>
+        <div id="keyRepeatOptions" style="margin-left: 22px; display: none">
+          <p style="display: flex; align-items: center; gap: 10px">
+            <span>Initial delay:</span>
+            <input
+              type="number"
+              id="keyRepeatDelay"
+              value="400"
+              min="100"
+              max="1000"
+              step="50"
+              style="width: 70px"
+            />
+            <span>ms</span>
+          </p>
+          <p style="display: flex; align-items: center; gap: 10px">
+            <span>Repeat speed:</span>
+            <input
+              type="number"
+              id="keyRepeatSpeed"
+              value="75"
+              min="30"
+              max="200"
+              step="10"
+              style="width: 70px"
+            />
+            <span>ms</span>
+          </p>
+        </div>
 
         <h2>Voice Input (Speech-to-Text)</h2>
         <p>

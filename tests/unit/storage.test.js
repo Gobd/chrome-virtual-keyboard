@@ -431,6 +431,9 @@ describe("storage.js", () => {
         voiceEnabled: false,
         voiceModel: "base-q8",
         voiceLanguage: "multilingual",
+        keyRepeatEnabled: false,
+        keyRepeatDelay: 400,
+        keyRepeatSpeed: 75,
       });
     });
 
@@ -482,6 +485,9 @@ describe("storage.js", () => {
         voiceEnabled: false,
         voiceModel: "base-q8",
         voiceLanguage: "multilingual",
+        keyRepeatEnabled: false,
+        keyRepeatDelay: 400,
+        keyRepeatSpeed: 75,
       });
     });
   });

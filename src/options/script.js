@@ -24,6 +24,9 @@ function saveDisplaySettings() {
   const voiceEnabled = $("voiceEnabled").checked;
   const voiceModel = $("voiceModel").value;
   const voiceLanguage = $("voiceLanguage").value;
+  const keyRepeatEnabled = $("keyRepeatEnabled").checked;
+  const keyRepeatDelay = parseInt($("keyRepeatDelay").value, 10) || 400;
+  const keyRepeatSpeed = parseInt($("keyRepeatSpeed").value, 10) || 75;
 
   chrome.storage.local.set({
     [STORAGE_KEYS.SHOW_OPEN_BUTTON]: showOpenButton,
@@ -43,15 +46,25 @@ function saveDisplaySettings() {
     [STORAGE_KEYS.VOICE_ENABLED]: voiceEnabled,
     [STORAGE_KEYS.VOICE_MODEL]: voiceModel,
     [STORAGE_KEYS.VOICE_LANGUAGE]: voiceLanguage,
+    [STORAGE_KEYS.KEY_REPEAT_ENABLED]: keyRepeatEnabled,
+    [STORAGE_KEYS.KEY_REPEAT_DELAY]: keyRepeatDelay,
+    [STORAGE_KEYS.KEY_REPEAT_SPEED]: keyRepeatSpeed,
   });
 
   // Toggle voice options visibility
   updateVoiceOptionsVisibility();
+  // Toggle key repeat options visibility
+  updateKeyRepeatOptionsVisibility();
 }
 
 function updateVoiceOptionsVisibility() {
   const voiceEnabled = $("voiceEnabled").checked;
   $("voiceOptions").style.display = voiceEnabled ? "block" : "none";
+}
+
+function updateKeyRepeatOptionsVisibility() {
+  const keyRepeatEnabled = $("keyRepeatEnabled").checked;
+  $("keyRepeatOptions").style.display = keyRepeatEnabled ? "block" : "none";
 }
 
 async function loadDisplaySettings() {
@@ -73,6 +86,9 @@ async function loadDisplaySettings() {
     STORAGE_KEYS.VOICE_ENABLED,
     STORAGE_KEYS.VOICE_MODEL,
     STORAGE_KEYS.VOICE_LANGUAGE,
+    STORAGE_KEYS.KEY_REPEAT_ENABLED,
+    STORAGE_KEYS.KEY_REPEAT_DELAY,
+    STORAGE_KEYS.KEY_REPEAT_SPEED,
   ]);
 
   $("showOpenButton").checked = result[STORAGE_KEYS.SHOW_OPEN_BUTTON] !== false;
@@ -103,6 +119,11 @@ async function loadDisplaySettings() {
   $("voiceLanguage").value =
     result[STORAGE_KEYS.VOICE_LANGUAGE] || "multilingual";
   updateVoiceOptionsVisibility();
+  $("keyRepeatEnabled").checked =
+    result[STORAGE_KEYS.KEY_REPEAT_ENABLED] === true;
+  $("keyRepeatDelay").value = result[STORAGE_KEYS.KEY_REPEAT_DELAY] || 400;
+  $("keyRepeatSpeed").value = result[STORAGE_KEYS.KEY_REPEAT_SPEED] || 75;
+  updateKeyRepeatOptionsVisibility();
 }
 
 function updateZoomLockCheckbox() {
@@ -230,4 +251,7 @@ window.addEventListener("load", async () => {
   $("voiceEnabled").addEventListener("change", saveDisplaySettings);
   $("voiceModel").addEventListener("change", saveDisplaySettings);
   $("voiceLanguage").addEventListener("change", saveDisplaySettings);
+  $("keyRepeatEnabled").addEventListener("change", saveDisplaySettings);
+  $("keyRepeatDelay").addEventListener("change", saveDisplaySettings);
+  $("keyRepeatSpeed").addEventListener("change", saveDisplaySettings);
 });

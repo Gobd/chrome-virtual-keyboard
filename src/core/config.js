@@ -100,6 +100,10 @@ export const STORAGE_KEYS = {
   VOICE_ENABLED: "voiceEnabled",
   VOICE_MODEL: "voiceModel",
   VOICE_LANGUAGE: "voiceLanguage",
+  // Key repeat settings
+  KEY_REPEAT_ENABLED: "keyRepeatEnabled",
+  KEY_REPEAT_DELAY: "keyRepeatDelay",
+  KEY_REPEAT_SPEED: "keyRepeatSpeed",
 };
 
 export const MESSAGE_TYPES = {
