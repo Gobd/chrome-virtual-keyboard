@@ -33,16 +33,11 @@ jobs:
       - name: Build extension
         run: pnpm run build
 
-      - name: Create zip
-        run: |
-          mv dist smartkey
-          zip -r smartkey.zip smartkey
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: smartkey-${{ github.head_ref || github.ref_name }}
-          path: smartkey.zip
+          path: dist
           overwrite: true
 
       - name: Find existing comment
