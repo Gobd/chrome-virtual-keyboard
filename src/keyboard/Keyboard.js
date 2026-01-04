@@ -12,6 +12,7 @@ import {
   voiceState,
 } from "../core/state.js";
 import storage from "../core/storage.js";
+import { getInputType, isSupportedInput } from "../input/InputBinder.js";
 import {
   addBodyPadding,
   clearCloseTimer,
@@ -21,7 +22,6 @@ import {
   saveScrollPosition,
   scrollInputIntoView,
 } from "../input/InputTracker.js";
-import { getInputType, isSupportedInput } from "../input/InputBinder.js";
 import { renderLayout } from "../layouts/LayoutRenderer.js";
 import { handleKeyPress } from "./KeyHandler.js";
 import { getKeyWithShift } from "./KeyMap.js";

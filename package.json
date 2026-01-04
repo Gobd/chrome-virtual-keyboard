@@ -8,7 +8,7 @@
     "build": "node build.js",
     "build:test": "node build.js --test",
     "watch": "node build.js --watch",
-    "format": "pnpm exec biome format --write .",
+    "format": "pnpm exec biome check --write .",
     "format:check": "pnpm exec biome check .",
     "lint": "pnpm exec biome lint .",
     "lint:fix": "pnpm exec biome lint --write .",
