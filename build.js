@@ -22,7 +22,7 @@ const STATIC_FILES = [
   "ARCHITECTURE.md",
 ];
 
-const STATIC_DIRS = ["options", "buttons", "core"];
+const STATIC_DIRS = ["buttons", "core"];
 
 // ONNX Runtime WASM files needed for Transformers.js (voice input)
 const WASM_FILES = [
@@ -107,8 +107,8 @@ function copyWasmFiles() {
   }
 }
 
-// Build configuration
-const buildOptions = {
+// Build configuration for main content script
+const mainBuildOptions = {
   entryPoints: [path.join(SRC_DIR, "main.js")],
   bundle: true,
   outfile: path.join(DIST_DIR, "main.js"),
@@ -120,6 +120,18 @@ const buildOptions = {
   logLevel: "info",
   // For test builds, use open shadow DOM so tests can access elements
   define: isTest ? { __SHADOW_MODE__: '"open"' } : {},
+};
+
+// Build configuration for options page script (needs bundling for VoiceInput imports)
+const optionsBuildOptions = {
+  entryPoints: [path.join(SRC_DIR, "options", "script.js")],
+  bundle: true,
+  outdir: path.join(DIST_DIR, "options"),
+  format: "esm",
+  target: ["chrome120"],
+  minify: false,
+  sourcemap: isTest ? "inline" : false,
+  logLevel: "info",
 };
 
 // Main build function
@@ -144,7 +156,11 @@ async function build() {
 
   // Bundle main.js
   console.log("\nBundling main.js...");
-  await esbuild.build(buildOptions);
+  await esbuild.build(mainBuildOptions);
+
+  // Bundle options script
+  console.log("\nBundling options/script.js...");
+  await esbuild.build(optionsBuildOptions);
 
   console.log("\nBuild complete! Output in dist/");
 }
@@ -157,12 +173,17 @@ async function watch() {
   await build();
 
   // Watch for changes
-  const ctx = await esbuild.context({
-    ...buildOptions,
+  const mainCtx = await esbuild.context({
+    ...mainBuildOptions,
+    logLevel: "info",
+  });
+  const optionsCtx = await esbuild.context({
+    ...optionsBuildOptions,
     logLevel: "info",
   });
 
-  await ctx.watch();
+  await mainCtx.watch();
+  await optionsCtx.watch();
 
   // Also watch static files
   const staticWatcher = (_eventType, filename) => {

@@ -87,12 +87,19 @@ function handleOpenButtonClick(event) {
   event.preventDefault();
   event.stopPropagation();
 
-  const inIframe = top !== self && window.frameElement !== null;
+  const isTopFrame = top === self;
+  const isCrossOriginIframe = top !== self && window.frameElement === null;
+  const isSameOriginIframe = top !== self && window.frameElement !== null;
 
-  if (inIframe) {
-    chrome.runtime.sendMessage({ method: MESSAGE_TYPES.OPEN_FROM_BUTTON });
-  } else {
+  if (isTopFrame || isCrossOriginIframe) {
+    // We can host the keyboard - open directly
     Keyboard.open(true);
+  } else if (isSameOriginIframe) {
+    // Same-origin child iframe - relay to parent with frame ID
+    chrome.runtime.sendMessage({
+      method: MESSAGE_TYPES.OPEN_FROM_BUTTON,
+      frame: window.frameElement.id,
+    });
   }
 }
 
@@ -362,14 +369,26 @@ async function loadSettings() {
  */
 function setupIframeCommunication() {
   const isTopFrame = top === self;
+  const isCrossOriginIframe = top !== self && window.frameElement === null;
+  const canHostKeyboard = isTopFrame || isCrossOriginIframe;
 
-  if (isTopFrame) {
-    // Top frame receives messages from iframes
+  if (canHostKeyboard) {
+    // Top frame and cross-origin iframes receive messages from child iframes
     chrome.runtime.onMessage.addListener((request) => {
       if (request.method === MESSAGE_TYPES.OPEN_FROM_IFRAME) {
         handleOpenFromIframe(request);
       } else if (request.method === MESSAGE_TYPES.OPEN_FROM_BUTTON) {
-        Keyboard.open(true);
+        // If frame ID provided, only respond if we own that iframe
+        if (request.frame) {
+          const iframe = document.getElementById(request.frame);
+          if (iframe) {
+            Keyboard.open(true);
+          }
+          // else: not our iframe, ignore
+        } else {
+          // No frame specified - open keyboard
+          Keyboard.open(true);
+        }
       } else if (request.method === MESSAGE_TYPES.CLICK_FROM_IFRAME) {
         handleKeyPress(request.key, { skip: request.skip });
       } else if (request.method === MESSAGE_TYPES.OPEN_URL_BAR) {

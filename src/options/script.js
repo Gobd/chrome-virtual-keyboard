@@ -2,8 +2,14 @@
 
 import { STORAGE_KEYS } from "../core/config.js";
 import { getLayoutsList } from "../core/storage.js";
+import * as VoiceInput from "../voice/VoiceInput.js";
 
 const $ = (id) => document.getElementById(id);
+
+// Track if model download is in progress
+let isDownloading = false;
+// Track which model is currently loaded
+let loadedModelKey = null;
 
 let zoomLocked = true;
 
@@ -60,6 +66,117 @@ function saveDisplaySettings() {
 function updateVoiceOptionsVisibility() {
   const voiceEnabled = $("voiceEnabled").checked;
   $("voiceOptions").style.display = voiceEnabled ? "block" : "none";
+}
+
+/**
+ * Get a human-readable model name
+ */
+function getModelDisplayName(modelSize, language) {
+  const modelNames = {
+    "tiny-q8": "Tiny (Q8)",
+    "base-q8": "Base (Q8)",
+    "small-q8": "Small (Q8)",
+    tiny: "Tiny",
+    base: "Base",
+    small: "Small",
+  };
+  const langNames = {
+    en: "English",
+    multilingual: "Multilingual",
+  };
+  return `${modelNames[modelSize] || modelSize} - ${langNames[language] || language}`;
+}
+
+/**
+ * Download the voice model when voice is enabled
+ */
+async function downloadVoiceModel(forceReload = false) {
+  if (isDownloading) return;
+
+  const modelSize = $("voiceModel").value;
+  const language = $("voiceLanguage").value;
+  const modelKey = `${modelSize}:${language}`;
+  const modelName = getModelDisplayName(modelSize, language);
+
+  // Check if we already have this exact model loaded
+  if (
+    !forceReload &&
+    loadedModelKey === modelKey &&
+    VoiceInput.isModelLoaded()
+  ) {
+    showModelStatus("ready", 100, null, modelName);
+    return;
+  }
+
+  // Dispose old model if switching to a different one
+  if (loadedModelKey && loadedModelKey !== modelKey) {
+    VoiceInput.dispose();
+    loadedModelKey = null;
+  }
+
+  isDownloading = true;
+  showModelStatus("downloading", 0, null, modelName);
+
+  const success = await VoiceInput.initTranscriber({
+    modelSize,
+    language,
+    onProgress: (percent) => {
+      showModelStatus("downloading", percent, null, modelName);
+    },
+    onStateChange: (state, error) => {
+      if (state === VoiceInput.VoiceState.IDLE) {
+        loadedModelKey = modelKey;
+        showModelStatus("ready", 100, null, modelName);
+        isDownloading = false;
+      } else if (state === VoiceInput.VoiceState.ERROR) {
+        showModelStatus("error", 0, error, modelName);
+        isDownloading = false;
+      }
+    },
+  });
+
+  if (!success) {
+    isDownloading = false;
+  }
+}
+
+/**
+ * Show model download status in the UI
+ */
+function showModelStatus(status, progress = 0, error = null, modelName = "") {
+  const statusDiv = $("voiceModelStatus");
+  const statusText = $("voiceModelStatusText");
+  const progressText = $("voiceModelProgress");
+  const progressBar = $("voiceModelProgressBar");
+
+  if (status === "downloading") {
+    statusDiv.style.display = "block";
+    statusText.textContent = `Downloading ${modelName}...`;
+    statusText.style.color = "#333";
+    progressText.textContent = `${progress}%`;
+    progressBar.style.width = `${progress}%`;
+    progressBar.style.background = "#2980b9";
+  } else if (status === "ready") {
+    statusDiv.style.display = "block";
+    statusText.textContent = `${modelName} ready`;
+    statusText.style.color = "#27ae60";
+    progressText.textContent = "";
+    progressBar.style.width = "100%";
+    progressBar.style.background = "#27ae60";
+    // Hide after a few seconds
+    setTimeout(() => {
+      statusDiv.style.display = "none";
+    }, 3000);
+  } else if (status === "error") {
+    statusDiv.style.display = "block";
+    statusText.textContent = `Error: ${error || "Failed to download"}`;
+    statusText.style.color = "#c0392b";
+    progressText.textContent = "";
+    progressBar.style.width = "100%";
+    progressBar.style.background = "#c0392b";
+  } else {
+    statusDiv.style.display = "none";
+  }
 }
 
 function updateKeyRepeatOptionsVisibility() {
@@ -248,9 +365,24 @@ window.addEventListener("load", async () => {
   $("resetPosition").addEventListener("click", () => {
     chrome.storage.local.set({ [STORAGE_KEYS.KEYBOARD_POSITION]: null });
   });
-  $("voiceEnabled").addEventListener("change", saveDisplaySettings);
-  $("voiceModel").addEventListener("change", saveDisplaySettings);
-  $("voiceLanguage").addEventListener("change", saveDisplaySettings);
+  $("voiceEnabled").addEventListener("change", () => {
+    saveDisplaySettings();
+    if ($("voiceEnabled").checked) {
+      downloadVoiceModel();
+    }
+  });
+  $("voiceModel").addEventListener("change", () => {
+    saveDisplaySettings();
+    if ($("voiceEnabled").checked) {
+      downloadVoiceModel();
+    }
+  });
+  $("voiceLanguage").addEventListener("change", () => {
+    saveDisplaySettings();
+    if ($("voiceEnabled").checked) {
+      downloadVoiceModel();
+    }
+  });
   $("keyRepeatEnabled").addEventListener("change", saveDisplaySettings);
   $("keyRepeatDelay").addEventListener("change", saveDisplaySettings);
   $("keyRepeatSpeed").addEventListener("change", saveDisplaySettings);
