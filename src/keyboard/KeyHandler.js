@@ -588,8 +588,4 @@ function dispatchBackspaceEvents(element) {
   element.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
-export { activateAutoCaps, handleKeyPress };
-
-export default {
-  handleKeyPress,
-};
+export { activateAutoCaps };
