@@ -8,17 +8,43 @@ Virtual Keyboard for Google Chrome&trade; will popup automatically when the user
 
 This extension is ideal for touch screen devices. This keyboard works like an iOS/Android/Windows 8 touch virtual keyboard.
 
+## Features
+
+### Input Features
+- **Cursor Positioning** - Type anywhere in a field, not just at the end
+- **Spacebar Cursor Swipe** - Drag on the spacebar to move the cursor left/right
+- **Auto-Capitalize** - Automatically capitalize the first letter after sentence punctuation (. ? !), Enter, or when the keyboard opens
+- **Sticky Shift** - Shift key stays on until pressed again (optional)
+- **Key Repeat** - Hold backspace to continuously delete characters, with configurable delay and speed
+- **`.com` Button** - Quick-insert ".com" when typing in email fields or the URL bar
+
+### Voice Input (Speech-to-Text)
+- **Offline Voice Recognition** - Uses Whisper AI running locally in your browser (no data sent to servers)
+- **Multiple Model Sizes** - Choose from Tiny, Base, or Small models in quantized or full precision
+- **Language Support** - English-only mode for faster recognition, or multilingual auto-detection
+
+### Display Options
+- **Adjustable Size** - Scale keyboard width and height independently (25-150%)
+- **Draggable Keyboard** - Reposition the keyboard anywhere on screen
+- **Number Row** - Optional dedicated number row above the main keyboard
+- **Customizable Buttons** - Show/hide: open button, language switcher, settings, URL button, close button, numbers toggle
+- **Autostart Mode** - Keyboard opens automatically when pages load
+
+### Keyboard Layouts
+15 language layouts available: English, French, German, Italian, Korean, Magyar, Norwegian, Polish, Russian, Slovenian, Spanish, Swedish, Tamil, Czech, and Ukrainian.
+
 ## Fork Differences
 
-This is a fork of the [original Virtual Keyboard extension](https://github.com/xontab/chrome-virtual-keyboard) with the following changes:
+This is a fork of the [original Virtual Keyboard extension](https://github.com/xontab/chrome-virtual-keyboard) with the following improvements:
 
 - **Manifest V3 Migration** - Updated from Manifest V2 to V3 for continued Chrome Web Store compatibility
 - **`role="textbox"` Support** - The keyboard now activates on elements with `role="textbox"` in addition to standard input fields (useful for custom form components and accessibility)
 - **Improved iframe Support** - Better handling of keyboard in same-origin iframe scenarios
 - **Efficient DOM Monitoring** - Replaced inefficient polling (scanning entire DOM every second) with MutationObserver for detecting new input fields. This uses zero CPU when the page is idle and responds instantly to dynamically added inputs
-- **Cursor Positioning** - Type anywhere in a field, not just at the end. Drag on the spacebar to move the cursor
-- **Open Button** - Optional floating keyboard button in the lower-right corner to manually show the keyboard (can be disabled in settings)
-- **`.com` Button** - Quick-insert ".com" when typing in email fields or the URL bar
+- **Voice Input** - Offline speech-to-text using Whisper AI
+- **Auto-Capitalize** - Smart capitalization after sentences and on keyboard open
+- **Key Repeat** - Configurable hold-to-repeat for backspace
+- **Spacebar Cursor Swipe** - Drag spacebar to move cursor
 
 All features from the original extension are preserved.
 

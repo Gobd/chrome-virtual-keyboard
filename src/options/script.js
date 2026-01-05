@@ -26,6 +26,7 @@ function saveDisplaySettings() {
   const keyboardDraggable = $("keyboardDraggable").checked;
   const spacebarCursorSwipe = $("spacebarCursorSwipe").checked;
   const stickyShift = $("stickyShift").checked;
+  const autoCaps = $("autoCaps").checked;
   const autostart = $("autostart").checked;
   const voiceEnabled = $("voiceEnabled").checked;
   const voiceModel = $("voiceModel").value;
@@ -48,6 +49,7 @@ function saveDisplaySettings() {
     [STORAGE_KEYS.KEYBOARD_DRAGGABLE]: keyboardDraggable,
     [STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE]: spacebarCursorSwipe,
     [STORAGE_KEYS.STICKY_SHIFT]: stickyShift,
+    [STORAGE_KEYS.AUTO_CAPS]: autoCaps,
     [STORAGE_KEYS.AUTOSTART]: autostart,
     [STORAGE_KEYS.VOICE_ENABLED]: voiceEnabled,
     [STORAGE_KEYS.VOICE_MODEL]: voiceModel,
@@ -199,6 +201,7 @@ async function loadDisplaySettings() {
     STORAGE_KEYS.KEYBOARD_DRAGGABLE,
     STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE,
     STORAGE_KEYS.STICKY_SHIFT,
+    STORAGE_KEYS.AUTO_CAPS,
     STORAGE_KEYS.AUTOSTART,
     STORAGE_KEYS.VOICE_ENABLED,
     STORAGE_KEYS.VOICE_MODEL,
@@ -230,6 +233,7 @@ async function loadDisplaySettings() {
   $("spacebarCursorSwipe").checked =
     result[STORAGE_KEYS.SPACEBAR_CURSOR_SWIPE] === true;
   $("stickyShift").checked = result[STORAGE_KEYS.STICKY_SHIFT] === true;
+  $("autoCaps").checked = result[STORAGE_KEYS.AUTO_CAPS] === true;
   $("autostart").checked = result[STORAGE_KEYS.AUTOSTART] === true;
   $("voiceEnabled").checked = result[STORAGE_KEYS.VOICE_ENABLED] === true;
   $("voiceModel").value = result[STORAGE_KEYS.VOICE_MODEL] || "base-q8";
@@ -361,6 +365,7 @@ window.addEventListener("load", async () => {
   $("keyboardDraggable").addEventListener("change", saveDisplaySettings);
   $("spacebarCursorSwipe").addEventListener("change", saveDisplaySettings);
   $("stickyShift").addEventListener("change", saveDisplaySettings);
+  $("autoCaps").addEventListener("change", saveDisplaySettings);
   $("autostart").addEventListener("change", saveDisplaySettings);
   $("resetPosition").addEventListener("click", () => {
     chrome.storage.local.set({ [STORAGE_KEYS.KEYBOARD_POSITION]: null });

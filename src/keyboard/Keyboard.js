@@ -22,7 +22,7 @@ import {
   scrollInputIntoView,
 } from "../input/InputTracker.js";
 import { renderLayout } from "../layouts/LayoutRenderer.js";
-import { handleKeyPress } from "./KeyHandler.js";
+import { activateAutoCaps, handleKeyPress } from "./KeyHandler.js";
 import { getKeyWithShift } from "./KeyMap.js";
 
 let keyboardElement = null;
@@ -1104,6 +1104,9 @@ export async function open(force = false) {
   keyboardElement.dataset.state = "open";
   keyboardElement.classList.remove(CSS_CLASSES.KEYBOARD_CLOSED);
   keyboardElement.classList.add(CSS_CLASSES.KEYBOARD_OPEN);
+
+  // Activate auto-caps on keyboard open (first keypress should be capitalized)
+  activateAutoCaps();
 
   // Update scroll extend element
   updateScrollExtend();

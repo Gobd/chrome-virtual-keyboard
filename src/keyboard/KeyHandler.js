@@ -154,6 +154,7 @@ function handleEnter() {
     element.value = `${element.value.slice(0, pos)}\n${element.value.slice(posEnd)}`;
     element.selectionStart = element.selectionEnd = pos + 1;
     dispatchInputEvent(element);
+    activateAutoCaps();
   } else if (type === "contenteditable") {
     // Insert <br>
     const selection = getSelectionForElement(element);
@@ -169,6 +170,7 @@ function handleEnter() {
     }
     dispatchInputEvent(element);
     markChanged();
+    activateAutoCaps();
   } else {
     // Submit form or close keyboard
     const form = element.closest("form");
@@ -191,6 +193,10 @@ function handleEnter() {
 function handleShift() {
   const current = keyboardState.get("shift");
   keyboardState.set("shift", !current);
+  // Clear auto-caps flag when user manually toggles shift
+  if (keyboardState.get("autoCapsActive")) {
+    keyboardState.set("autoCapsActive", false);
+  }
 }
 
 /**
@@ -362,14 +368,37 @@ function insertCharacter(key) {
       dispatchKeyEvents(element, key);
     }
   }
+
+  // Activate auto-caps after sentence-ending punctuation
+  if (key === "." || key === "?" || key === "!") {
+    activateAutoCaps();
+  }
 }
 
 /**
  * Reset shift mode after typing a character (unless sticky shift is enabled)
+ * Auto-caps triggered shift always resets (ignores sticky shift)
  */
 function resetShiftIfNeeded() {
-  if (keyboardState.get("shift") && !settingsState.get("stickyShift")) {
-    keyboardState.set("shift", false);
+  if (keyboardState.get("shift")) {
+    // Auto-caps always resets after one letter (ignores sticky shift)
+    if (keyboardState.get("autoCapsActive")) {
+      keyboardState.set("shift", false);
+      keyboardState.set("autoCapsActive", false);
+    } else if (!settingsState.get("stickyShift")) {
+      keyboardState.set("shift", false);
+    }
+  }
+}
+
+/**
+ * Activate auto-caps if enabled and shift is not already on
+ * Only activates if shift is OFF to avoid interfering with sticky shift
+ */
+function activateAutoCaps() {
+  if (settingsState.get("autoCaps") && !keyboardState.get("shift")) {
+    keyboardState.set("shift", true);
+    keyboardState.set("autoCapsActive", true);
   }
 }
 
@@ -558,6 +587,8 @@ function dispatchBackspaceEvents(element) {
   element.dispatchEvent(backspaceEvent("keyup"));
   element.dispatchEvent(new Event("input", { bubbles: true }));
 }
+
+export { activateAutoCaps, handleKeyPress };
 
 export default {
   handleKeyPress,
