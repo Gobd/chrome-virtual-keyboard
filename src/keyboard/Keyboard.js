@@ -881,6 +881,11 @@ function setupStateSubscriptions() {
     updateShiftKeys();
   });
 
+  // Auto-caps state changes (update display to show only letters shifted)
+  keyboardState.subscribe("autoCapsActive", () => {
+    updateShiftKeys();
+  });
+
   // Zoom setting changes
   settingsState.subscribe("keyboardZoomWidth", applyZoom);
   settingsState.subscribe("keyboardZoomHeight", applyZoom);
@@ -1281,10 +1286,20 @@ function renderInputType() {
 function updateShiftKeys() {
   const keys = getCachedShiftKeys();
   const shift = keyboardState.get("shift");
+  const autoCapsActive = keyboardState.get("autoCapsActive");
 
   for (const key of keys) {
-    const value =
-      key.dataset.keyShift && shift ? key.dataset.keyShift : key.dataset.key;
+    let value = key.dataset.key;
+    if (key.dataset.keyShift && shift) {
+      // Auto-caps only shows shifted display for letters
+      if (autoCapsActive) {
+        if (/\p{L}/u.test(key.dataset.key)) {
+          value = key.dataset.keyShift;
+        }
+      } else {
+        value = key.dataset.keyShift;
+      }
+    }
     const span = key.querySelector("span");
     if (span) {
       span.textContent = value;

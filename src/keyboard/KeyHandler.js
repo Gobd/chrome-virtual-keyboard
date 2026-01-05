@@ -357,14 +357,14 @@ function insertCharacter(key) {
   if (type === "contenteditable") {
     insertTextAtCursor(element, key);
     markChanged();
-    resetShiftIfNeeded();
+    resetShiftIfNeeded(key);
     dispatchKeyEvents(element, key);
   } else {
     const maxLength = element.maxLength;
     if (maxLength <= 0 || element.value.length < maxLength) {
       insertTextAtPosition(element, key);
       markChanged();
-      resetShiftIfNeeded();
+      resetShiftIfNeeded(key);
       dispatchKeyEvents(element, key);
     }
   }
@@ -377,14 +377,17 @@ function insertCharacter(key) {
 
 /**
  * Reset shift mode after typing a character (unless sticky shift is enabled)
- * Auto-caps triggered shift always resets (ignores sticky shift)
+ * Auto-caps triggered shift always resets after a letter (ignores sticky shift)
+ * @param {string} key - The character that was typed
  */
-function resetShiftIfNeeded() {
+function resetShiftIfNeeded(key) {
   if (keyboardState.get("shift")) {
-    // Auto-caps always resets after one letter (ignores sticky shift)
+    // Auto-caps only resets after typing a letter (ignores spaces/punctuation)
     if (keyboardState.get("autoCapsActive")) {
-      keyboardState.set("shift", false);
-      keyboardState.set("autoCapsActive", false);
+      if (/\p{L}/u.test(key)) {
+        keyboardState.set("shift", false);
+        keyboardState.set("autoCapsActive", false);
+      }
     } else if (!settingsState.get("stickyShift")) {
       keyboardState.set("shift", false);
     }
