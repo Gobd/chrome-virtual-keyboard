@@ -1,6 +1,8 @@
 // Shadow DOM Watcher
 // Monitors shadow roots for dynamically added inputs
 
+import { EVENTS, emit } from "../core/events.js";
+import { focusState } from "../core/state.js";
 import {
   bindAllInputs,
   bindInput,
@@ -100,12 +102,49 @@ export function unobserveShadowRoot(shadowRoot) {
 }
 
 /**
+ * Check if the focused element was removed and close keyboard if so
+ * @param {Node} node - The removed node
+ */
+function checkFocusedElementRemoved(node) {
+  const focusedElement = focusState.get("element");
+  if (!focusedElement) return;
+
+  // Check if the removed node is or contains the focused element
+  if (node === focusedElement || node.contains?.(focusedElement)) {
+    focusState.set("element", null);
+    emit(EVENTS.KEYBOARD_CLOSE);
+    return;
+  }
+
+  // Check if the removed node is an iframe containing the focused element
+  if (node.nodeName === "IFRAME") {
+    try {
+      const iframeDoc = node.contentDocument;
+      if (iframeDoc?.contains(focusedElement)) {
+        focusState.set("element", null);
+        emit(EVENTS.KEYBOARD_CLOSE);
+      }
+    } catch {
+      // Cross-origin iframe - can't check, but if the focused element
+      // is no longer connected, we should close
+      if (!focusedElement.isConnected) {
+        focusState.set("element", null);
+        emit(EVENTS.KEYBOARD_CLOSE);
+      }
+    }
+  }
+}
+
+/**
  * Process a node that was removed from the DOM
  * Clean up any shadow observers
  * @param {Node} node
  */
 function processRemovedNode(node) {
   if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+  // Check if the focused element was removed - close keyboard if so
+  checkFocusedElementRemoved(node);
 
   // Clean up shadow observer for this node
   if (node.shadowRoot) {
