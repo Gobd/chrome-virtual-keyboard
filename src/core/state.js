@@ -124,6 +124,7 @@ export function createStore(initialState = {}) {
 export const keyboardState = createStore({
   open: false,
   shift: false,
+  autoCapsActive: false, // Tracks when auto-caps triggered the current shift
   numbersMode: false,
   loadedLayout: "",
 });
@@ -161,6 +162,7 @@ export const settingsState = createStore({
   keyboardPosition: null,
   autostart: false,
   stickyShift: false,
+  autoCaps: false,
   // Voice settings
   voiceEnabled: false,
   voiceModel: "base-q8", // 'tiny-q8', 'base-q8', 'small-q8', 'tiny', 'base', 'small'

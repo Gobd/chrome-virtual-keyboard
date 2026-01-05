@@ -96,6 +96,7 @@ export const STORAGE_KEYS = {
   KEYBOARD_POSITION: "keyboardPosition",
   AUTOSTART: "autostart",
   STICKY_SHIFT: "stickyShift",
+  AUTO_CAPS: "autoCaps",
   // Voice input settings
   VOICE_ENABLED: "voiceEnabled",
   VOICE_MODEL: "voiceModel",

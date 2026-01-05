@@ -332,6 +332,23 @@ export async function setStickyShift(enabled) {
 }
 
 /**
+ * Get auto caps setting
+ * @returns {Promise<boolean>}
+ */
+export async function getAutoCaps() {
+  const result = await get(STORAGE_KEYS.AUTO_CAPS);
+  return result[STORAGE_KEYS.AUTO_CAPS] === true;
+}
+
+/**
+ * Set auto caps setting
+ * @param {boolean} enabled
+ */
+export async function setAutoCaps(enabled) {
+  await set({ [STORAGE_KEYS.AUTO_CAPS]: enabled });
+}
+
+/**
  * Get voice enabled setting
  * @returns {Promise<boolean>}
  */
@@ -422,6 +439,7 @@ export async function loadAllSettings() {
     STORAGE_KEYS.KEYBOARD_POSITION,
     STORAGE_KEYS.AUTOSTART,
     STORAGE_KEYS.STICKY_SHIFT,
+    STORAGE_KEYS.AUTO_CAPS,
     STORAGE_KEYS.VOICE_ENABLED,
     STORAGE_KEYS.VOICE_MODEL,
     STORAGE_KEYS.VOICE_LANGUAGE,
@@ -449,6 +467,7 @@ export async function loadAllSettings() {
     keyboardPosition: result[STORAGE_KEYS.KEYBOARD_POSITION] || null,
     autostart: result[STORAGE_KEYS.AUTOSTART] === true,
     stickyShift: result[STORAGE_KEYS.STICKY_SHIFT] === true,
+    autoCaps: result[STORAGE_KEYS.AUTO_CAPS] === true,
     voiceEnabled: result[STORAGE_KEYS.VOICE_ENABLED] === true,
     voiceModel: result[STORAGE_KEYS.VOICE_MODEL] || "base-q8",
     voiceLanguage: result[STORAGE_KEYS.VOICE_LANGUAGE] || "multilingual",
@@ -467,7 +486,7 @@ export async function initializeDefaults(defaultLayouts) {
     [STORAGE_KEYS.KEYBOARD_LAYOUT]: "en",
     [STORAGE_KEYS.KEYBOARD_LAYOUTS_LIST]: JSON.stringify(defaultLayouts),
     [STORAGE_KEYS.OPENED_FIRST_TIME]: "true",
-    [STORAGE_KEYS.SHOW_OPEN_BUTTON]: true,
+    [STORAGE_KEYS.SHOW_OPEN_BUTTON]: false,
     [STORAGE_KEYS.SHOW_LANGUAGE_BUTTON]: false,
     [STORAGE_KEYS.SHOW_SETTINGS_BUTTON]: true,
     [STORAGE_KEYS.SHOW_URL_BUTTON]: true,
@@ -482,6 +501,7 @@ export async function initializeDefaults(defaultLayouts) {
     [STORAGE_KEYS.KEYBOARD_POSITION]: null,
     [STORAGE_KEYS.AUTOSTART]: false,
     [STORAGE_KEYS.STICKY_SHIFT]: false,
+    [STORAGE_KEYS.AUTO_CAPS]: false,
     [STORAGE_KEYS.VOICE_ENABLED]: false,
     [STORAGE_KEYS.VOICE_MODEL]: "base-q8",
     [STORAGE_KEYS.VOICE_LANGUAGE]: "multilingual",
@@ -544,6 +564,8 @@ export default {
   setAutostart,
   getStickyShift,
   setStickyShift,
+  getAutoCaps,
+  setAutoCaps,
   getVoiceEnabled,
   setVoiceEnabled,
   getVoiceModel,

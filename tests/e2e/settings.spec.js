@@ -295,15 +295,15 @@ test.describe("Virtual Keyboard - Settings Persistence", () => {
   // These tests verify that settings from chrome.storage affect the UI
   // Note: Setting storage requires extension context
 
-  test("open button exists by default", async ({ page }) => {
+  test("open button is hidden by default", async ({ page }) => {
     await page.goto("http://localhost:3333/index.html");
     await waitForExtension(page);
 
-    // By default, open button should exist in the DOM
+    // By default, open button should not exist in the DOM
     const exists = await page.evaluate(() => {
       return document.querySelector("#vk-open-btn") !== null;
     });
-    expect(exists).toBe(true);
+    expect(exists).toBe(false);
   });
 
   test("keyboard applies correct styling", async ({ page }) => {

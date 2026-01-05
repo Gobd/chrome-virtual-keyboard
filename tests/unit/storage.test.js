@@ -428,6 +428,7 @@ describe("storage.js", () => {
         keyboardPosition: null,
         autostart: false,
         stickyShift: false,
+        autoCaps: false,
         voiceEnabled: false,
         voiceModel: "base-q8",
         voiceLanguage: "multilingual",
@@ -482,6 +483,7 @@ describe("storage.js", () => {
         keyboardPosition: { x: 100, y: 200 },
         autostart: true,
         stickyShift: true,
+        autoCaps: false,
         voiceEnabled: false,
         voiceModel: "base-q8",
         voiceLanguage: "multilingual",
@@ -506,7 +508,7 @@ describe("storage.js", () => {
       expect(settings.isFirstTime).toBe(false);
       expect(settings.layout).toBe("en");
       expect(settings.layoutsList).toEqual(defaultLayouts);
-      expect(settings.showOpenButton).toBe(true);
+      expect(settings.showOpenButton).toBe(false);
       expect(settings.showLanguageButton).toBe(false);
       expect(settings.showSettingsButton).toBe(true);
       expect(settings.showNumberBar).toBe(true);

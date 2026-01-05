@@ -22,7 +22,7 @@ import {
   scrollInputIntoView,
 } from "../input/InputTracker.js";
 import { renderLayout } from "../layouts/LayoutRenderer.js";
-import { handleKeyPress } from "./KeyHandler.js";
+import { activateAutoCaps, handleKeyPress } from "./KeyHandler.js";
 import { getKeyWithShift } from "./KeyMap.js";
 
 let keyboardElement = null;
@@ -881,6 +881,11 @@ function setupStateSubscriptions() {
     updateShiftKeys();
   });
 
+  // Auto-caps state changes (update display to show only letters shifted)
+  keyboardState.subscribe("autoCapsActive", () => {
+    updateShiftKeys();
+  });
+
   // Zoom setting changes
   settingsState.subscribe("keyboardZoomWidth", applyZoom);
   settingsState.subscribe("keyboardZoomHeight", applyZoom);
@@ -1105,6 +1110,9 @@ export async function open(force = false) {
   keyboardElement.classList.remove(CSS_CLASSES.KEYBOARD_CLOSED);
   keyboardElement.classList.add(CSS_CLASSES.KEYBOARD_OPEN);
 
+  // Activate auto-caps on keyboard open (first keypress should be capitalized)
+  activateAutoCaps();
+
   // Update scroll extend element
   updateScrollExtend();
 
@@ -1278,10 +1286,20 @@ function renderInputType() {
 function updateShiftKeys() {
   const keys = getCachedShiftKeys();
   const shift = keyboardState.get("shift");
+  const autoCapsActive = keyboardState.get("autoCapsActive");
 
   for (const key of keys) {
-    const value =
-      key.dataset.keyShift && shift ? key.dataset.keyShift : key.dataset.key;
+    let value = key.dataset.key;
+    if (key.dataset.keyShift && shift) {
+      // Auto-caps only shows shifted display for letters
+      if (autoCapsActive) {
+        if (/\p{L}/u.test(key.dataset.key)) {
+          value = key.dataset.keyShift;
+        }
+      } else {
+        value = key.dataset.keyShift;
+      }
+    }
     const span = key.querySelector("span");
     if (span) {
       span.textContent = value;
