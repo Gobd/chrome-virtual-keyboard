@@ -109,29 +109,25 @@ function checkFocusedElementRemoved(node) {
   const focusedElement = focusState.get("element");
   if (!focusedElement) return;
 
-  // Check if the removed node is or contains the focused element
-  if (node === focusedElement || node.contains?.(focusedElement)) {
+  // Check if the focused element's document is still in the main DOM
+  // When an iframe is removed, elements inside it have isConnected=true
+  // but their ownerDocument is no longer accessible from the main document
+  const focusedOwnerDoc = focusedElement.ownerDocument;
+  const isInMainDoc = focusedOwnerDoc === document;
+  const ownerDocConnected =
+    isInMainDoc ||
+    document.contains(focusedOwnerDoc?.defaultView?.frameElement);
+
+  if (!ownerDocConnected || !focusedElement.isConnected) {
     focusState.set("element", null);
     emit(EVENTS.KEYBOARD_CLOSE);
     return;
   }
 
-  // Check if the removed node is an iframe containing the focused element
-  if (node.nodeName === "IFRAME") {
-    try {
-      const iframeDoc = node.contentDocument;
-      if (iframeDoc?.contains(focusedElement)) {
-        focusState.set("element", null);
-        emit(EVENTS.KEYBOARD_CLOSE);
-      }
-    } catch {
-      // Cross-origin iframe - can't check, but if the focused element
-      // is no longer connected, we should close
-      if (!focusedElement.isConnected) {
-        focusState.set("element", null);
-        emit(EVENTS.KEYBOARD_CLOSE);
-      }
-    }
+  // Check if the removed node directly contains the focused element
+  if (node === focusedElement || node.contains?.(focusedElement)) {
+    focusState.set("element", null);
+    emit(EVENTS.KEYBOARD_CLOSE);
   }
 }
 
