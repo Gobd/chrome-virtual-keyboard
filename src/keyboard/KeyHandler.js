@@ -142,6 +142,7 @@ function handleEnter() {
   if (keydownEvent.defaultPrevented) {
     markChanged();
     dispatchInputEvent(element);
+    activateAutoCaps();
     return;
   }
 

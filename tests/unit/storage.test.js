@@ -508,7 +508,7 @@ describe("storage.js", () => {
       expect(settings.isFirstTime).toBe(false);
       expect(settings.layout).toBe("en");
       expect(settings.layoutsList).toEqual(defaultLayouts);
-      expect(settings.showOpenButton).toBe(true);
+      expect(settings.showOpenButton).toBe(false);
       expect(settings.showLanguageButton).toBe(false);
       expect(settings.showSettingsButton).toBe(true);
       expect(settings.showNumberBar).toBe(true);

@@ -486,7 +486,7 @@ export async function initializeDefaults(defaultLayouts) {
     [STORAGE_KEYS.KEYBOARD_LAYOUT]: "en",
     [STORAGE_KEYS.KEYBOARD_LAYOUTS_LIST]: JSON.stringify(defaultLayouts),
     [STORAGE_KEYS.OPENED_FIRST_TIME]: "true",
-    [STORAGE_KEYS.SHOW_OPEN_BUTTON]: true,
+    [STORAGE_KEYS.SHOW_OPEN_BUTTON]: false,
     [STORAGE_KEYS.SHOW_LANGUAGE_BUTTON]: false,
     [STORAGE_KEYS.SHOW_SETTINGS_BUTTON]: true,
     [STORAGE_KEYS.SHOW_URL_BUTTON]: true,

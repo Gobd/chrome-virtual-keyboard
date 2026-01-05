@@ -142,7 +142,7 @@ async function loadSettings() {
 
     settingsState.set({
       layout: "en",
-      showOpenButton: true,
+      showOpenButton: false,
       showLanguageButton: false,
       showSettingsButton: true,
       showUrlButton: true,
@@ -157,6 +157,7 @@ async function loadSettings() {
       keyboardPosition: null,
       autostart: false,
       stickyShift: false,
+      autoCaps: false,
       voiceEnabled: false,
       voiceModel: "base-q8",
       voiceLanguage: "multilingual",
@@ -182,6 +183,7 @@ async function loadSettings() {
       keyboardPosition: settings.keyboardPosition,
       autostart: settings.autostart,
       stickyShift: settings.stickyShift,
+      autoCaps: settings.autoCaps,
       voiceEnabled: settings.voiceEnabled,
       voiceModel: settings.voiceModel,
       voiceLanguage: settings.voiceLanguage,
@@ -215,6 +217,9 @@ async function loadSettings() {
     }
     if (changes.stickyShift !== undefined) {
       settingsState.set("stickyShift", changes.stickyShift.newValue === true);
+    }
+    if (changes.autoCaps !== undefined) {
+      settingsState.set("autoCaps", changes.autoCaps.newValue === true);
     }
     if (changes.spacebarCursorSwipe !== undefined) {
       settingsState.set(
