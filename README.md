@@ -2,6 +2,8 @@
 
 ![Virtual Keyboard Screenshot](screenshot.png)
 
+[![Install from Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Install-blue?logo=googlechrome)](https://chromewebstore.google.com/detail/smartkey-auto-popup-keybo/fkppclffmhmhajngophcggopdmjaoiah)
+
 ## About
 
 Virtual Keyboard for Google Chrome&trade; will popup automatically when the user clicks on an input field such as textboxes and textareas. Furthermore, the keyboard will disappear automatically once no longer needed.
