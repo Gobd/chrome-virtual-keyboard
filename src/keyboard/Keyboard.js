@@ -581,7 +581,7 @@ function createKeyboardFromRows(id, rows, keyClass = "") {
  */
 function createNumberInputKeyboard() {
   return createKeyboardFromRows(DOM_IDS.NUMBER_BAR_INPUT, [
-    ["7", "8", "9", "#"],
+    ["7", "8", "9", "#", "Backspace"],
     ["4", "5", "6", "-", ")"],
     ["1", "2", "3", "+", "("],
     ["0", ".", "*", "$", "Enter"],
