@@ -424,10 +424,38 @@ function setupIframeCommunication() {
 }
 
 /**
+ * Recursively search for an iframe by ID in all nested iframes
+ * @param {Document} doc - Document to search in
+ * @param {string} frameId - ID of the iframe to find
+ * @returns {HTMLIFrameElement|null}
+ */
+function findNestedIframe(doc, frameId) {
+  // First check direct children
+  const direct = doc.getElementById(frameId);
+  if (direct) return direct;
+
+  // Search in nested iframes
+  const iframes = doc.querySelectorAll("iframe");
+  for (const iframe of iframes) {
+    try {
+      const nestedDoc = iframe.contentDocument;
+      if (nestedDoc) {
+        const found = findNestedIframe(nestedDoc, frameId);
+        if (found) return found;
+      }
+    } catch {
+      // Cross-origin iframe, skip
+    }
+  }
+  return null;
+}
+
+/**
  * Handle open from iframe message
  */
 function handleOpenFromIframe(request) {
-  const iframe = document.getElementById(request.frame);
+  // Search for iframe recursively (handles nested same-origin iframes)
+  const iframe = findNestedIframe(document, request.frame);
   if (!iframe) return;
 
   const element = iframe.contentDocument?.getElementById(request.elem);
