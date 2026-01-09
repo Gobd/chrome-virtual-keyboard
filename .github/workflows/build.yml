@@ -1,13 +1,16 @@
 name: Build
 
 on:
+  push:
+    branches:
+      - master
   pull_request:
     types: [opened, reopened, synchronize]
     branches:
       - master
 
 concurrency:
-  group: build-${{ github.head_ref }}
+  group: build-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
