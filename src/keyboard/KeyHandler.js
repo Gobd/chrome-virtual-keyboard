@@ -408,7 +408,8 @@ function activateAutoCaps() {
   // Skip auto-caps for email and password inputs
   const element = focusState.get("element");
   if (element) {
-    const origType = element.getAttribute?.("data-original-type") || element.type;
+    const origType =
+      element.getAttribute?.("data-original-type") || element.type;
     if (origType === "email" || origType === "password") {
       return;
     }
