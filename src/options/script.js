@@ -349,6 +349,15 @@ window.addEventListener("load", async () => {
   loadLayouts();
   await loadDisplaySettings();
 
+  $("closeSettings").addEventListener("click", () => {
+    // Try to close the window/tab, fall back to navigating back
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.close();
+    }
+  });
+
   $("kl_add").addEventListener("click", addLayout);
   $("kl_remove").addEventListener("click", removeLayout);
 

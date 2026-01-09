@@ -398,12 +398,25 @@ function resetShiftIfNeeded(key) {
 /**
  * Activate auto-caps if enabled and shift is not already on
  * Only activates if shift is OFF to avoid interfering with sticky shift
+ * Skips activation for email and password inputs
  */
 function activateAutoCaps() {
-  if (settingsState.get("autoCaps") && !keyboardState.get("shift")) {
-    keyboardState.set("shift", true);
-    keyboardState.set("autoCapsActive", true);
+  if (!settingsState.get("autoCaps") || keyboardState.get("shift")) {
+    return;
   }
+
+  // Skip auto-caps for email and password inputs
+  const element = focusState.get("element");
+  if (element) {
+    const origType =
+      element.getAttribute?.("data-original-type") || element.type;
+    if (origType === "email" || origType === "password") {
+      return;
+    }
+  }
+
+  keyboardState.set("shift", true);
+  keyboardState.set("autoCapsActive", true);
 }
 
 // =============================================================================
