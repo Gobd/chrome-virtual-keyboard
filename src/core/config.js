@@ -42,6 +42,8 @@ export const TIMING = {
   URL_BAR_HIGHLIGHT_DELAY: 500,
   URL_BAR_FOCUS_DELAY: 200,
   ANIMATION_DURATION: 400,
+  // Grace period before closing when element is removed (allows new focus)
+  REMOVAL_CLOSE_DELAY: 100,
 };
 
 export const KEYBOARD = {

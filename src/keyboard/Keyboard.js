@@ -15,6 +15,7 @@ import storage from "../core/storage.js";
 import {
   addBodyPadding,
   clearCloseTimer,
+  clearRemovalCloseTimer,
   removeBodyPadding,
   restoreScrollPosition,
   saveInputType,
@@ -1098,6 +1099,7 @@ export async function open(force = false) {
   }
 
   clearCloseTimer();
+  clearRemovalCloseTimer();
   saveScrollPosition();
 
   // Add body padding

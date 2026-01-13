@@ -5,7 +5,10 @@ import { DOM_IDS, MESSAGE_TYPES, TIMING } from "./core/config.js";
 import { EVENTS, emit, on } from "./core/events.js";
 import { focusState, runtimeState, settingsState } from "./core/state.js";
 import storage from "./core/storage.js";
-import { getInputType } from "./input/InputBinder.js";
+import {
+  getInputType,
+  startDocumentFocusListener,
+} from "./input/InputBinder.js";
 import { init as initInputTracker } from "./input/InputTracker.js";
 import {
   bindAllInputsDeep,
@@ -502,8 +505,12 @@ async function init() {
   // Bind existing inputs (including shadow DOM)
   bindAllInputsDeep(document);
 
-  // Start observing for new inputs
-  startDocumentObserver();
+  // Start observing for new inputs (store reference to prevent GC)
+  const observer = await startDocumentObserver();
+  runtimeState.set("documentObserver", observer);
+
+  // Start document-level focus listener as fallback for missed inputs
+  startDocumentFocusListener(document);
 
   // Set up event subscriptions
   setupEventSubscriptions();
@@ -534,11 +541,29 @@ if (isTopFrame || isCrossOriginIframe) {
   });
 } else {
   // Same-origin iframe - only bind inputs and set up communication
-  loadSettings().then(() => {
+  loadSettings().then(async () => {
     initInputTracker();
     bindAllInputsDeep(document);
-    startDocumentObserver();
+
+    // Start observing for new inputs (store reference to prevent GC)
+    const observer = await startDocumentObserver();
+    runtimeState.set("documentObserver", observer);
+
+    // Start document-level focus listener as fallback for missed inputs
+    startDocumentFocusListener(document);
+
     setupIframeCommunication();
     createOpenButton();
+
+    // When iframe is being destroyed, immediately tell parent to close keyboard
+    // This handles cases where the blur timer wouldn't fire in time
+    window.addEventListener("pagehide", () => {
+      chrome.runtime.sendMessage({
+        method: MESSAGE_TYPES.CLICK_FROM_IFRAME,
+        key: "Close",
+        skip: false,
+        frame: window.frameElement?.id,
+      });
+    });
   });
 }

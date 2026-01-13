@@ -8,6 +8,32 @@ import { focusState, runtimeState, scrollState } from "../core/state.js";
 // Counter for generating unique element IDs in iframes
 let iframeElementCount = 0;
 
+// Timer for delayed close after element removal (managed here to avoid circular imports)
+let removalCloseTimer = null;
+
+/**
+ * Clear the removal close timer
+ */
+export function clearRemovalCloseTimer() {
+  if (removalCloseTimer) {
+    clearTimeout(removalCloseTimer);
+    removalCloseTimer = null;
+  }
+}
+
+/**
+ * Start a delayed close after element removal
+ * Uses a grace period to allow new elements to take focus
+ */
+export function startRemovalCloseTimer() {
+  clearRemovalCloseTimer();
+  removalCloseTimer = setTimeout(() => {
+    removalCloseTimer = null;
+    focusState.set("element", null);
+    emit(EVENTS.KEYBOARD_CLOSE);
+  }, TIMING.REMOVAL_CLOSE_DELAY);
+}
+
 /**
  * Initialize input tracking
  * Sets up event listeners for input focus/blur
@@ -33,8 +59,9 @@ function isInSameOriginIframe() {
  * @param {Object} data - { element, inputType, isFocus }
  */
 function handleInputFocus({ element, inputType, isFocus }) {
-  // Clear any pending close timer
+  // Clear any pending close timers (both blur and removal)
   clearCloseTimer();
+  clearRemovalCloseTimer();
 
   // Fire change event for previous element if needed
   fireChangeIfNeeded();
@@ -240,6 +267,8 @@ export default {
   markChanged,
   saveInputType,
   clearCloseTimer,
+  clearRemovalCloseTimer,
+  startRemovalCloseTimer,
   saveScrollPosition,
   scrollInputIntoView,
   restoreScrollPosition,
