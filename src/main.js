@@ -5,10 +5,7 @@ import { DOM_IDS, MESSAGE_TYPES, TIMING } from "./core/config.js";
 import { EVENTS, emit, on } from "./core/events.js";
 import { focusState, runtimeState, settingsState } from "./core/state.js";
 import storage from "./core/storage.js";
-import {
-  getInputType,
-  startDocumentFocusListener,
-} from "./input/InputBinder.js";
+import { getInputType } from "./input/InputBinder.js";
 import { init as initInputTracker } from "./input/InputTracker.js";
 import {
   bindAllInputsDeep,
@@ -509,8 +506,10 @@ async function init() {
   const observer = await startDocumentObserver();
   runtimeState.set("documentObserver", observer);
 
-  // Start document-level focus listener as fallback for missed inputs
-  startDocumentFocusListener(document);
+  // Fallback focus listener - catches inputs missed by MutationObserver
+  // Uncomment if keyboard stops appearing after long uptime:
+  // import { startDocumentFocusListener } from "./input/InputBinder.js";
+  // startDocumentFocusListener(document);
 
   // Set up event subscriptions
   setupEventSubscriptions();
@@ -549,8 +548,10 @@ if (isTopFrame || isCrossOriginIframe) {
     const observer = await startDocumentObserver();
     runtimeState.set("documentObserver", observer);
 
-    // Start document-level focus listener as fallback for missed inputs
-    startDocumentFocusListener(document);
+    // Fallback focus listener - catches inputs missed by MutationObserver
+    // Uncomment if keyboard stops appearing after long uptime:
+    // import { startDocumentFocusListener } from "./input/InputBinder.js";
+    // startDocumentFocusListener(document);
 
     setupIframeCommunication();
     createOpenButton();
