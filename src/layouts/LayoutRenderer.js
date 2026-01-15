@@ -2,8 +2,8 @@
 // Renders keyboard layouts as DOM elements (not HTML strings)
 
 import { CSS_CLASSES, DEFAULT_BOTTOM_ROW, KEY_TYPES } from "../core/config.js";
-import { getLayoutsList, layouts } from "./layouts.js";
 import { ICONS } from "../icons/icons.js";
+import { getLayoutsList, layouts } from "./layouts.js";
 
 /**
  * Render a complete keyboard layout

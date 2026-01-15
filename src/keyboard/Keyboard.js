@@ -3,7 +3,6 @@
 
 import { CSS_CLASSES, DOM_IDS, TIMING } from "../core/config.js";
 import { EVENTS, emit, on } from "../core/events.js";
-import { ICONS } from "../icons/icons.js";
 import {
   focusState,
   keyboardState,
@@ -13,6 +12,7 @@ import {
   voiceState,
 } from "../core/state.js";
 import storage from "../core/storage.js";
+import { ICONS } from "../icons/icons.js";
 import {
   addBodyPadding,
   clearCloseTimer,
