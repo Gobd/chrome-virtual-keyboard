@@ -502,8 +502,14 @@ async function init() {
   // Bind existing inputs (including shadow DOM)
   bindAllInputsDeep(document);
 
-  // Start observing for new inputs
-  startDocumentObserver();
+  // Start observing for new inputs (store reference to prevent GC)
+  const observer = await startDocumentObserver();
+  runtimeState.set("documentObserver", observer);
+
+  // Fallback focus listener - catches inputs missed by MutationObserver
+  // Uncomment if keyboard stops appearing after long uptime:
+  // import { startDocumentFocusListener } from "./input/InputBinder.js";
+  // startDocumentFocusListener(document);
 
   // Set up event subscriptions
   setupEventSubscriptions();
@@ -534,11 +540,31 @@ if (isTopFrame || isCrossOriginIframe) {
   });
 } else {
   // Same-origin iframe - only bind inputs and set up communication
-  loadSettings().then(() => {
+  loadSettings().then(async () => {
     initInputTracker();
     bindAllInputsDeep(document);
-    startDocumentObserver();
+
+    // Start observing for new inputs (store reference to prevent GC)
+    const observer = await startDocumentObserver();
+    runtimeState.set("documentObserver", observer);
+
+    // Fallback focus listener - catches inputs missed by MutationObserver
+    // Uncomment if keyboard stops appearing after long uptime:
+    // import { startDocumentFocusListener } from "./input/InputBinder.js";
+    // startDocumentFocusListener(document);
+
     setupIframeCommunication();
     createOpenButton();
+
+    // When iframe is being destroyed, immediately tell parent to close keyboard
+    // This handles cases where the blur timer wouldn't fire in time
+    window.addEventListener("pagehide", () => {
+      chrome.runtime.sendMessage({
+        method: MESSAGE_TYPES.CLICK_FROM_IFRAME,
+        key: "Close",
+        skip: false,
+        frame: window.frameElement?.id,
+      });
+    });
   });
 }

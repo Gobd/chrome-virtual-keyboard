@@ -179,6 +179,35 @@ export function processAddedNode(node) {
   }
 }
 
+/**
+ * Handle document-level focus events as a fallback
+ * This catches inputs that weren't bound by MutationObserver
+ * @param {FocusEvent} event
+ */
+function handleDocumentFocus(event) {
+  const element = event.target;
+  if (!element || !isSupportedInput(element)) return;
+
+  // If not bound, bind it now and trigger focus
+  if (!isBound(element)) {
+    bindInput(element);
+    // The bindInput already handles already-focused elements,
+    // but we trigger focus handling explicitly since we're in a focus event
+    const inputType = getInputType(element);
+    handleFocus(element, inputType, true);
+  }
+}
+
+/**
+ * Start listening for document-level focus events
+ * Acts as a fallback for inputs missed by MutationObserver
+ * @param {Document} doc
+ */
+export function startDocumentFocusListener(doc = document) {
+  // Use capture phase to catch focus before it reaches the element
+  doc.addEventListener("focus", handleDocumentFocus, true);
+}
+
 export default {
   isSupportedInput,
   getInputType,
@@ -186,4 +215,5 @@ export default {
   bindInput,
   bindAllInputs,
   processAddedNode,
+  startDocumentFocusListener,
 };

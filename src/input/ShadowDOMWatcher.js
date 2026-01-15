@@ -1,7 +1,6 @@
 // Shadow DOM Watcher
 // Monitors shadow roots for dynamically added inputs
 
-import { EVENTS, emit } from "../core/events.js";
 import { focusState } from "../core/state.js";
 import {
   bindAllInputs,
@@ -9,6 +8,7 @@ import {
   isSupportedInput,
   processAddedNode,
 } from "./InputBinder.js";
+import { startRemovalCloseTimer } from "./InputTracker.js";
 
 // WeakMap to track observers per shadow root (prevents memory leaks)
 const shadowObservers = new WeakMap();
@@ -103,6 +103,7 @@ export function unobserveShadowRoot(shadowRoot) {
 
 /**
  * Check if the focused element was removed and close keyboard if so
+ * Uses a grace period to allow new elements to take focus first
  * @param {Node} node - The removed node
  */
 function checkFocusedElementRemoved(node) {
@@ -119,15 +120,15 @@ function checkFocusedElementRemoved(node) {
     document.contains(focusedOwnerDoc?.defaultView?.frameElement);
 
   if (!ownerDocConnected || !focusedElement.isConnected) {
-    focusState.set("element", null);
-    emit(EVENTS.KEYBOARD_CLOSE);
+    // Use grace period to allow new element to focus
+    startRemovalCloseTimer();
     return;
   }
 
   // Check if the removed node directly contains the focused element
   if (node === focusedElement || node.contains?.(focusedElement)) {
-    focusState.set("element", null);
-    emit(EVENTS.KEYBOARD_CLOSE);
+    // Use grace period to allow new element to focus
+    startRemovalCloseTimer();
   }
 }
 

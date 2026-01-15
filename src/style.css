@@ -266,37 +266,26 @@
 }
 
 /* =============================================================================
-   Icons (Unicode characters)
+   Icons (SVG)
    ============================================================================= */
 
 .vk-icon {
-  display: block;
-  font-size: 24px;
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.vk-icon-shift::before {
-  content: "⇧";
+.vk-icon svg {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
+  fill: none;
 }
 
-.vk-icon-backspace::before {
-  content: "⌫";
-}
-
-.vk-icon-enter::before {
-  content: "↵";
-}
-
-.vk-icon-close::before {
-  content: "✕";
-}
-
-.vk-icon-settings::before {
-  content: "⚙";
-}
-
-.vk-icon-mic::before {
-  content: "🎤";
+/* Record icon uses fill instead of stroke */
+.vk-voice-recording .vk-icon svg {
+  fill: currentColor;
+  stroke: none;
 }
 
 /* =============================================================================
@@ -309,17 +298,9 @@
   animation: vk-pulse 1s infinite;
 }
 
-.vk-key-voice.vk-voice-recording .vk-icon-mic::before {
-  content: "⏺";
-}
-
 /* Voice button - loading/transcribing state */
 .vk-key-voice.vk-voice-loading {
   background: #2980b9;
-}
-
-.vk-key-voice.vk-voice-loading .vk-icon-mic::before {
-  content: "⏳";
 }
 
 /* Voice button - error state */
@@ -327,8 +308,7 @@
   background: #7f8c8d;
 }
 
-.vk-key-voice.vk-voice-error .vk-icon-mic::before {
-  content: "🎤";
+.vk-key-voice.vk-voice-error .vk-icon {
   opacity: 0.5;
 }
 

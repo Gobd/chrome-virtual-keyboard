@@ -12,9 +12,11 @@ import {
   voiceState,
 } from "../core/state.js";
 import storage from "../core/storage.js";
+import { ICONS } from "../icons/icons.js";
 import {
   addBodyPadding,
   clearCloseTimer,
+  clearRemovalCloseTimer,
   removeBodyPadding,
   restoreScrollPosition,
   saveInputType,
@@ -515,10 +517,10 @@ async function createLanguageOverlay() {
  * Special key configurations for button creation
  */
 const SPECIAL_KEY_CONFIG = {
-  Backspace: { className: "vk-key-backspace", icon: "vk-icon-backspace" },
-  Enter: { className: "vk-key-enter", icon: "vk-icon-enter" },
+  Backspace: { className: "vk-key-backspace", icon: "backspace" },
+  Enter: { className: "vk-key-enter", icon: "enter" },
   "&123": { className: "vk-key-action", text: "ABC" },
-  Close: { className: "vk-key-action", icon: "vk-icon-close" },
+  Close: { className: "vk-key-action", icon: "close" },
 };
 
 /**
@@ -536,8 +538,9 @@ function createKeyButton(key, extraClass = "") {
   if (config) {
     btn.className = `vk-key ${config.className} ${CSS_CLASSES.KEY_CLICK}`;
     const span = document.createElement("span");
-    if (config.icon) {
-      span.className = `vk-icon ${config.icon}`;
+    if (config.icon && ICONS[config.icon]) {
+      span.className = `vk-icon vk-icon-${config.icon}`;
+      span.innerHTML = ICONS[config.icon];
     } else if (config.text) {
       span.textContent = config.text;
     }
@@ -545,7 +548,12 @@ function createKeyButton(key, extraClass = "") {
   } else {
     btn.className = `vk-key ${extraClass} ${CSS_CLASSES.KEY_CLICK}`.trim();
     const span = document.createElement("span");
-    span.textContent = key === "Enter" ? "↵" : key;
+    if (key === "Enter" && ICONS.enter) {
+      span.className = "vk-icon vk-icon-enter";
+      span.innerHTML = ICONS.enter;
+    } else {
+      span.textContent = key;
+    }
     btn.appendChild(span);
   }
 
@@ -928,19 +936,28 @@ function updateVoiceButtonState(state) {
     "vk-voice-error"
   );
 
-  // Add appropriate class based on state
+  // Find the icon span
+  const iconSpan = voiceButton.querySelector(".vk-icon");
+  if (!iconSpan) return;
+
+  // Add appropriate class and swap icon based on state
   switch (state) {
     case "recording":
       voiceButton.classList.add("vk-voice-recording");
+      iconSpan.innerHTML = ICONS.record;
       break;
     case "loading_model":
     case "transcribing":
       voiceButton.classList.add("vk-voice-loading");
+      iconSpan.innerHTML = ICONS.loading;
       break;
     case "error":
       voiceButton.classList.add("vk-voice-error");
+      iconSpan.innerHTML = ICONS.mic;
       break;
-    // 'idle' - no class needed
+    default:
+      // 'idle' - show mic icon
+      iconSpan.innerHTML = ICONS.mic;
   }
 }
 
@@ -1098,6 +1115,7 @@ export async function open(force = false) {
   }
 
   clearCloseTimer();
+  clearRemovalCloseTimer();
   saveScrollPosition();
 
   // Add body padding
