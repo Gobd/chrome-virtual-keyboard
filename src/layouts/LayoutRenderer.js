@@ -3,6 +3,7 @@
 
 import { CSS_CLASSES, DEFAULT_BOTTOM_ROW, KEY_TYPES } from "../core/config.js";
 import { getLayoutsList, layouts } from "./layouts.js";
+import { ICONS } from "../icons/icons.js";
 
 /**
  * Render a complete keyboard layout
@@ -175,7 +176,12 @@ function createSpecialKey(keyName, labels = {}, options = {}) {
   // Create content span
   const span = document.createElement("span");
 
-  if (keyType.icon) {
+  if (keyType.icon && ICONS[keyType.icon]) {
+    span.className = "vk-icon";
+    span.innerHTML = ICONS[keyType.icon];
+    span.setAttribute("aria-label", keyName);
+  } else if (keyType.icon) {
+    // Fallback for icons not in ICONS object
     span.className = `vk-icon vk-icon-${keyType.icon}`;
     span.setAttribute("aria-label", keyName);
   } else {
