@@ -177,7 +177,7 @@ function createSpecialKey(keyName, labels = {}, options = {}) {
   const span = document.createElement("span");
 
   if (keyType.icon && ICONS[keyType.icon]) {
-    span.className = "vk-icon";
+    span.className = `vk-icon vk-icon-${keyType.icon}`;
     span.innerHTML = ICONS[keyType.icon];
     span.setAttribute("aria-label", keyName);
   } else if (keyType.icon) {

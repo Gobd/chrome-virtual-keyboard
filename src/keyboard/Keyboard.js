@@ -539,7 +539,7 @@ function createKeyButton(key, extraClass = "") {
     btn.className = `vk-key ${config.className} ${CSS_CLASSES.KEY_CLICK}`;
     const span = document.createElement("span");
     if (config.icon && ICONS[config.icon]) {
-      span.className = "vk-icon";
+      span.className = `vk-icon vk-icon-${config.icon}`;
       span.innerHTML = ICONS[config.icon];
     } else if (config.text) {
       span.textContent = config.text;
@@ -549,7 +549,7 @@ function createKeyButton(key, extraClass = "") {
     btn.className = `vk-key ${extraClass} ${CSS_CLASSES.KEY_CLICK}`.trim();
     const span = document.createElement("span");
     if (key === "Enter" && ICONS.enter) {
-      span.className = "vk-icon";
+      span.className = "vk-icon vk-icon-enter";
       span.innerHTML = ICONS.enter;
     } else {
       span.textContent = key;
