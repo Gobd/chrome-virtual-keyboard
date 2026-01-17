@@ -5,7 +5,10 @@ import { DOM_IDS, MESSAGE_TYPES, TIMING } from "./core/config.js";
 import { EVENTS, emit, on } from "./core/events.js";
 import { focusState, runtimeState, settingsState } from "./core/state.js";
 import storage from "./core/storage.js";
-import { getInputType } from "./input/InputBinder.js";
+import {
+  getInputType,
+  startDocumentFocusListener,
+} from "./input/InputBinder.js";
 import { init as initInputTracker } from "./input/InputTracker.js";
 import {
   bindAllInputsDeep,
@@ -14,6 +17,45 @@ import {
 import Keyboard from "./keyboard/Keyboard.js";
 import { handleKeyPress } from "./keyboard/KeyHandler.js";
 import { getLayoutsList } from "./layouts/layouts.js";
+
+// =============================================================================
+// CURSOR HIDING (KIOSK MODE)
+// =============================================================================
+
+const CURSOR_HIDE_STYLE_ID = "vk-cursor-hide-style";
+
+/**
+ * Apply cursor hiding CSS to the page
+ */
+function applyCursorHiding() {
+  if (document.getElementById(CURSOR_HIDE_STYLE_ID)) return;
+
+  const style = document.createElement("style");
+  style.id = CURSOR_HIDE_STYLE_ID;
+  style.textContent = "*, *::before, *::after { cursor: none !important; }";
+  document.head.appendChild(style);
+}
+
+/**
+ * Remove cursor hiding CSS from the page
+ */
+function removeCursorHiding() {
+  const style = document.getElementById(CURSOR_HIDE_STYLE_ID);
+  if (style) {
+    style.remove();
+  }
+}
+
+/**
+ * Update cursor hiding based on setting
+ */
+function updateCursorHiding(enabled) {
+  if (enabled) {
+    applyCursorHiding();
+  } else {
+    removeCursorHiding();
+  }
+}
 
 // =============================================================================
 // OPEN BUTTON (FLOATING KEYBOARD TRIGGER)
@@ -164,6 +206,7 @@ async function loadSettings() {
       keyRepeatEnabled: false,
       keyRepeatDelay: 400,
       keyRepeatSpeed: 75,
+      hideCursor: false,
     });
   } else {
     settingsState.set({
@@ -190,7 +233,11 @@ async function loadSettings() {
       keyRepeatEnabled: settings.keyRepeatEnabled,
       keyRepeatDelay: settings.keyRepeatDelay,
       keyRepeatSpeed: settings.keyRepeatSpeed,
+      hideCursor: settings.hideCursor,
     });
+
+    // Apply cursor hiding immediately if enabled
+    updateCursorHiding(settings.hideCursor);
   }
 
   // Listen for storage changes to update settings live
@@ -362,6 +409,11 @@ async function loadSettings() {
         changes.keyRepeatSpeed.newValue || 75
       );
     }
+    if (changes.hideCursor !== undefined) {
+      const hideCursor = changes.hideCursor.newValue === true;
+      settingsState.set("hideCursor", hideCursor);
+      updateCursorHiding(hideCursor);
+    }
   });
 }
 
@@ -507,9 +559,7 @@ async function init() {
   runtimeState.set("documentObserver", observer);
 
   // Fallback focus listener - catches inputs missed by MutationObserver
-  // Uncomment if keyboard stops appearing after long uptime:
-  // import { startDocumentFocusListener } from "./input/InputBinder.js";
-  // startDocumentFocusListener(document);
+  startDocumentFocusListener(document);
 
   // Set up event subscriptions
   setupEventSubscriptions();
@@ -549,9 +599,7 @@ if (isTopFrame || isCrossOriginIframe) {
     runtimeState.set("documentObserver", observer);
 
     // Fallback focus listener - catches inputs missed by MutationObserver
-    // Uncomment if keyboard stops appearing after long uptime:
-    // import { startDocumentFocusListener } from "./input/InputBinder.js";
-    // startDocumentFocusListener(document);
+    startDocumentFocusListener(document);
 
     setupIframeCommunication();
     createOpenButton();
