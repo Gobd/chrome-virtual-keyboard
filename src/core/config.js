@@ -107,6 +107,8 @@ export const STORAGE_KEYS = {
   KEY_REPEAT_ENABLED: "keyRepeatEnabled",
   KEY_REPEAT_DELAY: "keyRepeatDelay",
   KEY_REPEAT_SPEED: "keyRepeatSpeed",
+  // Kiosk mode
+  HIDE_CURSOR: "hideCursor",
 };
 
 export const MESSAGE_TYPES = {

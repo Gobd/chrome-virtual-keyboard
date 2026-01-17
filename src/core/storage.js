@@ -400,6 +400,23 @@ export async function setVoiceLanguage(language) {
 }
 
 /**
+ * Get hide cursor setting (kiosk mode)
+ * @returns {Promise<boolean>}
+ */
+export async function getHideCursor() {
+  const result = await get(STORAGE_KEYS.HIDE_CURSOR);
+  return result[STORAGE_KEYS.HIDE_CURSOR] === true;
+}
+
+/**
+ * Set hide cursor setting (kiosk mode)
+ * @param {boolean} enabled
+ */
+export async function setHideCursor(enabled) {
+  await set({ [STORAGE_KEYS.HIDE_CURSOR]: enabled });
+}
+
+/**
  * Check if this is the first time the extension has been opened
  * @returns {Promise<boolean>}
  */
@@ -446,6 +463,7 @@ export async function loadAllSettings() {
     STORAGE_KEYS.KEY_REPEAT_ENABLED,
     STORAGE_KEYS.KEY_REPEAT_DELAY,
     STORAGE_KEYS.KEY_REPEAT_SPEED,
+    STORAGE_KEYS.HIDE_CURSOR,
   ]);
 
   return {
@@ -474,6 +492,7 @@ export async function loadAllSettings() {
     keyRepeatEnabled: result[STORAGE_KEYS.KEY_REPEAT_ENABLED] === true,
     keyRepeatDelay: result[STORAGE_KEYS.KEY_REPEAT_DELAY] || 400,
     keyRepeatSpeed: result[STORAGE_KEYS.KEY_REPEAT_SPEED] || 75,
+    hideCursor: result[STORAGE_KEYS.HIDE_CURSOR] === true,
   };
 }
 
@@ -508,6 +527,7 @@ export async function initializeDefaults(defaultLayouts) {
     [STORAGE_KEYS.KEY_REPEAT_ENABLED]: false,
     [STORAGE_KEYS.KEY_REPEAT_DELAY]: 400,
     [STORAGE_KEYS.KEY_REPEAT_SPEED]: 75,
+    [STORAGE_KEYS.HIDE_CURSOR]: false,
   });
 }
 
@@ -572,6 +592,8 @@ export default {
   setVoiceModel,
   getVoiceLanguage,
   setVoiceLanguage,
+  getHideCursor,
+  setHideCursor,
   isFirstTime,
   markOpened,
   loadAllSettings,

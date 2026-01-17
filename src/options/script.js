@@ -34,6 +34,7 @@ function saveDisplaySettings() {
   const keyRepeatEnabled = $("keyRepeatEnabled").checked;
   const keyRepeatDelay = parseInt($("keyRepeatDelay").value, 10) || 400;
   const keyRepeatSpeed = parseInt($("keyRepeatSpeed").value, 10) || 75;
+  const hideCursor = $("hideCursor").checked;
 
   chrome.storage.local.set({
     [STORAGE_KEYS.SHOW_OPEN_BUTTON]: showOpenButton,
@@ -57,6 +58,7 @@ function saveDisplaySettings() {
     [STORAGE_KEYS.KEY_REPEAT_ENABLED]: keyRepeatEnabled,
     [STORAGE_KEYS.KEY_REPEAT_DELAY]: keyRepeatDelay,
     [STORAGE_KEYS.KEY_REPEAT_SPEED]: keyRepeatSpeed,
+    [STORAGE_KEYS.HIDE_CURSOR]: hideCursor,
   });
 
   // Toggle voice options visibility
@@ -209,6 +211,7 @@ async function loadDisplaySettings() {
     STORAGE_KEYS.KEY_REPEAT_ENABLED,
     STORAGE_KEYS.KEY_REPEAT_DELAY,
     STORAGE_KEYS.KEY_REPEAT_SPEED,
+    STORAGE_KEYS.HIDE_CURSOR,
   ]);
 
   $("showOpenButton").checked = result[STORAGE_KEYS.SHOW_OPEN_BUTTON] !== false;
@@ -245,6 +248,7 @@ async function loadDisplaySettings() {
   $("keyRepeatDelay").value = result[STORAGE_KEYS.KEY_REPEAT_DELAY] || 400;
   $("keyRepeatSpeed").value = result[STORAGE_KEYS.KEY_REPEAT_SPEED] || 75;
   updateKeyRepeatOptionsVisibility();
+  $("hideCursor").checked = result[STORAGE_KEYS.HIDE_CURSOR] === true;
 }
 
 function updateZoomLockCheckbox() {
@@ -400,4 +404,5 @@ window.addEventListener("load", async () => {
   $("keyRepeatEnabled").addEventListener("change", saveDisplaySettings);
   $("keyRepeatDelay").addEventListener("change", saveDisplaySettings);
   $("keyRepeatSpeed").addEventListener("change", saveDisplaySettings);
+  $("hideCursor").addEventListener("change", saveDisplaySettings);
 });
