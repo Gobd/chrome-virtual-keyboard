@@ -435,6 +435,7 @@ describe("storage.js", () => {
         keyRepeatEnabled: false,
         keyRepeatDelay: 400,
         keyRepeatSpeed: 75,
+        hideCursor: false,
       });
     });
 
@@ -490,6 +491,7 @@ describe("storage.js", () => {
         keyRepeatEnabled: false,
         keyRepeatDelay: 400,
         keyRepeatSpeed: 75,
+        hideCursor: false,
       });
     });
   });
