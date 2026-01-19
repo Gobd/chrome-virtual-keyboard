@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SmartKey - Auto-Popup Keyboard",
-  "version": "3.0.2",
+  "version": "3.0.5",
   "description": "Touch-friendly virtual keyboard with auto-capitalize, voice input, cursor positioning, draggable UI, and 15 language layouts",
   "homepage_url": "https://github.com/Gobd/chrome-virtual-keyboard",
   "icons": {
