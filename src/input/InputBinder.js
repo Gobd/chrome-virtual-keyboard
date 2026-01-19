@@ -203,8 +203,8 @@ function handleDocumentFocus(event) {
  * @param {Document} doc
  */
 export function startDocumentFocusListener(doc = document) {
-  // Use focusin which bubbles, so activeElement is set when we check
-  doc.addEventListener("focusin", handleDocumentFocus);
+  // Use capture phase to catch focus before it reaches the element
+  doc.addEventListener("focus", handleDocumentFocus, true);
 }
 
 export default {

@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(du:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm run coverage:*)",
+      "Bash(pnpm exec playwright test:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(rg:*)",
+      "Bash(wc:*)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm run test:unit:*)",
+      "Bash(pnpm run coverage:unit:*)",
+      "Bash(pnpm run build:test:*)",
+      "Bash(pnpm exec biome check:*)",
+      "Bash(node scripts/merge-coverage.js:*)",
+      "Bash(npm view:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(head:*)",
+      "Bash(grep:*)",
+      "Bash(node:*)",
+      "Bash(COVERAGE=1 pnpm run test:e2e:*)",
+      "Bash(pnpm install)",
+      "Bash(jq:*)",
+      "Bash(pnpm run build:*)",
+      "Bash(git log:*)",
+      "Bash(git -C /Users/bkemper/Developer/chrome-virtual-keyboard log --oneline -20)",
+      "Bash(git -C /Users/bkemper/Developer/chrome-virtual-keyboard show dakfix:src/keyboard/KeyHandler.js)",
+      "Bash(pnpm test:e2e:*)",
+      "Bash(pnpm build:*)"
+    ]
+  }
+}
