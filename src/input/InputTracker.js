@@ -73,6 +73,11 @@ function handleInputFocus({ element, inputType, isFocus }) {
       element.id = `CVK_E_${iframeElementCount++}`;
     }
 
+    // Ensure iframe has an ID so top frame can find it
+    if (!window.frameElement.id) {
+      window.frameElement.id = `CVK_F_${Date.now()}`;
+    }
+
     // Send message to top frame via background script
     chrome.runtime.sendMessage({
       method: MESSAGE_TYPES.OPEN_FROM_IFRAME,
