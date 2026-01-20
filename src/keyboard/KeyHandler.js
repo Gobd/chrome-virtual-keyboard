@@ -220,23 +220,19 @@ function handleShift() {
  * Uses Whisper (batch) or Vosk (streaming, kiosk only) for speech-to-text
  */
 async function handleVoice() {
-  console.log("[Voice] Button pressed");
 
   // Check if voice is enabled in settings
   if (!settingsState.get("voiceEnabled")) {
-    console.log("[Voice] Voice not enabled in settings");
     return;
   }
 
   const element = focusState.get("element");
   if (!element) {
-    console.log("[Voice] No focused element");
     return;
   }
 
   // Check which engine to use (kiosk builds only have engine selection)
   const engine = isFirefox ? (settingsState.get("voiceEngine") || "whisper") : "whisper";
-  console.log("[Voice] Using engine:", engine);
 
   if (engine === "vosk" && VoskInput) {
     await handleVoiceVosk(element);
@@ -250,7 +246,6 @@ async function handleVoice() {
  */
 async function handleVoiceWhisper(element) {
   const vadMode = settingsState.get("voiceVadMode");
-  console.log("[Voice] VAD mode:", vadMode);
 
   // Initialize transcriber if not already done
   if (!WhisperInput.isModelLoaded()) {
@@ -283,12 +278,10 @@ async function handleVoiceWhisper(element) {
 
   // VAD mode - auto-detect speech and transcribe
   if (vadMode) {
-    console.log("[Voice] Using VAD mode");
     await handleVoiceVAD(WhisperInput, element);
     return;
   }
 
-  console.log("[Voice] Using manual mode");
 
   // Manual mode - toggle recording
   if (WhisperInput.getIsRecording()) {
@@ -328,7 +321,6 @@ async function handleVoiceVosk(element) {
         }
       },
       onPartialResult: (text) => {
-        console.log("[Vosk] Partial:", text);
         const currentElement = focusState.get("element");
         if (currentElement && text) {
           // Replace previous partial text with new partial
@@ -343,7 +335,6 @@ async function handleVoiceVosk(element) {
         voiceState.set("partialText", text);
       },
       onFinalResult: (text) => {
-        console.log("[Vosk] Final:", text);
         const currentElement = focusState.get("element");
         const prevPartial = voiceState.get("partialText") || "";
         if (currentElement) {
@@ -369,11 +360,9 @@ async function handleVoiceVosk(element) {
 
   // Toggle recording
   if (VoskInput.getIsRecording()) {
-    console.log("[Vosk] Stopping recording");
     await VoskInput.stopRecording();
     voiceState.set("partialText", "");
   } else {
-    console.log("[Vosk] Starting recording");
     voiceState.set("partialText", "");
     await VoskInput.startRecording();
   }
@@ -386,20 +375,15 @@ async function handleVoiceVosk(element) {
 async function handleVoiceVAD(VoiceInput, element) {
   // Initialize VAD if not already done
   if (!VoiceInput.isVADInitialized()) {
-    console.log("[Voice] Initializing VAD...");
     const success = await VoiceInput.initVAD({
       onTranscription: (text) => {
-        console.log("[Voice] Got transcription:", text);
         // Insert transcribed text when VAD detects speech end
         const currentElement = focusState.get("element");
-        console.log("[Voice] Current element:", currentElement);
         if (currentElement && text) {
-          console.log("[Voice] Inserting text");
           insertVoiceText(currentElement, text);
         }
       },
       onStateChange: (state, error) => {
-        console.log("[Voice] State change:", state, error);
         voiceState.set("state", state);
         if (error) {
           voiceState.set("error", error);
@@ -408,22 +392,17 @@ async function handleVoiceVAD(VoiceInput, element) {
     });
 
     if (!success) {
-      console.log("[Voice] VAD init failed");
       return;
     }
-    console.log("[Voice] VAD initialized");
   }
 
   // Toggle VAD listening
   if (VoiceInput.isVADListening()) {
-    console.log("[Voice] Stopping VAD listening");
     VoiceInput.stopVADListening();
     vadModeActive = false;
   } else {
-    console.log("[Voice] Starting VAD listening");
     const started = await VoiceInput.startVADListening();
     vadModeActive = started;
-    console.log("[Voice] VAD started:", started);
   }
 }
 

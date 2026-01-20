@@ -226,9 +226,7 @@ async function downloadVoiceModel() {
     const initOptions = {
       modelKey: model,
       onStateChange: async (state, error) => {
-        console.log("[Options] Vosk state change:", state, error || "");
         if (state === VoskInput.VoiceState.IDLE) {
-          console.log("[Options] Model ready, updating UI");
           downloadedModels.add(downloadKey);
           await saveDownloadedModels();
           showModelStatus("ready", 100, null, modelName);

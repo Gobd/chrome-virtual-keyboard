@@ -464,11 +464,9 @@ export async function initVAD(options = {}) {
       baseAssetPath: vadBasePath,
       onnxWASMBasePath: wasmBasePath,
       onSpeechStart: () => {
-        console.log("[VAD] Speech started");
         setState(VoiceState.SPEECH_DETECTED);
       },
       onSpeechEnd: async (audio) => {
-        console.log("[VAD] Speech ended, transcribing...", audio.length, "samples");
         setState(VoiceState.TRANSCRIBING);
 
         try {
@@ -479,16 +477,13 @@ export async function initVAD(options = {}) {
             return_timestamps: false,
           });
 
-          console.log("[VAD] Transcription result:", result);
 
           let text = result.text?.trim() || "";
           // Remove trailing punctuation
           text = text.replace(/[.!?]+$/, "");
 
-          console.log("[VAD] Final text:", text);
 
           if (text && onTranscription) {
-            console.log("[VAD] Calling onTranscription callback");
             onTranscription(text);
           }
         } catch (error) {
@@ -503,7 +498,6 @@ export async function initVAD(options = {}) {
         }
       },
       onVADMisfire: () => {
-        console.log("[VAD] Misfire (too short)");
       },
     });
 
@@ -534,7 +528,6 @@ export async function startVADListening() {
     vadInstance.start();
     isVadListening = true;
     setState(VoiceState.LISTENING);
-    console.log("[VAD] Started listening");
     return true;
   } catch (error) {
     console.error("[VAD] Failed to start:", error);
@@ -554,7 +547,6 @@ export function stopVADListening() {
   vadInstance.pause();
   isVadListening = false;
   setState(VoiceState.IDLE);
-  console.log("[VAD] Stopped listening");
 }
 
 /**

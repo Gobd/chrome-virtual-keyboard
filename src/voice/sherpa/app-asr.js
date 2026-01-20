@@ -40,13 +40,11 @@ Module = {};
 
 // https://emscripten.org/docs/api_reference/module.html#Module.locateFile
 Module.locateFile = function(path, scriptDirectory = '') {
-  console.log(`path: ${path}, scriptDirectory: ${scriptDirectory}`);
   return scriptDirectory + path;
 };
 
 // https://emscripten.org/docs/api_reference/module.html#Module.locateFile
 Module.setStatus = function(status) {
-  console.log(`status ${status}`);
   const statusElement = document.getElementById('status');
   if (status == 'Running...') {
     status = 'Model downloaded. Initializing recongizer...'
@@ -60,7 +58,6 @@ Module.setStatus = function(status) {
         total === 0 ? 0.00 : Number((downloaded * 10000n) / total) / 100;
     status = `Downloading data... ${percent.toFixed(2)}% (${downloadMatch[1]}/${
         downloadMatch[2]})`;
-    console.log(`here ${status}`)
   }
 
   statusElement.textContent = status;
@@ -80,12 +77,10 @@ Module.setStatus = function(status) {
 };
 
 Module.onRuntimeInitialized = function() {
-  console.log('inited!');
 
   startBtn.disabled = false;
 
   recognizer = createOnlineRecognizer(Module);
-  console.log('recognizer is created!', recognizer);
 };
 
 let audioCtx;
@@ -102,7 +97,6 @@ let recognizer = null;
 let recognizer_stream = null;
 
 if (navigator.mediaDevices.getUserMedia) {
-  console.log('getUserMedia supported.');
 
   // see https://w3c.github.io/mediacapture-main/#dom-mediadevices-getusermedia
   const constraints = {audio: true};
@@ -111,13 +105,10 @@ if (navigator.mediaDevices.getUserMedia) {
     if (!audioCtx) {
       audioCtx = new AudioContext({sampleRate: 16000});
     }
-    console.log(audioCtx);
     recordSampleRate = audioCtx.sampleRate;
-    console.log('sample rate ' + recordSampleRate);
 
     // creates an audio node from the microphone incoming stream
     mediaStream = audioCtx.createMediaStreamSource(stream);
-    console.log('media stream', mediaStream);
 
     // https://developer.mozilla.org/en-US/docs/Web/API/AudioContext/createScriptProcessor
     // bufferSize: the onaudioprocess event is called when the buffer is full
@@ -131,7 +122,6 @@ if (navigator.mediaDevices.getUserMedia) {
       recorder = audioCtx.createJavaScriptNode(
           bufferSize, numberOfInputChannels, numberOfOutputChannels);
     }
-    console.log('recorder', recorder);
 
     recorder.onaudioprocess = function(e) {
       let samples = new Float32Array(e.inputBuffer.getChannelData(0))
@@ -194,14 +184,12 @@ if (navigator.mediaDevices.getUserMedia) {
       mediaStream.connect(recorder);
       recorder.connect(audioCtx.destination);
 
-      console.log('recorder started');
 
       stopBtn.disabled = false;
       startBtn.disabled = true;
     };
 
     stopBtn.onclick = function() {
-      console.log('recorder stopped');
 
       // stopBtn recording
       recorder.disconnect(audioCtx.destination);
@@ -240,7 +228,6 @@ if (navigator.mediaDevices.getUserMedia) {
       leftchannel = [];
       const audioURL = window.URL.createObjectURL(blob);
       audio.src = audioURL;
-      console.log('recorder stopped');
 
       deleteButton.onclick = function(e) {
         let evtTgt = e.target;
@@ -260,12 +247,10 @@ if (navigator.mediaDevices.getUserMedia) {
   };
 
   let onError = function(err) {
-    console.log('The following error occured: ' + err);
   };
 
   navigator.mediaDevices.getUserMedia(constraints).then(onSuccess, onError);
 } else {
-  console.log('getUserMedia not supported on your browser!');
   alert('getUserMedia not supported on your browser!');
 }
 

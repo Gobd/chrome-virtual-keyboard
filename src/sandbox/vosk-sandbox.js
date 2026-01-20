@@ -30,9 +30,7 @@ try {
     writable: false,
     configurable: false,
   });
-  console.log("[Vosk Sandbox] IndexedDB mocked");
 } catch (e) {
-  console.log("[Vosk Sandbox] Could not mock IndexedDB:", e.message);
 }
 
 // Dynamic import to ensure mock is in place first
@@ -80,7 +78,6 @@ async function handleInit({ modelData }) {
   send({ type: "stateChange", state: "loading_model" });
 
   try {
-    console.log("[Vosk Sandbox] Received model data, size:", modelData?.byteLength);
 
     if (!modelData || !modelData.byteLength) {
       throw new Error("No model data received");
@@ -89,22 +86,17 @@ async function handleInit({ modelData }) {
     // Create blob URL from the model data (already fetched by main context)
     const blob = new Blob([modelData], { type: "application/zip" });
     const blobUrl = URL.createObjectURL(blob);
-    console.log("[Vosk Sandbox] Created blob URL:", blobUrl);
 
-    console.log("[Vosk Sandbox] createModel function:", typeof createModel);
 
     // Add timeout to detect if it's hanging
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => reject(new Error("Model loading timeout after 120s")), 120000);
     });
 
-    console.log("[Vosk Sandbox] Calling createModel...");
     const modelPromise = createModel(blobUrl);
 
     modelPromise.then(() => {
-      console.log("[Vosk Sandbox] createModel promise resolved");
     }).catch((err) => {
-      console.log("[Vosk Sandbox] createModel promise rejected:", err);
     });
 
     model = await Promise.race([
@@ -112,12 +104,10 @@ async function handleInit({ modelData }) {
       timeoutPromise
     ]);
 
-    console.log("[Vosk Sandbox] Model object received:", typeof model);
 
     // Clean up blob URL
     URL.revokeObjectURL(blobUrl);
 
-    console.log("[Vosk Sandbox] Model loaded successfully");
     send({ type: "stateChange", state: "idle" });
     send({ type: "ready" });
   } catch (error) {
@@ -140,20 +130,17 @@ function handleStart() {
     recognizer.on("result", (message) => {
       const text = message.result?.text || "";
       if (text) {
-        console.log("[Vosk Sandbox] Final:", text);
         send({ type: "result", text });
       }
     });
 
     recognizer.on("partialresult", (message) => {
       const text = message.result?.partial || "";
-      console.log("[Vosk Sandbox] Partial:", text);
       send({ type: "partial", text });
     });
 
     send({ type: "stateChange", state: "recording" });
     send({ type: "started" });
-    console.log("[Vosk Sandbox] Recording started");
   } catch (error) {
     console.error("[Vosk Sandbox] Failed to start:", error);
     send({ type: "error", message: error.message });
@@ -177,7 +164,6 @@ function handleStop() {
   }
   send({ type: "stateChange", state: "idle" });
   send({ type: "stopped" });
-  console.log("[Vosk Sandbox] Recording stopped");
 }
 
 function handleDispose() {
@@ -189,9 +175,7 @@ function handleDispose() {
     model.terminate();
     model = null;
   }
-  console.log("[Vosk Sandbox] Disposed");
 }
 
 // Signal that sandbox is ready
 send({ type: "sandbox-ready" });
-console.log("[Vosk Sandbox] Sandbox initialized");

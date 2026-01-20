@@ -88,7 +88,6 @@ export function isVoskAvailable() {
  * @param {string} [error]
  */
 function setState(state, error = null) {
-  console.log("[Vosk] setState:", state, error || "");
   if (onStateChange) {
     onStateChange(state, error);
   } else {
@@ -103,7 +102,6 @@ function setState(state, error = null) {
  * @returns {Promise<string>} Blob URL
  */
 async function fetchModelAsBlob(url, onProgress) {
-  console.log("[Vosk] Fetching model in main thread:", url);
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch model: ${response.status}`);
@@ -130,7 +128,6 @@ async function fetchModelAsBlob(url, onProgress) {
 
   const blob = new Blob(chunks, { type: "application/zip" });
   const blobUrl = URL.createObjectURL(blob);
-  console.log("[Vosk] Model fetched, created blob URL:", blobUrl);
   return blobUrl;
 }
 
@@ -159,13 +156,11 @@ export async function initTranscriber(options = {}) {
   onFinalResult = finalCallback;
 
   if (model) {
-    console.log("[Vosk] Model already loaded, updating callbacks only");
     setState(VoiceState.IDLE);
     return true; // Already initialized
   }
 
   if (isLoadingModel) {
-    console.log("[Vosk] Model already loading, please wait");
     return false;
   }
 
@@ -179,12 +174,10 @@ export async function initTranscriber(options = {}) {
 
   try {
     setState(VoiceState.LOADING_MODEL);
-    console.log("[Vosk] Loading model:", modelUrl);
 
     // Fetch in main thread to avoid worker CORS issues
     const blobUrl = await fetchModelAsBlob(modelUrl, progressCallback);
 
-    console.log("[Vosk] Creating Model directly with blob URL...");
 
     // Create Model directly - bypasses createModel's broken Promise in Firefox
     // The Model constructor starts loading immediately
@@ -197,13 +190,11 @@ export async function initTranscriber(options = {}) {
 
     while (Date.now() - startTime < maxWaitMs) {
       if (voskModel.ready) {
-        console.log("[Vosk] Model ready! (via model.ready property)");
         model = voskModel;
         break;
       }
       const elapsed = Math.round((Date.now() - startTime) / 1000);
       if (elapsed % 5 === 0 && elapsed > 0) {
-        console.log(`[Vosk] Waiting for model.ready... ${elapsed}s`);
       }
       await new Promise((r) => setTimeout(r, pollIntervalMs));
     }
@@ -216,7 +207,6 @@ export async function initTranscriber(options = {}) {
 
     // Keep blob URL alive while model is in use (don't revoke yet)
 
-    console.log("[Vosk] Model loaded successfully, model object:", typeof model);
     isLoadingModel = false;
     setState(VoiceState.IDLE);
     return true;
@@ -254,24 +244,20 @@ export async function startRecording() {
     // Create recognizer using model's KaldiRecognizer class
     const KaldiRecognizer = model.KaldiRecognizer;
     recognizer = new KaldiRecognizer(SAMPLE_RATE);
-    console.log("[Vosk] Created KaldiRecognizer");
 
     // Firefox EventTarget is broken for vosk-browser classes
     // Intercept dispatchEvent and handle events directly
     const originalDispatch = recognizer.dispatchEvent.bind(recognizer);
     recognizer.dispatchEvent = (event) => {
       const message = event.detail;
-      console.log("[Vosk] Event:", event.type, message);
 
       if (event.type === "result") {
         const text = message?.result?.text || message?.text || "";
         if (text) {
-          console.log("[Vosk] Final:", text);
           if (onFinalResult) onFinalResult(text);
         }
       } else if (event.type === "partialresult") {
         const text = message?.result?.partial || message?.partial || "";
-        console.log("[Vosk] Partial:", text);
         if (onPartialResult) onPartialResult(text);
       }
 
@@ -292,7 +278,6 @@ export async function startRecording() {
     // Create audio context at default sample rate (matches mic)
     audioContext = new AudioContext();
     const inputSampleRate = audioContext.sampleRate;
-    console.log("[Vosk] Audio context sample rate:", inputSampleRate);
 
     mediaStreamSource = audioContext.createMediaStreamSource(stream);
 
@@ -314,7 +299,6 @@ export async function startRecording() {
 
         audioChunkCount++;
         if (audioChunkCount <= 3 || audioChunkCount % 50 === 0) {
-          console.log(`[Vosk] Audio chunk #${audioChunkCount}, samples: ${samples.length}, first: ${samples[0]?.toFixed(4)}`);
         }
 
         // Use acceptWaveformFloat for raw Float32Array data
@@ -327,7 +311,6 @@ export async function startRecording() {
 
     isRecording = true;
     setState(VoiceState.RECORDING);
-    console.log("[Vosk] Recording started");
 
     return true;
   } catch (error) {
@@ -379,7 +362,6 @@ export async function stopRecording() {
 
   // Request final result before cleanup
   if (recognizer) {
-    console.log("[Vosk] Requesting final result...");
     recognizer.retrieveFinalResult();
 
     // Wait a bit for the final result event to fire
@@ -390,7 +372,6 @@ export async function stopRecording() {
   }
 
   setState(VoiceState.IDLE);
-  console.log("[Vosk] Recording stopped");
 
   return null; // Vosk streams results via callbacks
 }
