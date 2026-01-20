@@ -4,9 +4,13 @@
 import { MESSAGE_TYPES } from "./core/config.js";
 
 // Open settings when extension icon is clicked
-chrome.action.onClicked.addListener(() => {
-  chrome.runtime.openOptionsPage();
-});
+// MV3 uses chrome.action, MV2 uses chrome.browserAction
+const actionAPI = chrome.action || chrome.browserAction;
+if (actionAPI) {
+  actionAPI.onClicked.addListener(() => {
+    chrome.runtime.openOptionsPage();
+  });
+}
 
 /**
  * Get the active tab in the current window

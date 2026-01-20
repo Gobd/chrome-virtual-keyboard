@@ -6,13 +6,16 @@
   "main": "index.js",
   "scripts": {
     "build": "node build.js",
+    "build:firefox": "node build.js --firefox",
     "build:test": "node build.js --test",
     "watch": "node build.js --watch",
+    "watch:firefox": "node build.js --watch --firefox",
     "format": "pnpm exec biome check --write .",
     "format:check": "pnpm exec biome check .",
     "lint": "pnpm exec biome lint .",
     "lint:fix": "pnpm exec biome lint --write .",
     "package": "pnpm run build && cd dist && zip -r ../chrome-virtual-keyboard.zip . -x \".DS_Store\"",
+    "package:firefox": "pnpm run build:firefox && cd dist && zip -r ../smartkey-firefox.xpi . -x \".DS_Store\"",
     "test": "pnpm run test:unit && pnpm run test:e2e",
     "test:unit": "pnpm exec vitest run",
     "test:e2e": "pnpm exec playwright test",
@@ -42,6 +45,9 @@
     "vitest-monocart-coverage": "^4.0.1"
   },
   "dependencies": {
-    "@huggingface/transformers": "^3.8.1"
+    "@huggingface/transformers": "^3.8.1",
+    "@ricky0123/vad-web": "^0.0.30",
+    "fflate": "^0.8.2",
+    "vosk-browser": "^0.0.8"
   }
 }

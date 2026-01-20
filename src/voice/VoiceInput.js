@@ -1,5 +1,6 @@
 // Voice Input Module
 // Uses Transformers.js with Whisper for local speech-to-text
+// Optional VAD (Voice Activity Detection) for auto-transcription
 //
 // FUTURE IMPROVEMENTS:
 // 1. If performance is insufficient (especially on Raspberry Pi),
@@ -15,6 +16,7 @@
 // only require changes to this file.
 
 import { env, pipeline } from "@huggingface/transformers";
+import { MicVAD } from "@ricky0123/vad-web";
 
 // Configure ONNX Runtime to use local WASM files (required for Chrome extensions)
 // Chrome extensions block loading from CDN due to CSP restrictions
@@ -29,9 +31,15 @@ let mediaRecorder = null;
 let audioChunks = [];
 let recordingTimeout = null;
 
+// VAD state
+let vadInstance = null;
+let isVadMode = false;
+let isVadListening = false;
+
 // Callbacks for UI updates
 let onStateChange = null;
 let onProgress = null;
+let onTranscription = null; // Callback for VAD mode transcriptions
 
 // Constants
 const MAX_RECORDING_DURATION = 30000; // 30 seconds
@@ -45,6 +53,8 @@ export const VoiceState = {
   LOADING_MODEL: "loading_model",
   RECORDING: "recording",
   TRANSCRIBING: "transcribing",
+  LISTENING: "listening", // VAD mode: waiting for speech
+  SPEECH_DETECTED: "speech_detected", // VAD mode: speech in progress
   ERROR: "error",
 };
 
@@ -402,11 +412,178 @@ export function dispose() {
   if (mediaRecorder && isRecording) {
     mediaRecorder.stop();
   }
+  if (vadInstance) {
+    vadInstance.destroy();
+    vadInstance = null;
+  }
   if (transcriber) {
     transcriber = null;
   }
   isRecording = false;
+  isVadListening = false;
   audioChunks = [];
+}
+
+// ============================================================
+// VAD (Voice Activity Detection) Mode
+// Auto-transcribes when speech is detected and pauses
+// ============================================================
+
+/**
+ * Initialize VAD for auto-transcription mode
+ * @param {Object} options
+ * @param {Function} options.onTranscription - Callback with transcribed text
+ * @param {Function} options.onStateChange - State change callback
+ * @returns {Promise<boolean>} Success
+ */
+export async function initVAD(options = {}) {
+  const { onTranscription: transcriptionCallback, onStateChange: stateCallback } =
+    options;
+
+  onTranscription = transcriptionCallback;
+  if (stateCallback) {
+    onStateChange = stateCallback;
+  }
+
+  if (vadInstance) {
+    return true; // Already initialized
+  }
+
+  if (!transcriber) {
+    setState(VoiceState.ERROR, "Whisper model must be loaded first");
+    return false;
+  }
+
+  try {
+    // Configure paths for Chrome extension
+    const vadBasePath = chrome.runtime.getURL("vad/");
+    const wasmBasePath = chrome.runtime.getURL("wasm/");
+
+    vadInstance = await MicVAD.new({
+      model: "legacy",
+      baseAssetPath: vadBasePath,
+      onnxWASMBasePath: wasmBasePath,
+      onSpeechStart: () => {
+        console.log("[VAD] Speech started");
+        setState(VoiceState.SPEECH_DETECTED);
+      },
+      onSpeechEnd: async (audio) => {
+        console.log("[VAD] Speech ended, transcribing...", audio.length, "samples");
+        setState(VoiceState.TRANSCRIBING);
+
+        try {
+          // audio is Float32Array at 16kHz - exactly what Whisper needs
+          const result = await transcriber(audio, {
+            chunk_length_s: 30,
+            stride_length_s: 5,
+            return_timestamps: false,
+          });
+
+          console.log("[VAD] Transcription result:", result);
+
+          let text = result.text?.trim() || "";
+          // Remove trailing punctuation
+          text = text.replace(/[.!?]+$/, "");
+
+          console.log("[VAD] Final text:", text);
+
+          if (text && onTranscription) {
+            console.log("[VAD] Calling onTranscription callback");
+            onTranscription(text);
+          }
+        } catch (error) {
+          console.error("[VAD] Transcription failed:", error);
+        }
+
+        // Back to listening if VAD is still active
+        if (isVadListening) {
+          setState(VoiceState.LISTENING);
+        } else {
+          setState(VoiceState.IDLE);
+        }
+      },
+      onVADMisfire: () => {
+        console.log("[VAD] Misfire (too short)");
+      },
+    });
+
+    isVadMode = true;
+    return true;
+  } catch (error) {
+    console.error("[VAD] Failed to initialize:", error);
+    setState(VoiceState.ERROR, error.message);
+    return false;
+  }
+}
+
+/**
+ * Start VAD listening (auto-transcription mode)
+ * @returns {Promise<boolean>} Success
+ */
+export async function startVADListening() {
+  if (!vadInstance) {
+    setState(VoiceState.ERROR, "VAD not initialized");
+    return false;
+  }
+
+  if (isVadListening) {
+    return true; // Already listening
+  }
+
+  try {
+    vadInstance.start();
+    isVadListening = true;
+    setState(VoiceState.LISTENING);
+    console.log("[VAD] Started listening");
+    return true;
+  } catch (error) {
+    console.error("[VAD] Failed to start:", error);
+    setState(VoiceState.ERROR, error.message);
+    return false;
+  }
+}
+
+/**
+ * Stop VAD listening
+ */
+export function stopVADListening() {
+  if (!vadInstance || !isVadListening) {
+    return;
+  }
+
+  vadInstance.pause();
+  isVadListening = false;
+  setState(VoiceState.IDLE);
+  console.log("[VAD] Stopped listening");
+}
+
+/**
+ * Toggle VAD listening state
+ * @returns {Promise<boolean>} New listening state
+ */
+export async function toggleVADListening() {
+  if (isVadListening) {
+    stopVADListening();
+    return false;
+  } else {
+    return await startVADListening();
+  }
+}
+
+/**
+ * Check if VAD is initialized
+ * @returns {boolean}
+ */
+export function isVADInitialized() {
+  return vadInstance !== null;
+}
+
+/**
+ * Check if VAD is currently listening
+ * @returns {boolean}
+ */
+export function isVADListening() {
+  return isVadListening;
 }
 
 export default {
@@ -419,4 +596,11 @@ export default {
   toggleRecording,
   getIsRecording,
   dispose,
+  // VAD mode
+  initVAD,
+  startVADListening,
+  stopVADListening,
+  toggleVADListening,
+  isVADInitialized,
+  isVADListening,
 };

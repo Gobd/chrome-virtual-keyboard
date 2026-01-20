@@ -1,6 +1,11 @@
 // Virtual Keyboard - Main Entry Point
 // Initializes all modules and sets up the keyboard
 
+// Firefox uses browser.*, Chrome uses chrome.*
+const storageAPI = (typeof browser !== "undefined" && browser.storage)
+  ? browser.storage
+  : storageAPI;
+
 import { DOM_IDS, MESSAGE_TYPES, TIMING } from "./core/config.js";
 import { EVENTS, emit, on } from "./core/events.js";
 import { focusState, runtimeState, settingsState } from "./core/state.js";
@@ -201,8 +206,9 @@ async function loadSettings() {
       stickyShift: false,
       autoCaps: false,
       voiceEnabled: false,
-      voiceModel: "base-q8",
-      voiceLanguage: "multilingual",
+      voiceEngine: "whisper",
+      voiceModel: "base-q8-multi",
+      voiceVadMode: false,
       keyRepeatEnabled: false,
       keyRepeatDelay: 400,
       keyRepeatSpeed: 75,
@@ -228,8 +234,9 @@ async function loadSettings() {
       stickyShift: settings.stickyShift,
       autoCaps: settings.autoCaps,
       voiceEnabled: settings.voiceEnabled,
+      voiceEngine: settings.voiceEngine || "whisper",
       voiceModel: settings.voiceModel,
-      voiceLanguage: settings.voiceLanguage,
+      voiceVadMode: settings.voiceVadMode,
       keyRepeatEnabled: settings.keyRepeatEnabled,
       keyRepeatDelay: settings.keyRepeatDelay,
       keyRepeatSpeed: settings.keyRepeatSpeed,
@@ -241,7 +248,7 @@ async function loadSettings() {
   }
 
   // Listen for storage changes to update settings live
-  chrome.storage.onChanged.addListener((changes, areaName) => {
+  storageAPI.onChanged.addListener((changes, areaName) => {
     if (areaName !== "local") return;
 
     if (changes.keyboardZoomWidth) {
@@ -372,14 +379,14 @@ async function loadSettings() {
         });
       }
     }
-    if (changes.voiceModel !== undefined) {
-      settingsState.set("voiceModel", changes.voiceModel.newValue || "base-q8");
+    if (changes.voiceEngine !== undefined) {
+      settingsState.set("voiceEngine", changes.voiceEngine.newValue || "whisper");
     }
-    if (changes.voiceLanguage !== undefined) {
-      settingsState.set(
-        "voiceLanguage",
-        changes.voiceLanguage.newValue || "multilingual"
-      );
+    if (changes.voiceModel !== undefined) {
+      settingsState.set("voiceModel", changes.voiceModel.newValue || "base-q8-multi");
+    }
+    if (changes.voiceVadMode !== undefined) {
+      settingsState.set("voiceVadMode", changes.voiceVadMode.newValue === true);
     }
     if (changes.autostart !== undefined) {
       const autostartEnabled = changes.autostart.newValue === true;

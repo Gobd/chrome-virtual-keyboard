@@ -4,11 +4,20 @@
   "version": "3.0.6",
   "description": "Touch-friendly virtual keyboard with auto-capitalize, voice input, cursor positioning, draggable UI, and 15 language layouts",
   "homepage_url": "https://github.com/Gobd/chrome-virtual-keyboard",
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
   "icons": {
     "48": "buttons/keyboard_1.png",
     "128": "buttons/keyboard_2.png"
   },
   "permissions": ["storage", "activeTab"],
+  "host_permissions": [
+    "https://alphacephei.com/*",
+    "https://huggingface.co/*",
+    "https://cdn-lfs.huggingface.co/*",
+    "https://cdn-lfs-us-1.huggingface.co/*"
+  ],
   "action": {
     "default_icon": {
       "16": "buttons/keyboard_3.png",
@@ -31,7 +40,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["style.css", "options.html", "options/*", "buttons/*", "wasm/*"],
+      "resources": ["style.css", "options.html", "options/*", "buttons/*", "wasm/*", "vad/*"],
       "matches": ["<all_urls>"]
     }
   ]

@@ -11,8 +11,22 @@ import {
   voiceState,
 } from "../core/state.js";
 import { clearCloseTimer, markChanged } from "../input/InputTracker.js";
-import * as VoiceInput from "../voice/VoiceInput.js";
+import * as WhisperInput from "../voice/VoiceInput.js";
 import { applyShiftToCharacter } from "./KeyMap.js";
+
+// Vosk is only available in kiosk builds (requires unsafe-eval CSP)
+// eslint-disable-next-line no-undef
+const isFirefox = typeof __IS_FIREFOX__ !== "undefined" && __IS_FIREFOX__;
+// Dynamically import VoskInput only in kiosk mode
+let VoskInput = null;
+if (isFirefox) {
+  import("../voice/VoskInput.js").then((module) => {
+    VoskInput = module;
+  });
+}
+
+// Track if VAD mode is active
+let vadModeActive = false;
 
 /**
  * Handle a key press
@@ -200,28 +214,55 @@ function handleShift() {
   }
 }
 
+
 /**
  * Handle voice button press
+ * Uses Whisper (batch) or Vosk (streaming, kiosk only) for speech-to-text
  */
 async function handleVoice() {
+  console.log("[Voice] Button pressed");
+
   // Check if voice is enabled in settings
   if (!settingsState.get("voiceEnabled")) {
+    console.log("[Voice] Voice not enabled in settings");
     return;
   }
 
   const element = focusState.get("element");
-  if (!element) return;
+  if (!element) {
+    console.log("[Voice] No focused element");
+    return;
+  }
+
+  // Check which engine to use (kiosk builds only have engine selection)
+  const engine = isFirefox ? (settingsState.get("voiceEngine") || "whisper") : "whisper";
+  console.log("[Voice] Using engine:", engine);
+
+  if (engine === "vosk" && VoskInput) {
+    await handleVoiceVosk(element);
+  } else {
+    await handleVoiceWhisper(element);
+  }
+}
+
+/**
+ * Handle voice with Whisper engine (batch transcription)
+ */
+async function handleVoiceWhisper(element) {
+  const vadMode = settingsState.get("voiceVadMode");
+  console.log("[Voice] VAD mode:", vadMode);
 
   // Initialize transcriber if not already done
-  if (!VoiceInput.isModelLoaded()) {
-    const modelSize = settingsState.get("voiceModel") || "base";
-    const language = settingsState.get("voiceLanguage") || "multilingual";
+  if (!WhisperInput.isModelLoaded()) {
+    voiceState.set("state", WhisperInput.VoiceState.LOADING_MODEL);
 
-    voiceState.set("state", VoiceInput.VoiceState.LOADING_MODEL);
+    const model = settingsState.get("voiceModel") || "base-q8-multi";
+    const parts = model.split("-");
+    const isMulti = parts.pop() === "multi";
 
-    const success = await VoiceInput.initTranscriber({
-      modelSize,
-      language,
+    const initOptions = {
+      modelSize: parts.join("-"), // "base-q8" or "tiny-q8" etc
+      language: isMulti ? "multilingual" : "en",
       onProgress: (percent) => {
         voiceState.set("downloadProgress", percent);
       },
@@ -231,7 +272,95 @@ async function handleVoice() {
           voiceState.set("error", error);
         }
       },
-    });
+    };
+
+    const success = await WhisperInput.initTranscriber(initOptions);
+
+    if (!success) {
+      return;
+    }
+  }
+
+  // VAD mode - auto-detect speech and transcribe
+  if (vadMode) {
+    console.log("[Voice] Using VAD mode");
+    await handleVoiceVAD(WhisperInput, element);
+    return;
+  }
+
+  console.log("[Voice] Using manual mode");
+
+  // Manual mode - toggle recording
+  if (WhisperInput.getIsRecording()) {
+    // Stop recording and get transcription
+    const text = await WhisperInput.stopRecording();
+    if (text) {
+      // Insert transcribed text at cursor position
+      insertVoiceText(element, text);
+    }
+    voiceState.set("partialText", "");
+  } else {
+    // Start recording
+    voiceState.set("partialText", "");
+    await WhisperInput.startRecording();
+  }
+}
+
+/**
+ * Handle voice with Vosk engine (streaming transcription, kiosk only)
+ */
+async function handleVoiceVosk(element) {
+  // Initialize Vosk if not already done
+  if (!VoskInput.isModelLoaded()) {
+    voiceState.set("state", VoskInput.VoiceState.LOADING_MODEL);
+
+    const model = settingsState.get("voiceModel") || "en-small";
+
+    const initOptions = {
+      modelKey: model,
+      onProgress: (percent) => {
+        voiceState.set("downloadProgress", percent);
+      },
+      onStateChange: (state, error) => {
+        voiceState.set("state", state);
+        if (error) {
+          voiceState.set("error", error);
+        }
+      },
+      onPartialResult: (text) => {
+        console.log("[Vosk] Partial:", text);
+        const currentElement = focusState.get("element");
+        if (currentElement && text) {
+          // Replace previous partial text with new partial
+          const prevPartial = voiceState.get("partialText") || "";
+          if (prevPartial) {
+            // Delete the previous partial text
+            deleteLastNChars(currentElement, prevPartial.length);
+          }
+          // Insert the new partial text
+          insertVoiceText(currentElement, text);
+        }
+        voiceState.set("partialText", text);
+      },
+      onFinalResult: (text) => {
+        console.log("[Vosk] Final:", text);
+        const currentElement = focusState.get("element");
+        const prevPartial = voiceState.get("partialText") || "";
+        if (currentElement) {
+          // Delete the partial text
+          if (prevPartial) {
+            deleteLastNChars(currentElement, prevPartial.length);
+          }
+          // Insert the final text
+          if (text) {
+            insertVoiceText(currentElement, text + " ");
+          }
+        }
+        voiceState.set("partialText", "");
+      },
+    };
+
+    const success = await VoskInput.initTranscriber(initOptions);
 
     if (!success) {
       return;
@@ -239,16 +368,62 @@ async function handleVoice() {
   }
 
   // Toggle recording
-  if (VoiceInput.getIsRecording()) {
-    // Stop recording and get transcription
-    const text = await VoiceInput.stopRecording();
-    if (text) {
-      // Insert transcribed text at cursor position
-      insertVoiceText(element, text);
-    }
+  if (VoskInput.getIsRecording()) {
+    console.log("[Vosk] Stopping recording");
+    await VoskInput.stopRecording();
+    voiceState.set("partialText", "");
   } else {
-    // Start recording
-    await VoiceInput.startRecording();
+    console.log("[Vosk] Starting recording");
+    voiceState.set("partialText", "");
+    await VoskInput.startRecording();
+  }
+}
+
+/**
+ * Handle VAD mode for Whisper
+ * Auto-detects speech and transcribes when speech ends
+ */
+async function handleVoiceVAD(VoiceInput, element) {
+  // Initialize VAD if not already done
+  if (!VoiceInput.isVADInitialized()) {
+    console.log("[Voice] Initializing VAD...");
+    const success = await VoiceInput.initVAD({
+      onTranscription: (text) => {
+        console.log("[Voice] Got transcription:", text);
+        // Insert transcribed text when VAD detects speech end
+        const currentElement = focusState.get("element");
+        console.log("[Voice] Current element:", currentElement);
+        if (currentElement && text) {
+          console.log("[Voice] Inserting text");
+          insertVoiceText(currentElement, text);
+        }
+      },
+      onStateChange: (state, error) => {
+        console.log("[Voice] State change:", state, error);
+        voiceState.set("state", state);
+        if (error) {
+          voiceState.set("error", error);
+        }
+      },
+    });
+
+    if (!success) {
+      console.log("[Voice] VAD init failed");
+      return;
+    }
+    console.log("[Voice] VAD initialized");
+  }
+
+  // Toggle VAD listening
+  if (VoiceInput.isVADListening()) {
+    console.log("[Voice] Stopping VAD listening");
+    VoiceInput.stopVADListening();
+    vadModeActive = false;
+  } else {
+    console.log("[Voice] Starting VAD listening");
+    const started = await VoiceInput.startVADListening();
+    vadModeActive = started;
+    console.log("[Voice] VAD started:", started);
   }
 }
 
@@ -262,6 +437,20 @@ function insertVoiceText(_element, text) {
   // Insert each character as if the user pressed the key
   for (const char of text) {
     insertCharacter(char);
+  }
+}
+
+/**
+ * Delete the last N characters from the focused element
+ * Used for streaming voice input to replace partial results
+ * @param {Element} element - The input element
+ * @param {number} n - Number of characters to delete
+ */
+function deleteLastNChars(element, n) {
+  if (!element || n <= 0) return;
+
+  for (let i = 0; i < n; i++) {
+    handleBackspace();
   }
 }
 

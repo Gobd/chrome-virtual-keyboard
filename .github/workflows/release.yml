@@ -24,16 +24,23 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Build extension
-        run: pnpm run build
-
-      - name: Create zip
+      - name: Build store version
         run: |
+          pnpm run build
           mv dist smartkey
           zip -r smartkey-${{ github.ref_name }}.zip smartkey
+          rm -rf smartkey
+
+      - name: Build kiosk version
+        run: |
+          pnpm run build:kiosk
+          mv dist smartkey-kiosk
+          zip -r smartkey-kiosk-${{ github.ref_name }}.zip smartkey-kiosk
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: smartkey-${{ github.ref_name }}.zip
+          files: |
+            smartkey-${{ github.ref_name }}.zip
+            smartkey-kiosk-${{ github.ref_name }}.zip
           generate_release_notes: true

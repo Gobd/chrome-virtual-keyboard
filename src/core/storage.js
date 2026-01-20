@@ -3,39 +3,46 @@
 
 import { STORAGE_KEYS } from "./config.js";
 
+// Firefox uses browser.*, Chrome uses chrome.*
+// Firefox has a chrome.* compatibility layer but it can be inconsistent
+const storageAPI = (typeof browser !== "undefined" && browser.storage)
+  ? browser.storage.local
+  : chrome.storage.local;
+
 /**
- * Get values from chrome.storage.local
+ * Get values from storage
  * @param {string|string[]} keys - Key(s) to retrieve
  * @returns {Promise<Object>} Object with requested values
  */
 export async function get(keys) {
-  return chrome.storage.local.get(keys);
+  const result = await storageAPI.get(keys);
+  return result || {};
 }
 
 /**
- * Set values in chrome.storage.local
+ * Set values in storage
  * @param {Object} items - Key-value pairs to store
  * @returns {Promise<void>}
  */
 export async function set(items) {
-  return chrome.storage.local.set(items);
+  return storageAPI.set(items);
 }
 
 /**
- * Remove keys from chrome.storage.local
+ * Remove keys from storage
  * @param {string|string[]} keys - Key(s) to remove
  * @returns {Promise<void>}
  */
 export async function remove(keys) {
-  return chrome.storage.local.remove(keys);
+  return storageAPI.remove(keys);
 }
 
 /**
- * Clear all data from chrome.storage.local
+ * Clear all data from storage
  * @returns {Promise<void>}
  */
 export async function clear() {
-  return chrome.storage.local.clear();
+  return storageAPI.clear();
 }
 
 // =============================================================================
@@ -383,23 +390,6 @@ export async function setVoiceModel(model) {
 }
 
 /**
- * Get voice language setting
- * @returns {Promise<string>} 'en' or 'multilingual'
- */
-export async function getVoiceLanguage() {
-  const result = await get(STORAGE_KEYS.VOICE_LANGUAGE);
-  return result[STORAGE_KEYS.VOICE_LANGUAGE] || "multilingual";
-}
-
-/**
- * Set voice language setting
- * @param {string} language - 'en' or 'multilingual'
- */
-export async function setVoiceLanguage(language) {
-  await set({ [STORAGE_KEYS.VOICE_LANGUAGE]: language });
-}
-
-/**
  * Get hide cursor setting (kiosk mode)
  * @returns {Promise<boolean>}
  */
@@ -458,8 +448,9 @@ export async function loadAllSettings() {
     STORAGE_KEYS.STICKY_SHIFT,
     STORAGE_KEYS.AUTO_CAPS,
     STORAGE_KEYS.VOICE_ENABLED,
+    STORAGE_KEYS.VOICE_ENGINE,
     STORAGE_KEYS.VOICE_MODEL,
-    STORAGE_KEYS.VOICE_LANGUAGE,
+    STORAGE_KEYS.VOICE_VAD_MODE,
     STORAGE_KEYS.KEY_REPEAT_ENABLED,
     STORAGE_KEYS.KEY_REPEAT_DELAY,
     STORAGE_KEYS.KEY_REPEAT_SPEED,
@@ -487,8 +478,9 @@ export async function loadAllSettings() {
     stickyShift: result[STORAGE_KEYS.STICKY_SHIFT] === true,
     autoCaps: result[STORAGE_KEYS.AUTO_CAPS] === true,
     voiceEnabled: result[STORAGE_KEYS.VOICE_ENABLED] === true,
-    voiceModel: result[STORAGE_KEYS.VOICE_MODEL] || "base-q8",
-    voiceLanguage: result[STORAGE_KEYS.VOICE_LANGUAGE] || "multilingual",
+    voiceEngine: result[STORAGE_KEYS.VOICE_ENGINE] || "whisper",
+    voiceModel: result[STORAGE_KEYS.VOICE_MODEL] || "base-q8-multi",
+    voiceVadMode: result[STORAGE_KEYS.VOICE_VAD_MODE] === true,
     keyRepeatEnabled: result[STORAGE_KEYS.KEY_REPEAT_ENABLED] === true,
     keyRepeatDelay: result[STORAGE_KEYS.KEY_REPEAT_DELAY] || 400,
     keyRepeatSpeed: result[STORAGE_KEYS.KEY_REPEAT_SPEED] || 75,
@@ -522,8 +514,9 @@ export async function initializeDefaults(defaultLayouts) {
     [STORAGE_KEYS.STICKY_SHIFT]: false,
     [STORAGE_KEYS.AUTO_CAPS]: false,
     [STORAGE_KEYS.VOICE_ENABLED]: false,
-    [STORAGE_KEYS.VOICE_MODEL]: "base-q8",
-    [STORAGE_KEYS.VOICE_LANGUAGE]: "multilingual",
+    [STORAGE_KEYS.VOICE_ENGINE]: "whisper", // "whisper" or "vosk" (kiosk builds only)
+    [STORAGE_KEYS.VOICE_MODEL]: "base-q8-multi", // includes language: multi=multilingual, en=english
+    [STORAGE_KEYS.VOICE_VAD_MODE]: false,
     [STORAGE_KEYS.KEY_REPEAT_ENABLED]: false,
     [STORAGE_KEYS.KEY_REPEAT_DELAY]: 400,
     [STORAGE_KEYS.KEY_REPEAT_SPEED]: 75,
@@ -590,8 +583,6 @@ export default {
   setVoiceEnabled,
   getVoiceModel,
   setVoiceModel,
-  getVoiceLanguage,
-  setVoiceLanguage,
   getHideCursor,
   setHideCursor,
   isFirstTime,
