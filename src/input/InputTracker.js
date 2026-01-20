@@ -245,21 +245,67 @@ export function restoreScrollPosition() {
   }
 }
 
+// Track the spacer element we added
+let scrollSpacer = null;
+let scrollSpacerContainer = null;
+
 /**
- * Add padding to body to make room for keyboard
+ * Find the scrollable ancestor of an element
+ * @param {HTMLElement} element
+ * @returns {HTMLElement|null}
+ */
+function findScrollableAncestor(element) {
+  let current = element.parentElement;
+
+  while (current && current !== document.body && current !== document.documentElement) {
+    const style = window.getComputedStyle(current);
+    const overflowY = style.overflowY;
+    const isScrollable = overflowY === "auto" || overflowY === "scroll";
+
+    if (isScrollable && current.scrollHeight > current.clientHeight) {
+      return current;
+    }
+
+    current = current.parentElement;
+  }
+
+  return null;
+}
+
+/**
+ * Add padding to the focused element's scrollable container to make room for keyboard
+ * Falls back to body if no scrollable container is found
  * @param {number} keyboardHeight
  */
 export function addBodyPadding(keyboardHeight) {
-  if (!document.body.style.marginBottom || scrollState.get("pagePadding")) {
+  removeBodyPadding();
+
+  const element = focusState.get("element");
+  const scrollableContainer = element ? findScrollableAncestor(element) : null;
+
+  if (scrollableContainer) {
+    scrollSpacer = document.createElement("div");
+    scrollSpacer.id = "vk-scroll-spacer";
+    scrollSpacer.style.cssText = `height: ${keyboardHeight}px; flex-shrink: 0; pointer-events: none;`;
+    scrollableContainer.appendChild(scrollSpacer);
+    scrollSpacerContainer = scrollableContainer;
+    scrollState.set("pagePadding", true);
+  } else {
     document.body.style.marginBottom = `${keyboardHeight}px`;
     scrollState.set("pagePadding", true);
   }
 }
 
 /**
- * Remove body padding when keyboard closes
+ * Remove scroll padding when keyboard closes
  */
 export function removeBodyPadding() {
+  if (scrollSpacer && scrollSpacer.parentNode) {
+    scrollSpacer.parentNode.removeChild(scrollSpacer);
+  }
+  scrollSpacer = null;
+  scrollSpacerContainer = null;
+
   if (scrollState.get("pagePadding")) {
     document.body.style.marginBottom = "";
     scrollState.set("pagePadding", false);
