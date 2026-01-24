@@ -224,10 +224,24 @@ export function scrollInputIntoView(keyboardHeight) {
     const padding = 20;
     const scrollAmount = elemRect.bottom - visibleBottom + padding;
 
-    scrollState.set("lastPos", window.scrollY);
-    scrollState.set("newPos", window.scrollY + scrollAmount);
+    // Check if we have a scrollable container
+    const scrollableContainer = findScrollableAncestor(element);
 
-    window.scrollBy({ top: scrollAmount, behavior: "smooth" });
+    if (scrollableContainer) {
+      // Scroll the container
+      scrollState.set("lastPos", scrollableContainer.scrollTop);
+      scrollState.set("newPos", scrollableContainer.scrollTop + scrollAmount);
+      scrollState.set("scrollContainer", scrollableContainer);
+
+      scrollableContainer.scrollBy({ top: scrollAmount, behavior: "smooth" });
+    } else {
+      // Fall back to window scroll
+      scrollState.set("lastPos", window.scrollY);
+      scrollState.set("newPos", window.scrollY + scrollAmount);
+      scrollState.set("scrollContainer", null);
+
+      window.scrollBy({ top: scrollAmount, behavior: "smooth" });
+    }
   }
 }
 
@@ -237,11 +251,21 @@ export function scrollInputIntoView(keyboardHeight) {
 export function restoreScrollPosition() {
   const lastPos = scrollState.get("lastPos");
   const newPos = scrollState.get("newPos");
-  const scrollY = window.scrollY;
+  const scrollContainer = scrollState.get("scrollContainer");
 
-  // Only restore if user hasn't scrolled much since we opened
-  if (scrollY <= newPos + 50 && scrollY >= newPos - 50) {
-    window.scroll(0, lastPos);
+  if (scrollContainer) {
+    // Restore container scroll position
+    const currentScroll = scrollContainer.scrollTop;
+    if (currentScroll <= newPos + 50 && currentScroll >= newPos - 50) {
+      scrollContainer.scrollTo({ top: lastPos });
+    }
+    scrollState.set("scrollContainer", null);
+  } else {
+    // Restore window scroll position
+    const scrollY = window.scrollY;
+    if (scrollY <= newPos + 50 && scrollY >= newPos - 50) {
+      window.scroll(0, lastPos);
+    }
   }
 }
 
@@ -250,6 +274,7 @@ let scrollSpacer = null;
 
 /**
  * Find the scrollable ancestor of an element
+ * Looks for containers that CAN scroll (overflow-y: auto/scroll), not just those already scrolling
  * @param {HTMLElement} element
  * @returns {HTMLElement|null}
  */
@@ -263,9 +288,10 @@ function findScrollableAncestor(element) {
   ) {
     const style = window.getComputedStyle(current);
     const overflowY = style.overflowY;
-    const isScrollable = overflowY === "auto" || overflowY === "scroll";
 
-    if (isScrollable && current.scrollHeight > current.clientHeight) {
+    // Check if the container COULD scroll (has auto/scroll overflow)
+    // Don't require it to already be scrolling - our spacer will make it scrollable
+    if (overflowY === "auto" || overflowY === "scroll") {
       return current;
     }
 
