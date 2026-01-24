@@ -247,7 +247,6 @@ export function restoreScrollPosition() {
 
 // Track the spacer element we added
 let scrollSpacer = null;
-let scrollSpacerContainer = null;
 
 /**
  * Find the scrollable ancestor of an element
@@ -257,7 +256,11 @@ let scrollSpacerContainer = null;
 function findScrollableAncestor(element) {
   let current = element.parentElement;
 
-  while (current && current !== document.body && current !== document.documentElement) {
+  while (
+    current &&
+    current !== document.body &&
+    current !== document.documentElement
+  ) {
     const style = window.getComputedStyle(current);
     const overflowY = style.overflowY;
     const isScrollable = overflowY === "auto" || overflowY === "scroll";
@@ -288,7 +291,6 @@ export function addBodyPadding(keyboardHeight) {
     scrollSpacer.id = "vk-scroll-spacer";
     scrollSpacer.style.cssText = `height: ${keyboardHeight}px; flex-shrink: 0; pointer-events: none;`;
     scrollableContainer.appendChild(scrollSpacer);
-    scrollSpacerContainer = scrollableContainer;
     scrollState.set("pagePadding", true);
   } else {
     document.body.style.marginBottom = `${keyboardHeight}px`;
@@ -300,11 +302,10 @@ export function addBodyPadding(keyboardHeight) {
  * Remove scroll padding when keyboard closes
  */
 export function removeBodyPadding() {
-  if (scrollSpacer && scrollSpacer.parentNode) {
+  if (scrollSpacer?.parentNode) {
     scrollSpacer.parentNode.removeChild(scrollSpacer);
   }
   scrollSpacer = null;
-  scrollSpacerContainer = null;
 
   if (scrollState.get("pagePadding")) {
     document.body.style.marginBottom = "";
