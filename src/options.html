@@ -184,31 +184,23 @@
           </label>
           <br />
           <small style="color: #888; margin-left: 22px">
-            Uses Whisper AI running locally in your browser. No data sent to servers.
+            Runs 100% locally in your browser. No data sent to servers.
           </small>
         </p>
         <div id="voiceOptions" style="margin-left: 22px; display: none">
-          <p style="display: flex; align-items: center; gap: 10px">
-            <span>Model:</span>
-            <select id="voiceModel" style="padding: 5px">
-              <optgroup label="Quantized (smaller, faster)">
-                <option value="tiny-q8">Tiny (~41 MB) - RPi/low-power</option>
-                <option value="base-q8" selected>Base (~77 MB) - Recommended</option>
-                <option value="small-q8">Small (~244 MB) - Better accuracy</option>
-              </optgroup>
-              <optgroup label="Full precision (larger, higher quality)">
-                <option value="tiny">Tiny (~75 MB)</option>
-                <option value="base">Base (~145 MB)</option>
-                <option value="small">Small (~488 MB) - Best quality</option>
-              </optgroup>
+          <p id="voiceEngineRow" style="display: none; align-items: center; gap: 10px">
+            <span>Engine:</span>
+            <select id="voiceEngine" style="padding: 5px">
+              <option value="whisper">Whisper (Batch - Higher Quality)</option>
+              <option value="vosk">Vosk (Streaming - Lower Latency)</option>
             </select>
           </p>
           <p style="display: flex; align-items: center; gap: 10px">
-            <span>Language:</span>
-            <select id="voiceLanguage" style="padding: 5px">
-              <option value="en">English only (faster)</option>
-              <option value="multilingual" selected>Multilingual (auto-detect)</option>
+            <span>Model:</span>
+            <select id="voiceModel" style="padding: 5px">
+              <!-- Options populated by JavaScript based on engine -->
             </select>
+            <button id="downloadModel" type="button" style="padding: 5px 12px">Download</button>
           </p>
           <div id="voiceModelStatus" style="margin-top: 10px; display: none">
             <div style="display: flex; align-items: center; gap: 10px">
@@ -236,6 +228,17 @@
               ></div>
             </div>
           </div>
+          <p id="vadModeContainer">
+            <label>
+              <input type="checkbox" id="voiceVadMode" />
+              Auto-listen mode (Whisper only)
+            </label>
+            <br />
+            <small style="color: #888; margin-left: 22px">
+              Automatically detects when you stop speaking and transcribes.
+              Without this, press mic to start/stop recording manually.
+            </small>
+          </p>
           <p>
             <small style="color: #888">
               Press the mic button to start recording, press again to stop.

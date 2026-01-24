@@ -33,13 +33,25 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build extension
+      - name: Build store version
         run: pnpm run build
 
-      - name: Upload artifact
+      - name: Upload store artifact
         uses: actions/upload-artifact@v4
         with:
           name: smartkey-${{ github.head_ref || github.ref_name }}
+          path: dist
+          overwrite: true
+
+      - name: Build kiosk version
+        run: |
+          rm -rf dist
+          pnpm run build:kiosk
+
+      - name: Upload kiosk artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: smartkey-kiosk-${{ github.head_ref || github.ref_name }}
           path: dist
           overwrite: true
 
@@ -61,9 +73,11 @@ jobs:
           edit-mode: replace
           body: |
             <!-- build-artifact-comment -->
-            ## Build Artifact
+            ## Build Artifacts
 
-            Download the latest build: [smartkey.zip](https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/smartkey-${{ github.head_ref }}.zip)
+            Download the latest builds:
+            - **Store version:** [smartkey.zip](https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/smartkey-${{ github.head_ref }}.zip)
+            - **Kiosk version:** [smartkey-kiosk.zip](https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/smartkey-kiosk-${{ github.head_ref }}.zip) (includes Vosk streaming)
 
             **Branch:** `${{ github.head_ref }}`
             **Commit:** ${{ github.event.pull_request.head.sha }}

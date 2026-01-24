@@ -28,7 +28,17 @@
       "Bash(git -C /Users/bkemper/Developer/chrome-virtual-keyboard log --oneline -20)",
       "Bash(git -C /Users/bkemper/Developer/chrome-virtual-keyboard show dakfix:src/keyboard/KeyHandler.js)",
       "Bash(pnpm test:e2e:*)",
-      "Bash(pnpm build:*)"
+      "Bash(pnpm build:*)",
+      "Bash(curl:*)",
+      "Bash(npm install:*)",
+      "WebSearch",
+      "WebFetch(domain:k2-fsa.github.io)",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(fd:*)",
+      "Bash(pnpm run build:kiosk:*)",
+      "Bash(pnpm build:kiosk:*)",
+      "Bash(pnpm build:firefox:*)",
+      "Bash(pnpm run build:firefox:*)"
     ]
   }
 }

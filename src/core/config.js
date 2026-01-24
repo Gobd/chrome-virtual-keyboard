@@ -101,8 +101,10 @@ export const STORAGE_KEYS = {
   AUTO_CAPS: "autoCaps",
   // Voice input settings
   VOICE_ENABLED: "voiceEnabled",
-  VOICE_MODEL: "voiceModel",
-  VOICE_LANGUAGE: "voiceLanguage",
+  VOICE_ENGINE: "voiceEngine", // "whisper" or "vosk" (kiosk builds only)
+  VOICE_MODEL: "voiceModel", // Model key like "base-q8-multi" (includes language)
+  VOICE_DOWNLOADED_MODELS: "voiceDownloadedModels", // JSON array of downloaded model keys
+  VOICE_VAD_MODE: "voiceVadMode", // true = auto-listen with VAD, false = manual push-to-talk
   // Key repeat settings
   KEY_REPEAT_ENABLED: "keyRepeatEnabled",
   KEY_REPEAT_DELAY: "keyRepeatDelay",

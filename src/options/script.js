@@ -2,14 +2,29 @@
 
 import { STORAGE_KEYS } from "../core/config.js";
 import { getLayoutsList } from "../core/storage.js";
-import * as VoiceInput from "../voice/VoiceInput.js";
+
+// Firefox uses browser.*, Chrome uses chrome.*
+const storageLocal = (typeof browser !== "undefined" && browser.storage)
+  ? browser.storage.local
+  : storageLocal;
+import * as WhisperInput from "../voice/VoiceInput.js";
+// Vosk is only available in kiosk builds (requires unsafe-eval CSP)
+// eslint-disable-next-line no-undef
+const isFirefox = typeof __IS_FIREFOX__ !== "undefined" && __IS_FIREFOX__;
+// Dynamically import VoskInput only in kiosk mode
+let VoskInput = null;
+if (isFirefox) {
+  import("../voice/VoskInput.js").then((module) => {
+    VoskInput = module;
+  });
+}
 
 const $ = (id) => document.getElementById(id);
 
 // Track if model download is in progress
 let isDownloading = false;
-// Track which model is currently loaded
-let loadedModelKey = null;
+// Track which models have been downloaded (persisted in chrome.storage)
+let downloadedModels = new Set();
 
 let zoomLocked = true;
 
@@ -29,14 +44,15 @@ function saveDisplaySettings() {
   const autoCaps = $("autoCaps").checked;
   const autostart = $("autostart").checked;
   const voiceEnabled = $("voiceEnabled").checked;
+  const voiceEngine = isFirefox ? $("voiceEngine").value : "whisper";
   const voiceModel = $("voiceModel").value;
-  const voiceLanguage = $("voiceLanguage").value;
+  const voiceVadMode = $("voiceVadMode").checked;
   const keyRepeatEnabled = $("keyRepeatEnabled").checked;
   const keyRepeatDelay = parseInt($("keyRepeatDelay").value, 10) || 400;
   const keyRepeatSpeed = parseInt($("keyRepeatSpeed").value, 10) || 75;
   const hideCursor = $("hideCursor").checked;
 
-  chrome.storage.local.set({
+  storageLocal.set({
     [STORAGE_KEYS.SHOW_OPEN_BUTTON]: showOpenButton,
     [STORAGE_KEYS.SHOW_NUMBER_BAR]: showNumberBar,
     [STORAGE_KEYS.SHOW_LANGUAGE_BUTTON]: showLanguageButton,
@@ -53,8 +69,9 @@ function saveDisplaySettings() {
     [STORAGE_KEYS.AUTO_CAPS]: autoCaps,
     [STORAGE_KEYS.AUTOSTART]: autostart,
     [STORAGE_KEYS.VOICE_ENABLED]: voiceEnabled,
+    [STORAGE_KEYS.VOICE_ENGINE]: voiceEngine,
     [STORAGE_KEYS.VOICE_MODEL]: voiceModel,
-    [STORAGE_KEYS.VOICE_LANGUAGE]: voiceLanguage,
+    [STORAGE_KEYS.VOICE_VAD_MODE]: voiceVadMode,
     [STORAGE_KEYS.KEY_REPEAT_ENABLED]: keyRepeatEnabled,
     [STORAGE_KEYS.KEY_REPEAT_DELAY]: keyRepeatDelay,
     [STORAGE_KEYS.KEY_REPEAT_SPEED]: keyRepeatSpeed,
@@ -67,87 +84,230 @@ function saveDisplaySettings() {
   updateKeyRepeatOptionsVisibility();
 }
 
+// Model options for each engine
+// Quantized (q8) = smaller & faster, Full = larger & higher quality
+const WHISPER_MODELS = [
+  // Quantized models - smaller, faster
+  { value: "tiny-q8-en", label: "Tiny Fast - English (41 MB)" },
+  { value: "tiny-q8-multi", label: "Tiny Fast - All languages (41 MB)" },
+  { value: "base-q8-en", label: "Base Fast - English (77 MB)" },
+  { value: "base-q8-multi", label: "Base Fast - All languages (77 MB) - Recommended", default: true },
+  { value: "small-q8-en", label: "Small Fast - English (244 MB)" },
+  { value: "small-q8-multi", label: "Small Fast - All languages (244 MB)" },
+  // Full precision models - larger, higher quality
+  { value: "tiny-en", label: "Tiny HQ - English (75 MB)" },
+  { value: "tiny-multi", label: "Tiny HQ - All languages (75 MB)" },
+  { value: "base-en", label: "Base HQ - English (145 MB)" },
+  { value: "base-multi", label: "Base HQ - All languages (145 MB)" },
+  { value: "small-en", label: "Small HQ - English (488 MB) - Best quality" },
+  { value: "small-multi", label: "Small HQ - All languages (488 MB) - Best multilingual" },
+];
+
+// Vosk models (kiosk builds only - streaming recognition)
+const VOSK_MODELS = [
+  { value: "en-small", label: "English (45 MB)", default: true },
+  { value: "de-small", label: "German (45 MB)" },
+  { value: "fr-small", label: "French (41 MB)" },
+  { value: "es-small", label: "Spanish (39 MB)" },
+  { value: "it-small", label: "Italian (48 MB)" },
+  { value: "pt-small", label: "Portuguese (31 MB)" },
+  { value: "ru-small", label: "Russian (45 MB)" },
+  { value: "zh-small", label: "Chinese (42 MB)" },
+];
+
+
 function updateVoiceOptionsVisibility() {
   const voiceEnabled = $("voiceEnabled").checked;
   $("voiceOptions").style.display = voiceEnabled ? "block" : "none";
+  if (voiceEnabled) {
+    // Show engine selection only in kiosk builds
+    if (isFirefox) {
+      $("voiceEngineRow").style.display = "flex";
+    }
+    populateModelDropdown();
+    updateDownloadButton();
+    updateVadModeVisibility();
+  }
+}
+
+function updateVadModeVisibility() {
+  // VAD mode only available for Whisper engine
+  const engine = isFirefox ? $("voiceEngine").value : "whisper";
+  const vadContainer = $("vadModeContainer");
+  if (vadContainer) {
+    vadContainer.style.display = engine === "whisper" ? "block" : "none";
+  }
+}
+
+function populateModelDropdown() {
+  const select = $("voiceModel");
+  const currentValue = select.value;
+  const engine = isFirefox ? $("voiceEngine").value : "whisper";
+  const models = engine === "vosk" ? VOSK_MODELS : WHISPER_MODELS;
+
+  select.innerHTML = "";
+  let hasCurrentValue = false;
+
+  for (const model of models) {
+    const option = document.createElement("option");
+    option.value = model.value;
+    option.textContent = model.label;
+    if (model.value === currentValue) {
+      option.selected = true;
+      hasCurrentValue = true;
+    } else if (model.default && !hasCurrentValue) {
+      option.selected = true;
+    }
+    select.appendChild(option);
+  }
 }
 
 /**
- * Get a human-readable model name
+ * Get display name for current model
  */
-function getModelDisplayName(modelSize, language) {
-  const modelNames = {
-    "tiny-q8": "Tiny (Q8)",
-    "base-q8": "Base (Q8)",
-    "small-q8": "Small (Q8)",
-    tiny: "Tiny",
-    base: "Base",
-    small: "Small",
-  };
-  const langNames = {
-    en: "English",
-    multilingual: "Multilingual",
-  };
-  return `${modelNames[modelSize] || modelSize} - ${langNames[language] || language}`;
+function getModelDisplayName() {
+  const model = $("voiceModel").value;
+  const engine = isFirefox ? $("voiceEngine").value : "whisper";
+  const models = engine === "vosk" ? VOSK_MODELS : WHISPER_MODELS;
+  const found = models.find(m => m.value === model);
+  return found ? found.label.split(" - ")[0] : model;
 }
 
 /**
- * Download the voice model when voice is enabled
+ * Save downloaded models to storage
  */
-async function downloadVoiceModel(forceReload = false) {
+async function saveDownloadedModels() {
+  const arr = Array.from(downloadedModels);
+  await storageLocal.set({
+    [STORAGE_KEYS.VOICE_DOWNLOADED_MODELS]: JSON.stringify(arr),
+  });
+}
+
+/**
+ * Load downloaded models from storage
+ */
+async function loadDownloadedModels() {
+  const result = await storageLocal.get([STORAGE_KEYS.VOICE_DOWNLOADED_MODELS]);
+  const json = result[STORAGE_KEYS.VOICE_DOWNLOADED_MODELS];
+  if (json) {
+    try {
+      const arr = JSON.parse(json);
+      downloadedModels = new Set(arr);
+    } catch {
+      downloadedModels = new Set();
+    }
+  }
+}
+
+/**
+ * Download the selected voice model
+ */
+async function downloadVoiceModel() {
   if (isDownloading) return;
 
-  const modelSize = $("voiceModel").value;
-  const language = $("voiceLanguage").value;
-  const modelKey = `${modelSize}:${language}`;
-  const modelName = getModelDisplayName(modelSize, language);
+  const model = $("voiceModel").value;
+  const modelName = getModelDisplayName();
+  const engine = isFirefox ? $("voiceEngine").value : "whisper";
 
-  // Check if we already have this exact model loaded
-  if (
-    !forceReload &&
-    loadedModelKey === modelKey &&
-    VoiceInput.isModelLoaded()
-  ) {
+  // Check if we already have this model downloaded
+  // Use engine-prefixed key to track downloads separately
+  const downloadKey = `${engine}:${model}`;
+  if (downloadedModels.has(downloadKey)) {
     showModelStatus("ready", 100, null, modelName);
     return;
   }
 
-  // Dispose old model if switching to a different one
-  if (loadedModelKey && loadedModelKey !== modelKey) {
-    VoiceInput.dispose();
-    loadedModelKey = null;
-  }
-
   isDownloading = true;
-  showModelStatus("downloading", 0, null, modelName);
 
-  const success = await VoiceInput.initTranscriber({
-    modelSize,
-    language,
-    onProgress: (percent) => {
-      showModelStatus("downloading", percent, null, modelName);
-    },
-    onStateChange: (state, error) => {
-      if (state === VoiceInput.VoiceState.IDLE) {
-        loadedModelKey = modelKey;
-        showModelStatus("ready", 100, null, modelName);
-        isDownloading = false;
-      } else if (state === VoiceInput.VoiceState.ERROR) {
-        showModelStatus("error", 0, error, modelName);
-        isDownloading = false;
-      }
-    },
-  });
+  if (engine === "vosk" && VoskInput) {
+    // Vosk model download (streaming, no progress available)
+    showModelStatus("downloading", 0, null, modelName, true);
 
-  if (!success) {
-    isDownloading = false;
+    const initOptions = {
+      modelKey: model,
+      onStateChange: async (state, error) => {
+        if (state === VoskInput.VoiceState.IDLE) {
+          downloadedModels.add(downloadKey);
+          await saveDownloadedModels();
+          showModelStatus("ready", 100, null, modelName);
+          isDownloading = false;
+        } else if (state === VoskInput.VoiceState.ERROR) {
+          showModelStatus("error", 0, error, modelName);
+          isDownloading = false;
+        }
+      },
+    };
+
+    const success = await VoskInput.initTranscriber(initOptions);
+    if (!success) {
+      isDownloading = false;
+    }
+  } else {
+    // Whisper model download
+    showModelStatus("downloading", 0, null, modelName, false);
+
+    // Parse model string like "base-q8-multi" into modelSize and language
+    const parts = model.split("-");
+    const isMulti = parts.pop() === "multi";
+
+    const initOptions = {
+      modelSize: parts.join("-"), // "base-q8" or "tiny-q8" etc
+      language: isMulti ? "multilingual" : "en",
+      onProgress: (percent) => {
+        showModelStatus("downloading", percent, null, modelName, false);
+      },
+      onStateChange: async (state, error) => {
+        if (state === WhisperInput.VoiceState.IDLE) {
+          downloadedModels.add(downloadKey);
+          await saveDownloadedModels();
+          showModelStatus("ready", 100, null, modelName);
+          isDownloading = false;
+        } else if (state === WhisperInput.VoiceState.ERROR) {
+          showModelStatus("error", 0, error, modelName);
+          isDownloading = false;
+        }
+      },
+    };
+
+    const success = await WhisperInput.initTranscriber(initOptions);
+    if (!success) {
+      isDownloading = false;
+    }
+  }
+}
+
+/**
+ * Update the download button state
+ */
+function updateDownloadButton() {
+  const btn = $("downloadModel");
+  const model = $("voiceModel").value;
+  const engine = isFirefox ? $("voiceEngine").value : "whisper";
+  const downloadKey = `${engine}:${model}`;
+  const isDownloaded = downloadedModels.has(downloadKey);
+
+  if (isDownloading) {
+    btn.textContent = "Downloading...";
+    btn.disabled = true;
+    btn.style.background = "";
+    btn.style.color = "";
+  } else if (isDownloaded) {
+    btn.textContent = "Ready";
+    btn.disabled = true;
+    btn.style.background = "#27ae60";
+    btn.style.color = "white";
+  } else {
+    btn.textContent = "Download";
+    btn.disabled = false;
+    btn.style.background = "";
+    btn.style.color = "";
   }
 }
 
 /**
  * Show model download status in the UI
  */
-function showModelStatus(status, progress = 0, error = null, modelName = "") {
+function showModelStatus(status, progress = 0, error = null, modelName = "", isIndeterminate = false) {
   const statusDiv = $("voiceModelStatus");
   const statusText = $("voiceModelStatusText");
   const progressText = $("voiceModelProgress");
@@ -157,16 +317,30 @@ function showModelStatus(status, progress = 0, error = null, modelName = "") {
     statusDiv.style.display = "block";
     statusText.textContent = `Downloading ${modelName}...`;
     statusText.style.color = "#333";
-    progressText.textContent = `${progress}%`;
-    progressBar.style.width = `${progress}%`;
-    progressBar.style.background = "#2980b9";
+
+    if (isIndeterminate) {
+      // For Vosk - show animated indeterminate progress
+      progressText.textContent = "";
+      progressBar.style.width = "100%";
+      progressBar.style.background = "linear-gradient(90deg, #2980b9 25%, #5dade2 50%, #2980b9 75%)";
+      progressBar.style.backgroundSize = "200% 100%";
+      progressBar.style.animation = "shimmer 1.5s infinite linear";
+    } else {
+      progressText.textContent = `${progress}%`;
+      progressBar.style.width = `${progress}%`;
+      progressBar.style.background = "#2980b9";
+      progressBar.style.animation = "";
+    }
+    updateDownloadButton();
   } else if (status === "ready") {
     statusDiv.style.display = "block";
-    statusText.textContent = `${modelName} ready`;
+    statusText.textContent = `${modelName} ready!`;
     statusText.style.color = "#27ae60";
     progressText.textContent = "";
     progressBar.style.width = "100%";
     progressBar.style.background = "#27ae60";
+    progressBar.style.animation = "";
+    updateDownloadButton();
     // Hide after a few seconds
     setTimeout(() => {
       statusDiv.style.display = "none";
@@ -178,8 +352,11 @@ function showModelStatus(status, progress = 0, error = null, modelName = "") {
     progressText.textContent = "";
     progressBar.style.width = "100%";
     progressBar.style.background = "#c0392b";
+    progressBar.style.animation = "";
+    updateDownloadButton();
   } else {
     statusDiv.style.display = "none";
+    updateDownloadButton();
   }
 }
 
@@ -189,7 +366,7 @@ function updateKeyRepeatOptionsVisibility() {
 }
 
 async function loadDisplaySettings() {
-  const result = await chrome.storage.local.get([
+  const result = await storageLocal.get([
     STORAGE_KEYS.SHOW_OPEN_BUTTON,
     STORAGE_KEYS.SHOW_NUMBER_BAR,
     STORAGE_KEYS.SHOW_LANGUAGE_BUTTON,
@@ -206,8 +383,9 @@ async function loadDisplaySettings() {
     STORAGE_KEYS.AUTO_CAPS,
     STORAGE_KEYS.AUTOSTART,
     STORAGE_KEYS.VOICE_ENABLED,
+    STORAGE_KEYS.VOICE_ENGINE,
     STORAGE_KEYS.VOICE_MODEL,
-    STORAGE_KEYS.VOICE_LANGUAGE,
+    STORAGE_KEYS.VOICE_VAD_MODE,
     STORAGE_KEYS.KEY_REPEAT_ENABLED,
     STORAGE_KEYS.KEY_REPEAT_DELAY,
     STORAGE_KEYS.KEY_REPEAT_SPEED,
@@ -239,9 +417,18 @@ async function loadDisplaySettings() {
   $("autoCaps").checked = result[STORAGE_KEYS.AUTO_CAPS] === true;
   $("autostart").checked = result[STORAGE_KEYS.AUTOSTART] === true;
   $("voiceEnabled").checked = result[STORAGE_KEYS.VOICE_ENABLED] === true;
-  $("voiceModel").value = result[STORAGE_KEYS.VOICE_MODEL] || "base-q8";
-  $("voiceLanguage").value =
-    result[STORAGE_KEYS.VOICE_LANGUAGE] || "multilingual";
+  // Set engine first (kiosk builds only), then populate models
+  if (isFirefox) {
+    const savedEngine = result[STORAGE_KEYS.VOICE_ENGINE] || "whisper";
+    $("voiceEngine").value = savedEngine;
+  }
+  // Populate model dropdown first, then set value
+  populateModelDropdown();
+  const savedModel = result[STORAGE_KEYS.VOICE_MODEL];
+  if (savedModel) {
+    $("voiceModel").value = savedModel;
+  }
+  $("voiceVadMode").checked = result[STORAGE_KEYS.VOICE_VAD_MODE] === true;
   updateVoiceOptionsVisibility();
   $("keyRepeatEnabled").checked =
     result[STORAGE_KEYS.KEY_REPEAT_ENABLED] === true;
@@ -326,7 +513,7 @@ function saveLayouts() {
 
   if (layouts.length === 0) return;
 
-  chrome.storage.local.set({
+  storageLocal.set({
     [STORAGE_KEYS.KEYBOARD_LAYOUTS_LIST]: JSON.stringify(layouts),
     [STORAGE_KEYS.KEYBOARD_LAYOUT]: layouts[0].value,
   });
@@ -351,6 +538,7 @@ async function loadLayouts() {
 
 window.addEventListener("load", async () => {
   loadLayouts();
+  await loadDownloadedModels();
   await loadDisplaySettings();
 
   $("closeSettings").addEventListener("click", () => {
@@ -381,26 +569,29 @@ window.addEventListener("load", async () => {
   $("autoCaps").addEventListener("change", saveDisplaySettings);
   $("autostart").addEventListener("change", saveDisplaySettings);
   $("resetPosition").addEventListener("click", () => {
-    chrome.storage.local.set({ [STORAGE_KEYS.KEYBOARD_POSITION]: null });
+    storageLocal.set({ [STORAGE_KEYS.KEYBOARD_POSITION]: null });
   });
   $("voiceEnabled").addEventListener("change", () => {
     saveDisplaySettings();
-    if ($("voiceEnabled").checked) {
-      downloadVoiceModel();
-    }
   });
+  if (isFirefox) {
+    $("voiceEngine").addEventListener("change", () => {
+      populateModelDropdown();
+      updateDownloadButton();
+      updateVadModeVisibility();
+      saveDisplaySettings();
+    });
+  }
   $("voiceModel").addEventListener("change", () => {
     saveDisplaySettings();
+    updateDownloadButton();
+  });
+  $("downloadModel").addEventListener("click", () => {
     if ($("voiceEnabled").checked) {
       downloadVoiceModel();
     }
   });
-  $("voiceLanguage").addEventListener("change", () => {
-    saveDisplaySettings();
-    if ($("voiceEnabled").checked) {
-      downloadVoiceModel();
-    }
-  });
+  $("voiceVadMode").addEventListener("change", saveDisplaySettings);
   $("keyRepeatEnabled").addEventListener("change", saveDisplaySettings);
   $("keyRepeatDelay").addEventListener("change", saveDisplaySettings);
   $("keyRepeatSpeed").addEventListener("change", saveDisplaySettings);

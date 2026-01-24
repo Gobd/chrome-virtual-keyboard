@@ -24,6 +24,8 @@ This extension is ideal for touch screen devices. This keyboard works like an iO
 - **Offline Voice Recognition** - Uses Whisper AI running locally in your browser (no data sent to servers)
 - **Multiple Model Sizes** - Choose from Tiny, Base, or Small models in quantized or full precision
 - **Language Support** - English-only mode for faster recognition, or multilingual auto-detection
+- **Auto-Listen Mode (VAD)** - Automatically detects when you stop speaking and transcribes
+- **Streaming Recognition** - Real-time text as you speak (Vosk engine, [kiosk build](#kiosk-build) only)
 
 ### Display Options
 - **Adjustable Size** - Scale keyboard width and height independently (25-150%)
@@ -65,12 +67,15 @@ The content script is configured to run on all pages (`<all_urls>`) to detect wh
 
 ```bash
 pnpm install          # Install dependencies
-pnpm build            # Build extension to dist/
+pnpm build            # Build store version to dist/
+pnpm build:kiosk      # Build kiosk version (with Vosk) to dist/
 pnpm watch            # Build and watch for changes
+pnpm watch:kiosk      # Build kiosk and watch for changes
 pnpm format           # Format code with Biome
 pnpm lint             # Lint code with Biome
 pnpm lint:fix         # Fix lint issues automatically
-pnpm package          # Create zip for Chrome Web Store submission
+pnpm package          # Create store zip for Chrome Web Store
+pnpm package:kiosk    # Create kiosk zip for local deployment
 ```
 
 Extension source files are in the `src/` directory.
@@ -109,6 +114,54 @@ Coverage reports are generated in:
 - `coverage/` - Combined coverage report (HTML)
 - `coverage-unit/` - Unit test coverage
 - `coverage-e2e/` - E2E test coverage
+
+## Kiosk Build
+
+Two build variants are available:
+
+| | Store | Kiosk |
+|---|---|---|
+| Voice engines | Whisper | Whisper + Vosk |
+| Mode | Batch | Batch + Streaming |
+
+**Store** - Whisper only, published to Chrome Web Store.
+
+**Kiosk** - Adds Vosk for streaming recognition (text appears as you speak). Better for low-power devices like Raspberry Pi.
+
+```bash
+pnpm run build         # Store version
+pnpm run build:kiosk   # Kiosk version
+```
+
+### Loading the Kiosk Build
+
+1. `pnpm run build:kiosk`
+2. Go to `chrome://extensions`, enable "Developer mode"
+3. Click "Load unpacked" → select `dist` folder
+
+### Launching Chrome in Kiosk Mode
+
+**macOS:**
+```bash
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
+  --kiosk --load-extension=/path/to/dist "https://your-app.com"
+```
+
+**Linux:**
+```bash
+google-chrome --kiosk --load-extension=/path/to/dist "https://your-app.com"
+```
+
+**Windows:**
+```cmd
+"C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk --load-extension="C:\path\to\dist" "https://your-app.com"
+```
+
+**Raspberry Pi:**
+```bash
+chromium-browser --kiosk --load-extension=/home/pi/dist \
+  --noerrdialogs --disable-infobars "https://your-app.com"
+```
 
 ## Known Limitations
 
