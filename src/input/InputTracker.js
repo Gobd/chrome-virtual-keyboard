@@ -224,10 +224,24 @@ export function scrollInputIntoView(keyboardHeight) {
     const padding = 20;
     const scrollAmount = elemRect.bottom - visibleBottom + padding;
 
-    scrollState.set("lastPos", window.scrollY);
-    scrollState.set("newPos", window.scrollY + scrollAmount);
+    // Check if we have a scrollable container
+    const scrollableContainer = findScrollableAncestor(element);
 
-    window.scrollBy({ top: scrollAmount, behavior: "smooth" });
+    if (scrollableContainer) {
+      // Scroll the container
+      scrollState.set("lastPos", scrollableContainer.scrollTop);
+      scrollState.set("newPos", scrollableContainer.scrollTop + scrollAmount);
+      scrollState.set("scrollContainer", scrollableContainer);
+
+      scrollableContainer.scrollBy({ top: scrollAmount, behavior: "smooth" });
+    } else {
+      // Fall back to window scroll
+      scrollState.set("lastPos", window.scrollY);
+      scrollState.set("newPos", window.scrollY + scrollAmount);
+      scrollState.set("scrollContainer", null);
+
+      window.scrollBy({ top: scrollAmount, behavior: "smooth" });
+    }
   }
 }
 
@@ -237,29 +251,88 @@ export function scrollInputIntoView(keyboardHeight) {
 export function restoreScrollPosition() {
   const lastPos = scrollState.get("lastPos");
   const newPos = scrollState.get("newPos");
-  const scrollY = window.scrollY;
+  const scrollContainer = scrollState.get("scrollContainer");
 
-  // Only restore if user hasn't scrolled much since we opened
-  if (scrollY <= newPos + 50 && scrollY >= newPos - 50) {
-    window.scroll(0, lastPos);
+  if (scrollContainer) {
+    // Restore container scroll position
+    const currentScroll = scrollContainer.scrollTop;
+    if (currentScroll <= newPos + 50 && currentScroll >= newPos - 50) {
+      scrollContainer.scrollTo({ top: lastPos });
+    }
+    scrollState.set("scrollContainer", null);
+  } else {
+    // Restore window scroll position
+    const scrollY = window.scrollY;
+    if (scrollY <= newPos + 50 && scrollY >= newPos - 50) {
+      window.scroll(0, lastPos);
+    }
   }
 }
 
+// Track the spacer element we added
+let scrollSpacer = null;
+
 /**
- * Add padding to body to make room for keyboard
+ * Find the scrollable ancestor of an element
+ * Looks for containers that CAN scroll (overflow-y: auto/scroll), not just those already scrolling
+ * @param {HTMLElement} element
+ * @returns {HTMLElement|null}
+ */
+function findScrollableAncestor(element) {
+  let current = element.parentElement;
+
+  while (
+    current &&
+    current !== document.body &&
+    current !== document.documentElement
+  ) {
+    const style = window.getComputedStyle(current);
+    const overflowY = style.overflowY;
+
+    // Check if the container COULD scroll (has auto/scroll overflow)
+    // Don't require it to already be scrolling - our spacer will make it scrollable
+    if (overflowY === "auto" || overflowY === "scroll") {
+      return current;
+    }
+
+    current = current.parentElement;
+  }
+
+  return null;
+}
+
+/**
+ * Add padding to the focused element's scrollable container to make room for keyboard
+ * Falls back to body if no scrollable container is found
  * @param {number} keyboardHeight
  */
 export function addBodyPadding(keyboardHeight) {
-  if (!document.body.style.marginBottom || scrollState.get("pagePadding")) {
+  removeBodyPadding();
+
+  const element = focusState.get("element");
+  const scrollableContainer = element ? findScrollableAncestor(element) : null;
+
+  if (scrollableContainer) {
+    scrollSpacer = document.createElement("div");
+    scrollSpacer.id = "vk-scroll-spacer";
+    scrollSpacer.style.cssText = `height: ${keyboardHeight}px; flex-shrink: 0; pointer-events: none;`;
+    scrollableContainer.appendChild(scrollSpacer);
+    scrollState.set("pagePadding", true);
+  } else {
     document.body.style.marginBottom = `${keyboardHeight}px`;
     scrollState.set("pagePadding", true);
   }
 }
 
 /**
- * Remove body padding when keyboard closes
+ * Remove scroll padding when keyboard closes
  */
 export function removeBodyPadding() {
+  if (scrollSpacer?.parentNode) {
+    scrollSpacer.parentNode.removeChild(scrollSpacer);
+  }
+  scrollSpacer = null;
+
   if (scrollState.get("pagePadding")) {
     document.body.style.marginBottom = "";
     scrollState.set("pagePadding", false);
