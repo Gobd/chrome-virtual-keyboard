@@ -21,7 +21,6 @@ import {
   restoreScrollPosition,
   saveInputType,
   saveScrollPosition,
-  scrollInputIntoView,
 } from "../input/InputTracker.js";
 import { renderLayout } from "../layouts/LayoutRenderer.js";
 import { activateAutoCaps, handleKeyPress } from "./KeyHandler.js";
@@ -1133,11 +1132,6 @@ export async function open(force = false) {
 
   // Update scroll extend element
   updateScrollExtend();
-
-  // Scroll input into view
-  requestAnimationFrame(() => {
-    scrollInputIntoView(height);
-  });
 
   // Hide open button
   emit(EVENTS.OPEN_BUTTON_HIDE);
