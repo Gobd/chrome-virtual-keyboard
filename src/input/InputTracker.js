@@ -273,12 +273,86 @@ export function restoreScrollPosition() {
 let scrollSpacer = null;
 
 /**
+ * Check if an element has a height constraint that would allow scrolling
+ * @param {HTMLElement} element
+ * @param {CSSStyleDeclaration} style
+ * @returns {boolean}
+ */
+function hasHeightConstraint(element, style) {
+  // Already scrollable = definitely constrained
+  if (element.scrollHeight > element.clientHeight) {
+    return true;
+  }
+
+  // Check for explicit height constraints in CSS
+  const height = style.height;
+  const maxHeight = style.maxHeight;
+
+  // Has constraint if height is a fixed value (not auto) or max-height is set
+  if (maxHeight !== "none" && maxHeight !== "0px") {
+    return true;
+  }
+
+  if (height !== "auto" && height !== "0px" && !height.endsWith("%")) {
+    return true;
+  }
+
+  // Check if it's a flex child that could be constrained
+  const parent = element.parentElement;
+  if (parent) {
+    const parentStyle = window.getComputedStyle(parent);
+    if (
+      parentStyle.display === "flex" ||
+      parentStyle.display === "inline-flex"
+    ) {
+      // In a column flex container with constrained height, children can scroll
+      if (
+        parentStyle.flexDirection === "column" ||
+        parentStyle.flexDirection === "column-reverse"
+      ) {
+        return hasHeightConstraint(parent, parentStyle);
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Check if an element is inside a fixed-position container
+ * @param {HTMLElement} element
+ * @returns {boolean}
+ */
+function isInsideFixedContainer(element) {
+  let current = element;
+  while (
+    current &&
+    current !== document.body &&
+    current !== document.documentElement
+  ) {
+    const style = window.getComputedStyle(current);
+    if (style.position === "fixed") {
+      return true;
+    }
+    current = current.parentElement;
+  }
+  return false;
+}
+
+/**
  * Find the scrollable ancestor of an element
- * Looks for containers that CAN scroll (overflow-y: auto/scroll), not just those already scrolling
+ * Only returns containers that CAN actually scroll (have overflow + height constraint)
+ * Skip elements inside fixed-position containers (like modals) since they don't need scroll spacers
  * @param {HTMLElement} element
  * @returns {HTMLElement|null}
  */
 function findScrollableAncestor(element) {
+  // Skip if element is inside a fixed-position container (e.g., modal)
+  // Fixed containers are positioned independently and don't need scroll spacers
+  if (isInsideFixedContainer(element)) {
+    return null;
+  }
+
   let current = element.parentElement;
 
   while (
@@ -289,10 +363,11 @@ function findScrollableAncestor(element) {
     const style = window.getComputedStyle(current);
     const overflowY = style.overflowY;
 
-    // Check if the container COULD scroll (has auto/scroll overflow)
-    // Don't require it to already be scrolling - our spacer will make it scrollable
+    // Must have scrollable overflow AND a height constraint
     if (overflowY === "auto" || overflowY === "scroll") {
-      return current;
+      if (hasHeightConstraint(current, style)) {
+        return current;
+      }
     }
 
     current = current.parentElement;

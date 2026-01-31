@@ -18,9 +18,7 @@ import {
   clearCloseTimer,
   clearRemovalCloseTimer,
   removeBodyPadding,
-  restoreScrollPosition,
   saveInputType,
-  saveScrollPosition,
 } from "../input/InputTracker.js";
 import { renderLayout } from "../layouts/LayoutRenderer.js";
 import { activateAutoCaps, handleKeyPress } from "./KeyHandler.js";
@@ -1115,7 +1113,6 @@ export async function open(force = false) {
 
   clearCloseTimer();
   clearRemovalCloseTimer();
-  saveScrollPosition();
 
   // Add body padding
   const height = keyboardElement.offsetHeight;
@@ -1165,8 +1162,6 @@ export function close() {
 
   setTimeout(() => {
     if (!keyboardState.get("open")) {
-      // Restore scroll position
-      restoreScrollPosition();
       removeBodyPadding();
 
       // Hide scroll extend
