@@ -301,9 +301,15 @@ function hasHeightConstraint(element, style) {
   const parent = element.parentElement;
   if (parent) {
     const parentStyle = window.getComputedStyle(parent);
-    if (parentStyle.display === "flex" || parentStyle.display === "inline-flex") {
+    if (
+      parentStyle.display === "flex" ||
+      parentStyle.display === "inline-flex"
+    ) {
       // In a column flex container with constrained height, children can scroll
-      if (parentStyle.flexDirection === "column" || parentStyle.flexDirection === "column-reverse") {
+      if (
+        parentStyle.flexDirection === "column" ||
+        parentStyle.flexDirection === "column-reverse"
+      ) {
         return hasHeightConstraint(parent, parentStyle);
       }
     }
