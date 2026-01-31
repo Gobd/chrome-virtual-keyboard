@@ -319,12 +319,40 @@ function hasHeightConstraint(element, style) {
 }
 
 /**
+ * Check if an element is inside a fixed-position container
+ * @param {HTMLElement} element
+ * @returns {boolean}
+ */
+function isInsideFixedContainer(element) {
+  let current = element;
+  while (
+    current &&
+    current !== document.body &&
+    current !== document.documentElement
+  ) {
+    const style = window.getComputedStyle(current);
+    if (style.position === "fixed") {
+      return true;
+    }
+    current = current.parentElement;
+  }
+  return false;
+}
+
+/**
  * Find the scrollable ancestor of an element
  * Only returns containers that CAN actually scroll (have overflow + height constraint)
+ * Skip elements inside fixed-position containers (like modals) since they don't need scroll spacers
  * @param {HTMLElement} element
  * @returns {HTMLElement|null}
  */
 function findScrollableAncestor(element) {
+  // Skip if element is inside a fixed-position container (e.g., modal)
+  // Fixed containers are positioned independently and don't need scroll spacers
+  if (isInsideFixedContainer(element)) {
+    return null;
+  }
+
   let current = element.parentElement;
 
   while (
