@@ -157,21 +157,28 @@ function handleEnter() {
     dispatchInputEvent(element);
     activateAutoCaps();
   } else if (type === "contenteditable") {
-    // Insert <br>
-    const selection = getSelectionForElement(element);
-    if (selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      range.deleteContents();
-      const br = element.ownerDocument.createElement("br");
-      range.insertNode(br);
-      range.setStartAfter(br);
-      range.setEndAfter(br);
-      selection.removeAllRanges();
-      selection.addRange(range);
+    const oskEvent = new CustomEvent("osk-insert", {
+      bubbles: true,
+      cancelable: true,
+      detail: { text: "Enter" },
+    });
+    element.dispatchEvent(oskEvent);
+    if (!oskEvent.defaultPrevented) {
+      // Fallback: insert <br> for non-Lexical contenteditable
+      const selection = getSelectionForElement(element);
+      if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        const br = element.ownerDocument.createElement("br");
+        range.insertNode(br);
+        range.setStartAfter(br);
+        range.setEndAfter(br);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
     }
     dispatchInputEvent(element);
     markChanged();
-    activateAutoCaps();
   } else {
     // Submit form or close keyboard
     const form = element.closest("form");
@@ -304,7 +311,16 @@ function handleBackspace() {
   }
 
   if (type === "contenteditable") {
-    deleteAtCursorWithRange(element, savedRange);
+    const oskEvent = new CustomEvent("osk-insert", {
+      bubbles: true,
+      cancelable: true,
+      detail: { text: "Backspace" },
+    });
+    element.dispatchEvent(oskEvent);
+    if (!oskEvent.defaultPrevented) {
+      // Fallback for non-Lexical contenteditable
+      deleteAtCursorWithRange(element, savedRange);
+    }
   } else {
     try {
       let pos = element.selectionStart;
@@ -355,8 +371,37 @@ function insertCharacter(key) {
   );
   element.dispatchEvent(keydownEvent);
 
+  // If site handled the keydown (e.g. Lexical), don't also do manual insertion
+  if (keydownEvent.defaultPrevented) {
+    markChanged();
+    resetShiftIfNeeded(key);
+    dispatchKeyEvents(element, key);
+    if (key === "." || key === "?" || key === "!") activateAutoCaps();
+    return;
+  }
+
   if (type === "contenteditable") {
-    insertTextAtCursor(element, key);
+    // Try osk-insert custom event first (handled by editors like Lexical that
+    // can't process synthetic beforeinput/keydown events due to isTrusted checks).
+    const oskEvent = new CustomEvent("osk-insert", {
+      bubbles: true,
+      cancelable: true,
+      detail: { text: key },
+    });
+    element.dispatchEvent(oskEvent);
+    if (!oskEvent.defaultPrevented) {
+      // Fall back to beforeinput for other contenteditable editors
+      const beforeInputEvent = new InputEvent("beforeinput", {
+        bubbles: true,
+        cancelable: true,
+        inputType: "insertText",
+        data: key,
+      });
+      element.dispatchEvent(beforeInputEvent);
+      if (!beforeInputEvent.defaultPrevented) {
+        insertTextAtCursor(element, key);
+      }
+    }
     markChanged();
     resetShiftIfNeeded(key);
     dispatchKeyEvents(element, key);
@@ -399,8 +444,9 @@ function resetShiftIfNeeded(key) {
  * Activate auto-caps if enabled and shift is not already on
  * Only activates if shift is OFF to avoid interfering with sticky shift
  * Skips activation for email and password inputs
+ * @param {boolean} onlyIfAtStart - Only activate if the cursor is at the start of the field
  */
-function activateAutoCaps() {
+function activateAutoCaps(onlyIfAtStart = false) {
   if (!settingsState.get("autoCaps") || keyboardState.get("shift")) {
     return;
   }
@@ -412,6 +458,24 @@ function activateAutoCaps() {
       element.getAttribute?.("data-original-type") || element.type;
     if (origType === "email" || origType === "password") {
       return;
+    }
+
+    if (onlyIfAtStart) {
+      const type = focusState.get("type");
+      if (type === "contenteditable") {
+        const selection = getSelectionForElement(element);
+        if (selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          // Not at start if there's text before the cursor
+          if (range.startOffset > 0 || element.textContent?.length > 0) {
+            return;
+          }
+        }
+      } else {
+        if (element.selectionStart > 0 || element.value?.length > 0) {
+          return;
+        }
+      }
     }
   }
 
