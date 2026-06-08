@@ -1124,8 +1124,8 @@ export async function open(force = false) {
   keyboardElement.classList.remove(CSS_CLASSES.KEYBOARD_CLOSED);
   keyboardElement.classList.add(CSS_CLASSES.KEYBOARD_OPEN);
 
-  // Activate auto-caps on keyboard open (first keypress should be capitalized)
-  activateAutoCaps();
+  // Activate auto-caps on keyboard open only if the field is empty/at start
+  activateAutoCaps(true);
 
   // Update scroll extend element
   updateScrollExtend();
@@ -1599,10 +1599,11 @@ function updateDragHandleVisibility() {
  */
 function broadcastKeyboardState(isOpen) {
   if (top === self) {
-    chrome.runtime.sendMessage({
-      method: "keyboardStateChange",
-      isOpen,
-    });
+    try {
+      chrome.runtime.sendMessage({ method: "keyboardStateChange", isOpen });
+    } catch (_e) {
+      // Service worker may be inactive — not fatal
+    }
   }
 }
 
